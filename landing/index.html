@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>자린고비 — 귀엽게 모으는 30일 저축 게임</title>
+<meta name="description" content="챌린지형 저축 게이미피케이션 앱 자린고비. 매일 작은 절약 미션을 완료하고 캐릭터를 꾸미세요. 30일이면 30만원이 모입니다."/>
+<meta property="og:title" content="자린고비 — 귀엽게 모으는 30일 저축 게임"/>
+<meta property="og:description" content="10원 앱테크는 이제 그만. 캐릭터 꾸미기와 양심 시스템으로 즐겁게 모으는 저축 게임."/>
+<meta property="og:type" content="website"/>
+<meta property="og:image" content="og.svg"/>
+<link rel="stylesheet" href="styles.css"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23ABBCA2'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='20'%3E🐟%3C/text%3E%3C/svg%3E"/>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#top" class="logo"><span class="fish">🐟</span>자린고비</a>
+    <div class="nav-links">
+      <a href="#features">핵심 재미</a>
+      <a href="#modes">모드</a>
+      <a href="#stack">제작 스택</a>
+      <a href="#cost">운영비</a>
+      <a href="architecture.html">아키텍처</a>
+      <a href="#download">다운로드</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="nav-cta" href="#signup">사전예약</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<header id="top" class="hero">
+  <div class="hero-grid">
+    <div>
+      <span class="eyebrow">CHALLENGE × GAMIFICATION</span>
+      <h1 class="h1">귀엽게 모으는<br/>30일 저축 게임,<br/><span style="color:var(--accent)">자린고비</span>.</h1>
+      <p class="lead">10원 앱테크에 지치셨나요? 매일 작은 절약 미션을 완료하고
+      <b>'자린이' 캐릭터</b>를 꾸며보세요. 30일이면 30만원, 하드모드는 100만원이 모입니다.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#download">📄 제작 설명서 다운로드</a>
+        <a class="btn btn-secondary" href="#features">▶ 핵심 재미 보기</a>
+        <a class="btn btn-ghost" href="architecture.html">🏗 아키텍처 보기</a>
+      </div>
+      <p style="margin-top:18px;font-size:13px;color:rgba(81,76,68,.6)">
+        App Store · Google Play 출시 준비 중 · 이메일 사전예약 가능
+      </p>
+    </div>
+
+    <!-- Character Room mock -->
+    <div class="room" aria-label="캐릭터 방 목업">
+      <div class="dday">D-30 · 0 / 300,000원</div>
+      <div class="hearts" id="hearts">
+        <button class="heart" data-i="1" aria-label="양심 1">♥</button>
+        <button class="heart" data-i="2" aria-label="양심 2">♥</button>
+        <button class="heart" data-i="3" aria-label="양심 3">♥</button>
+      </div>
+      <div class="fish-rope"></div>
+      <div class="fish-hang">🐟</div>
+      <div class="char">짠</div>
+    </div>
+  </div>
+</header>
+
+<!-- PAIN -->
+<section class="section pain">
+  <div class="container">
+    <span class="eyebrow">WHY 자린고비?</span>
+    <h2 class="h2">10원 앱테크에 지치셨나요?</h2>
+    <p class="lead">기존 가계부와 짠테크의 한계를 넘는, 게임처럼 즐거운 저축 습관.</p>
+    <div class="pain-grid">
+      <div class="pain-card reveal">
+        <div class="icn">😮‍💨</div>
+        <h3>리워드는 너무 적다</h3>
+        <p>광고 보고 받는 10~1,000원, 의욕이 안 생깁니다. 자린고비는 <b>실제 1만원·3만원</b> 단위 절약 목표.</p>
+      </div>
+      <div class="pain-card reveal">
+        <div class="icn">📒</div>
+        <h3>가계부는 지루하다</h3>
+        <p>형식적이고 계산적인 입력은 사흘을 못 넘깁니다. 자린고비는 <b>인증샷 한 장</b>이면 끝.</p>
+      </div>
+      <div class="pain-card reveal">
+        <div class="icn">💸</div>
+        <h3>참는 게 우울하다</h3>
+        <p>모은 돈으로 캐릭터의 옷·방을 꾸미는 <b>대리 만족</b>. MZ 취향의 꼬질하고 힙한 룩.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section id="features" class="section">
+  <div class="container">
+    <span class="eyebrow">CORE FUN</span>
+    <h2 class="h2">3가지 핵심 재미</h2>
+    <div class="features-grid">
+      <div class="feature reveal">
+        <div class="badge">🧥</div>
+        <h3>캐릭터 룸 꾸미기</h3>
+        <p>저축한 게임 재화로 자린이의 티셔츠·사치품·방 인테리어를 구매. 옷장에서 즐겨찾기·장착도 자유.</p>
+      </div>
+      <div class="feature reveal">
+        <div class="badge" style="background:var(--pink)">❤️</div>
+        <h3>양심 시스템</h3>
+        <p>스스로 깎는 페널티 하트 3개. 실패해도 시스템이 강요하지 않아 부담 없이 도전.</p>
+      </div>
+      <div class="feature reveal">
+        <div class="badge" style="background:var(--accent)">💬</div>
+        <h3>수다방 커뮤니티</h3>
+        <p>편의점 꿀조합·가성비 레시피·체험단 정보. 스레드로 가볍게 공유하고 스크랩.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MODES -->
+<section id="modes" class="section modes">
+  <div class="container">
+    <span class="eyebrow">CHOOSE YOUR LEVEL</span>
+    <h2 class="h2">두 가지 모드</h2>
+    <div class="modes-grid">
+      <div class="mode-card mode-normal reveal">
+        <div>
+          <span class="tag">NORMAL</span>
+          <h3>가볍게 시작</h3>
+          <div class="amount">300,000원</div>
+          <div class="desc">30일 동안 매일 1만원씩 절약</div>
+        </div>
+        <div class="coin">10</div>
+      </div>
+      <div class="mode-card mode-hard reveal">
+        <div>
+          <span class="tag">HARD</span>
+          <h3>제대로 모은다</h3>
+          <div class="amount">1,000,000원</div>
+          <div class="desc">30일 동안 매일 3~4만원 + 추가 절약 등록</div>
+        </div>
+        <div class="coin">💰</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TIMELINE -->
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">30 DAYS JOURNEY</span>
+    <h2 class="h2">30일의 여정</h2>
+    <div class="timeline" aria-label="D-30 부터 D-0 까지의 여정">
+      <div class="tnode active"><div class="day">D-30</div><div class="what">시작 · 모드 선택</div></div>
+      <div class="tnode"><div class="day">D-25</div><div class="what">아이템 첫 구매</div></div>
+      <div class="tnode"><div class="day">D-20</div><div class="what">수다방 합류</div></div>
+      <div class="tnode"><div class="day">D-15</div><div class="what">중간 점검</div></div>
+      <div class="tnode"><div class="day">D-10</div><div class="what">방 리모델링</div></div>
+      <div class="tnode"><div class="day">D-5</div><div class="what">마지막 스퍼트</div></div>
+      <div class="tnode active"><div class="day">D-0</div><div class="what">완주 · 칭호 획득</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- SHOTS -->
+<section id="shots" class="section shots">
+  <div class="container">
+    <span class="eyebrow">PRODUCT</span>
+    <h2 class="h2">앱 미리보기</h2>
+    <div class="shots-grid">
+      <div class="phone reveal"><div class="scr">
+        <div style="font-size:42px">🐟</div><h4>로그인</h4><p>소셜 로그인 1초 시작</p>
+      </div></div>
+      <div class="phone reveal"><div class="scr">
+        <div style="font-size:42px">🪙</div><h4>모드 선택</h4><p>노말 / 하드</p>
+      </div></div>
+      <div class="phone reveal"><div class="scr">
+        <div style="font-size:42px">🏠</div><h4>메인 룸</h4><p>캐릭터·미션·하트</p>
+      </div></div>
+      <div class="phone reveal"><div class="scr">
+        <div style="font-size:42px">📷</div><h4>인증 + 보상</h4><p>+10,000원 / +100P</p>
+      </div></div>
+    </div>
+  </div>
+</section>
+
+<!-- HEX TITLES -->
+<section class="section">
+  <div class="container">
+    <span class="eyebrow">TITLES</span>
+    <h2 class="h2">칭호와 아이템</h2>
+    <p class="lead">완주할 때마다 쌓이는 헥사곤 칭호. 영구 보관되는 인벤토리.</p>
+    <div class="hex-grid">
+      <div class="hex">홈<br/>바리스타</div>
+      <div class="hex gold">배달<br/>킬러</div>
+      <div class="hex pink">통장<br/>지킴이</div>
+      <div class="hex">충동<br/>차단</div>
+      <div class="hex locked">🔒</div>
+      <div class="hex locked">🔒</div>
+    </div>
+  </div>
+</section>
+
+<!-- STACK -->
+<section id="stack" class="section pain">
+  <div class="container">
+    <span class="eyebrow">FOR BUILDERS</span>
+    <h2 class="h2">제작 설명서 요약</h2>
+    <p class="lead">전체 풀 설명서는 다운로드 박스에서 받으실 수 있습니다.</p>
+    <div class="features-grid">
+      <div class="feature">
+        <div class="badge">📱</div>
+        <h3>모바일</h3>
+        <p>React Native + Expo (TS). EAS OTA 업데이트로 미션·디자인을 심사 없이 배포.</p>
+      </div>
+      <div class="feature">
+        <div class="badge" style="background:var(--accent)">🐘</div>
+        <h3>백엔드</h3>
+        <p>Supabase (Postgres + Auth + Storage + Realtime + Edge Functions). MVP 1인 운영.</p>
+      </div>
+      <div class="feature">
+        <div class="badge" style="background:var(--pink)">🖥</div>
+        <h3>어드민·홍보</h3>
+        <p>Next.js 14 + shadcn/ui. CMS·모더레이션·푸시 캠페인·A/B 통합.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- COST -->
+<section id="cost" class="section cost">
+  <div class="container">
+    <span class="eyebrow">COST</span>
+    <h2 class="h2">예상 운영비</h2>
+    <p class="lead">초기 0원에서 시작, 1만 MAU 기준 월 30만원 내외.</p>
+    <table class="cost-table">
+      <thead>
+        <tr><th>단계</th><th>MAU</th><th>핵심 인프라</th><th>월 비용</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MVP / 베타</td><td>0~1,000</td><td>Supabase Free · Vercel Hobby · Expo Free</td><td>0~70,000원</td></tr>
+        <tr><td>초기 성장</td><td>1k~10k</td><td>Supabase Pro · Vercel Pro · Sentry Team</td><td>120,000~350,000원</td></tr>
+        <tr><td>본격 성장</td><td>10k~50k</td><td>Supabase Team · 이미지 CDN · 모더레이션</td><td>700,000~1,800,000원</td></tr>
+        <tr><td>확장</td><td>50k+</td><td>AWS 자체 인프라 (EKS/RDS/S3)</td><td>별도 산정</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ARCH preview -->
+<section id="arch" class="section arch">
+  <div class="container">
+    <span class="eyebrow">ARCHITECTURE</span>
+    <h2 class="h2">시스템 아키텍처</h2>
+    <p class="lead">5개 다이어그램으로 한눈에. <a href="architecture.html" style="color:var(--accent);font-weight:700">전체 보기 →</a></p>
+    <div class="arch-cards">
+      <div class="arch-card"><span class="num">1</span><h4>System Overview</h4><p>Presentation → Edge → Data → External 4-Layer 구성.</p></div>
+      <div class="arch-card"><span class="num">2</span><h4>Data Flow</h4><p>인증샷 업로드부터 실시간 보상까지의 시퀀스.</p></div>
+      <div class="arch-card"><span class="num">3</span><h4>ERD</h4><p>14개 핵심 테이블과 관계도.</p></div>
+      <div class="arch-card"><span class="num">4</span><h4>Deployment</h4><p>3환경 + GitHub Actions + EAS OTA 핫픽스.</p></div>
+      <div class="arch-card"><span class="num">5</span><h4>Module Map</h4><p>apps/* ↔ packages/* 의존도, 횡단 의존 금지.</p></div>
+      <div class="arch-card" style="background:var(--accent);color:#fff">
+        <h4 style="color:#fff;margin-top:0">📐 모두 보기</h4>
+        <p style="opacity:.92">5개 SVG 다이어그램 + ASCII 시퀀스를 한 페이지에서.</p>
+        <a class="btn btn-pink" href="architecture.html" style="margin-top:8px">아키텍처 페이지 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download" class="section">
+  <div class="container">
+    <div class="dl-box reveal">
+      <div>
+        <span class="eyebrow" style="background:rgba(255,255,255,.18);color:#fff">DOWNLOAD</span>
+        <h2 class="h2">제작에 필요한 모든 문서</h2>
+        <p>기획서, 제작 설명서, 시스템 아키텍처를 마크다운으로 즉시 다운로드. 어디든 PDF로 변환 가능합니다.</p>
+      </div>
+      <div class="dl-actions">
+        <a class="dl-btn" href="downloads/자린고비-기획서.md" download>
+          <span>📋 자린고비 기획서</span><span class="arrow">↓</span>
+        </a>
+        <a class="dl-btn" href="downloads/자린고비-제작설명서.md" download>
+          <span>🛠 자린고비 제작 설명서</span><span class="arrow">↓</span>
+        </a>
+        <a class="dl-btn" href="downloads/자린고비-아키텍처.md" download>
+          <span>🏗 자린고비 시스템 아키텍처</span><span class="arrow">↓</span>
+        </a>
+        <a class="dl-btn" href="downloads/자린고비-관리자페이지.md" download>
+          <span>📊 관리자 / 홍보 페이지 스펙</span><span class="arrow">↓</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq" class="section">
+  <div class="container">
+    <span class="eyebrow">FAQ</span>
+    <h2 class="h2">자주 묻는 질문</h2>
+    <details class="faq-item"><summary>실제로 돈을 어떻게 모으나요?</summary>
+      <p>앱은 절약 시뮬레이션입니다. 매일 미션을 완료하고 인증사진을 올리면 누적 금액이 올라갑니다. 실제 송금은 본인의 자유 적금/저축 계좌로 직접 이체하시면 됩니다.</p></details>
+    <details class="faq-item"><summary>인증사진은 어디에 저장되나요?</summary>
+      <p>Supabase Storage(S3 호환)에 암호화되어 저장되고, EXIF의 GPS 정보는 자동 제거됩니다. 90일 후 cold storage, 180일 후 자동 삭제됩니다.</p></details>
+    <details class="faq-item"><summary>양심 하트가 다 떨어지면 어떻게 되나요?</summary>
+      <p>회차는 실패 처리되지만 그동안 모은 코인과 아이템은 영구 보관됩니다. 다음 회차에서 다시 시작할 수 있어요.</p></details>
+    <details class="faq-item"><summary>유료인가요?</summary>
+      <p>모든 핵심 기능은 무료입니다. 향후 시즌 패스, 콜라보 캐릭터 등 선택적 결제 요소가 추가될 수 있습니다.</p></details>
+    <details class="faq-item"><summary>안드로이드/아이폰 둘 다 되나요?</summary>
+      <p>네, React Native + Expo로 두 플랫폼 모두 지원합니다.</p></details>
+  </div>
+</section>
+
+<!-- SIGNUP -->
+<section id="signup" class="section">
+  <div class="container">
+    <div class="signup">
+      <span class="eyebrow" style="background:rgba(255,255,255,.18);color:#fff">BETA</span>
+      <h2 class="h2">베타 사전예약</h2>
+      <p style="opacity:.92">출시 알림과 베타 코드를 가장 먼저 받아보세요.</p>
+      <form id="signup-form" onsubmit="return Jaringobi.handleSignup(event)">
+        <input type="email" name="email" required placeholder="이메일을 입력하세요" aria-label="이메일"/>
+        <button type="submit" class="btn btn-pink">예약하기</button>
+      </form>
+      <p id="signup-msg" style="margin-top:14px;font-size:13px;opacity:.9"></p>
+    </div>
+  </div>
+</section>
+
+<!-- FOOT -->
+<footer class="foot">
+  <div>© 2026 자린고비 — 챌린지형 저축 게이미피케이션 앱</div>
+  <div style="margin-top:8px">
+    <a href="#download">문서 다운로드</a> ·
+    <a href="architecture.html">아키텍처</a> ·
+    <a href="#faq">FAQ</a> ·
+    <a href="mailto:hello@jaringobi.app">문의</a>
+  </div>
+</footer>
+
+<!-- Conscience modal -->
+<div class="modal-back" id="modal-back" role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal">
+    <div class="big-hearts">❤️ ❤️ ❤️</div>
+    <h3 id="m-title">당신의 양심 지키시겠습니까?</h3>
+    <p>한 번 깎인 양심은 다시 돌아오지 않습니다.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="Jaringobi.closeModal()">취소하기</button>
+      <button class="btn btn-primary" onclick="Jaringobi.deleteHeart()">양심 삭제</button>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

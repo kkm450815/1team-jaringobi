@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 760" font-family="-apple-system, 'Apple SD Gothic Neo', 'Pretendard', sans-serif">
+  <defs>
+    <style>
+      .bg{fill:#F6EEDE}
+      .primary{fill:#ABBCA2}
+      .accent{fill:#617C53}
+      .text{fill:#514C44}
+      .pink{fill:#F49496}
+      .card{fill:#FFFFFF;stroke:#514C44;stroke-width:1.5}
+      .label{font-size:14px;fill:#514C44;font-weight:600}
+      .small{font-size:12px;fill:#514C44}
+      .title{font-size:20px;fill:#514C44;font-weight:700}
+      .layer{font-size:13px;fill:#FFFFFF;font-weight:700}
+      .arrow{stroke:#514C44;stroke-width:1.5;fill:none;marker-end:url(#arr)}
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#514C44"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="760"/>
+  <text x="40" y="46" class="title">자린고비 — System Overview</text>
+  <text x="40" y="68" class="small">Presentation → Edge/API → Data → External</text>
+
+  <!-- Presentation Layer -->
+  <rect x="40" y="100" width="1120" height="140" rx="14" class="primary" opacity="0.25"/>
+  <rect x="40" y="100" width="160" height="28" rx="14" class="primary"/>
+  <text x="60" y="119" class="layer">① Presentation</text>
+
+  <rect x="80" y="146" width="280" height="80" rx="10" class="card"/>
+  <text x="100" y="172" class="label">📱 Mobile App</text>
+  <text x="100" y="194" class="small">React Native (Expo) · TS</text>
+  <text x="100" y="212" class="small">EAS Update · Reanimated · TanStack Query</text>
+
+  <rect x="460" y="146" width="280" height="80" rx="10" class="card"/>
+  <text x="480" y="172" class="label">🖥 Admin Console</text>
+  <text x="480" y="194" class="small">Next.js 14 · shadcn/ui</text>
+  <text x="480" y="212" class="small">CMS · Moderation · Push</text>
+
+  <rect x="840" y="146" width="280" height="80" rx="10" class="card"/>
+  <text x="860" y="172" class="label">🌐 Landing</text>
+  <text x="860" y="194" class="small">Static (HTML/CSS/JS)</text>
+  <text x="860" y="212" class="small">Vercel / GitHub Pages</text>
+
+  <!-- Edge / API Layer -->
+  <rect x="40" y="270" width="1120" height="140" rx="14" class="accent" opacity="0.18"/>
+  <rect x="40" y="270" width="160" height="28" rx="14" class="accent"/>
+  <text x="60" y="289" class="layer">② Edge / API</text>
+
+  <rect x="80" y="316" width="500" height="80" rx="10" class="card"/>
+  <text x="100" y="342" class="label">⚡ Supabase Edge Functions (Deno)</text>
+  <text x="100" y="364" class="small">confirm_mission · verify_mission · decrement_heart</text>
+  <text x="100" y="382" class="small">purchase_item · finalize_round · roll_daily_missions</text>
+
+  <rect x="620" y="316" width="500" height="80" rx="10" class="card"/>
+  <text x="640" y="342" class="label">🔌 PostgREST + Auth + Storage SDK</text>
+  <text x="640" y="364" class="small">단순 CRUD는 RLS로 직접 보호</text>
+  <text x="640" y="382" class="small">Realtime: Postgres CDC over WebSocket</text>
+
+  <!-- Data Layer -->
+  <rect x="40" y="440" width="1120" height="140" rx="14" class="primary" opacity="0.35"/>
+  <rect x="40" y="440" width="160" height="28" rx="14" class="primary"/>
+  <text x="60" y="459" class="layer">③ Data</text>
+
+  <rect x="80" y="486" width="320" height="80" rx="10" class="card"/>
+  <text x="100" y="512" class="label">🐘 Postgres</text>
+  <text x="100" y="534" class="small">RLS · RPC · pg_cron · triggers</text>
+  <text x="100" y="552" class="small">14 tables (users, challenges, missions...)</text>
+
+  <rect x="440" y="486" width="320" height="80" rx="10" class="card"/>
+  <text x="460" y="512" class="label">🗂 Storage (S3 호환)</text>
+  <text x="460" y="534" class="small">인증샷 · 캐릭터 일러스트 · 공유 OG</text>
+  <text x="460" y="552" class="small">자체 CDN · 라이프사이클(90d→cold)</text>
+
+  <rect x="800" y="486" width="320" height="80" rx="10" class="card"/>
+  <text x="820" y="512" class="label">⚡ Realtime / Cron</text>
+  <text x="820" y="534" class="small">CDC 채널 → 클라 푸시</text>
+  <text x="820" y="552" class="small">pg_cron: 매일 KST 00:00 미션 롤링</text>
+
+  <!-- External Layer -->
+  <rect x="40" y="610" width="1120" height="120" rx="14" class="pink" opacity="0.22"/>
+  <rect x="40" y="610" width="160" height="28" rx="14" class="pink"/>
+  <text x="60" y="629" class="layer">④ External</text>
+
+  <rect x="80" y="656" width="200" height="56" rx="10" class="card"/>
+  <text x="100" y="682" class="label">🔔 FCM / APNs</text>
+  <text x="100" y="700" class="small">푸시 (무료)</text>
+
+  <rect x="300" y="656" width="200" height="56" rx="10" class="card"/>
+  <text x="320" y="682" class="label">🛡 Sightengine</text>
+  <text x="320" y="700" class="small">NSFW 모더레이션</text>
+
+  <rect x="520" y="656" width="200" height="56" rx="10" class="card"/>
+  <text x="540" y="682" class="label">📈 Amplitude / GA4</text>
+  <text x="540" y="700" class="small">행동/마케팅 분석</text>
+
+  <rect x="740" y="656" width="200" height="56" rx="10" class="card"/>
+  <text x="760" y="682" class="label">🐞 Sentry</text>
+  <text x="760" y="700" class="small">에러 / 성능</text>
+
+  <rect x="960" y="656" width="160" height="56" rx="10" class="card"/>
+  <text x="980" y="682" class="label">✉️ Resend</text>
+  <text x="980" y="700" class="small">이메일 발송</text>
+
+  <!-- arrows -->
+  <path class="arrow" d="M220 226 L220 316"/>
+  <path class="arrow" d="M600 226 L600 316"/>
+  <path class="arrow" d="M980 226 L980 316"/>
+  <path class="arrow" d="M330 396 L240 486"/>
+  <path class="arrow" d="M870 396 L960 486"/>
+  <path class="arrow" d="M600 396 L600 486"/>
+  <path class="arrow" d="M180 566 L180 656"/>
+  <path class="arrow" d="M400 566 L400 656"/>
+  <path class="arrow" d="M620 566 L620 656"/>
+  <path class="arrow" d="M840 566 L840 656"/>
+</svg>
