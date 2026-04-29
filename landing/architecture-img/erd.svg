@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 900" font-family="-apple-system,'Apple SD Gothic Neo','Pretendard',sans-serif">
+  <defs>
+    <style>
+      .bg{fill:#F6EEDE}
+      .tbl{fill:#FFFFFF;stroke:#514C44;stroke-width:1.5}
+      .head{fill:#617C53}
+      .head2{fill:#ABBCA2}
+      .head3{fill:#F49496}
+      .label{font-size:13px;fill:#FFFFFF;font-weight:700}
+      .col{font-size:11.5px;fill:#514C44}
+      .pk{font-weight:700;fill:#617C53}
+      .title{font-size:20px;fill:#514C44;font-weight:700}
+      .note{font-size:12px;fill:#514C44}
+      .rel{stroke:#514C44;stroke-width:1.2;fill:none;marker-end:url(#one);marker-start:url(#many)}
+    </style>
+    <marker id="one" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M2,2 L2,10 M2,6 L10,6" stroke="#514C44" stroke-width="1.5" fill="none"/>
+    </marker>
+    <marker id="many" viewBox="0 0 12 12" refX="2" refY="6" markerWidth="9" markerHeight="9" orient="auto">
+      <path d="M2,2 L10,6 L2,10 M10,6 L10,2 M10,6 L10,10" stroke="#514C44" stroke-width="1.2" fill="none"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1400" height="900"/>
+  <text x="40" y="46" class="title">자린고비 — Postgres ERD</text>
+  <text x="40" y="68" class="note">14개 핵심 테이블 · PK는 진한 색 / FK는 화살표</text>
+
+  <!-- USERS -->
+  <g>
+    <rect x="40" y="100" width="180" height="120" rx="8" class="tbl"/>
+    <rect x="40" y="100" width="180" height="26" rx="8" class="head"/>
+    <text x="50" y="118" class="label">users</text>
+    <text x="50" y="146" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="50" y="164" class="col">email text</text>
+    <text x="50" y="182" class="col">provider text</text>
+    <text x="50" y="200" class="col">created_at</text>
+  </g>
+
+  <!-- PROFILES -->
+  <g>
+    <rect x="280" y="100" width="200" height="140" rx="8" class="tbl"/>
+    <rect x="280" y="100" width="200" height="26" rx="8" class="head2"/>
+    <text x="290" y="118" class="label">profiles</text>
+    <text x="290" y="146" class="col"><tspan class="pk">user_id</tspan> uuid FK</text>
+    <text x="290" y="164" class="col">nickname text</text>
+    <text x="290" y="182" class="col">equipped_title_id FK</text>
+    <text x="290" y="200" class="col">avatar_state jsonb</text>
+    <text x="290" y="218" class="col">birth_year int</text>
+  </g>
+
+  <!-- CHALLENGES -->
+  <g>
+    <rect x="540" y="100" width="220" height="180" rx="8" class="tbl"/>
+    <rect x="540" y="100" width="220" height="26" rx="8" class="head"/>
+    <text x="550" y="118" class="label">challenges</text>
+    <text x="550" y="146" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="550" y="164" class="col">user_id FK</text>
+    <text x="550" y="182" class="col">mode (normal/hard)</text>
+    <text x="550" y="200" class="col">started_at, ends_at</text>
+    <text x="550" y="218" class="col">target_amount int</text>
+    <text x="550" y="236" class="col">saved_amount int</text>
+    <text x="550" y="254" class="col">hearts_left int CHK 0..3</text>
+    <text x="550" y="272" class="col">status (active/done/failed)</text>
+  </g>
+
+  <!-- DAILY_MISSIONS -->
+  <g>
+    <rect x="820" y="100" width="220" height="160" rx="8" class="tbl"/>
+    <rect x="820" y="100" width="220" height="26" rx="8" class="head2"/>
+    <text x="830" y="118" class="label">daily_missions</text>
+    <text x="830" y="146" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="830" y="164" class="col">challenge_id FK</text>
+    <text x="830" y="182" class="col">day_no 1..30</text>
+    <text x="830" y="200" class="col">template_id FK</text>
+    <text x="830" y="218" class="col">status</text>
+    <text x="830" y="236" class="col">confirmed_at</text>
+    <text x="830" y="254" class="col">UNIQUE(challenge_id,day_no)</text>
+  </g>
+
+  <!-- MISSION_TEMPLATES -->
+  <g>
+    <rect x="1100" y="100" width="240" height="180" rx="8" class="tbl"/>
+    <rect x="1100" y="100" width="240" height="26" rx="8" class="head"/>
+    <text x="1110" y="118" class="label">mission_templates</text>
+    <text x="1110" y="146" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="1110" y="164" class="col">category (식비/여가/충동/통장)</text>
+    <text x="1110" y="182" class="col">title text</text>
+    <text x="1110" y="200" class="col">amount int</text>
+    <text x="1110" y="218" class="col">difficulty (E/N/H)</text>
+    <text x="1110" y="236" class="col">illust_url</text>
+    <text x="1110" y="254" class="col">modes text[]</text>
+    <text x="1110" y="272" class="col">is_active bool</text>
+  </g>
+
+  <!-- MISSION_LOGS -->
+  <g>
+    <rect x="820" y="320" width="220" height="160" rx="8" class="tbl"/>
+    <rect x="820" y="320" width="220" height="26" rx="8" class="head3"/>
+    <text x="830" y="338" class="label">mission_logs</text>
+    <text x="830" y="366" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="830" y="384" class="col">daily_mission_id FK</text>
+    <text x="830" y="402" class="col">photo_url text</text>
+    <text x="830" y="420" class="col">hash text</text>
+    <text x="830" y="438" class="col">moderation_score numeric</text>
+    <text x="830" y="456" class="col">status (approved/rejected)</text>
+  </g>
+
+  <!-- COINS_LEDGER -->
+  <g>
+    <rect x="40" y="320" width="220" height="160" rx="8" class="tbl"/>
+    <rect x="40" y="320" width="220" height="26" rx="8" class="head"/>
+    <text x="50" y="338" class="label">coins_ledger (append)</text>
+    <text x="50" y="366" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="50" y="384" class="col">user_id FK</text>
+    <text x="50" y="402" class="col">delta int (+/-)</text>
+    <text x="50" y="420" class="col">reason enum</text>
+    <text x="50" y="438" class="col">ref_id uuid</text>
+    <text x="50" y="456" class="col">created_at</text>
+  </g>
+
+  <!-- HEARTS_LOG -->
+  <g>
+    <rect x="540" y="320" width="220" height="140" rx="8" class="tbl"/>
+    <rect x="540" y="320" width="220" height="26" rx="8" class="head3"/>
+    <text x="550" y="338" class="label">hearts_log</text>
+    <text x="550" y="366" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="550" y="384" class="col">challenge_id FK</text>
+    <text x="550" y="402" class="col">used_at ts</text>
+    <text x="550" y="420" class="col">idem_key text UNIQUE</text>
+  </g>
+
+  <!-- ITEMS -->
+  <g>
+    <rect x="280" y="320" width="220" height="160" rx="8" class="tbl"/>
+    <rect x="280" y="320" width="220" height="26" rx="8" class="head"/>
+    <text x="290" y="338" class="label">items (shop SKU)</text>
+    <text x="290" y="366" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="290" y="384" class="col">sku text UNIQUE</text>
+    <text x="290" y="402" class="col">category (top/bottom/room)</text>
+    <text x="290" y="420" class="col">price_p int</text>
+    <text x="290" y="438" class="col">illust_url</text>
+    <text x="290" y="456" class="col">is_active bool</text>
+  </g>
+
+  <!-- INVENTORY -->
+  <g>
+    <rect x="280" y="540" width="220" height="120" rx="8" class="tbl"/>
+    <rect x="280" y="540" width="220" height="26" rx="8" class="head2"/>
+    <text x="290" y="558" class="label">inventory</text>
+    <text x="290" y="586" class="col">user_id FK</text>
+    <text x="290" y="604" class="col">item_id FK</text>
+    <text x="290" y="622" class="col">acquired_at</text>
+    <text x="290" y="640" class="col">is_favorite bool</text>
+  </g>
+
+  <!-- EQUIPPED -->
+  <g>
+    <rect x="40" y="540" width="220" height="120" rx="8" class="tbl"/>
+    <rect x="40" y="540" width="220" height="26" rx="8" class="head2"/>
+    <text x="50" y="558" class="label">equipped</text>
+    <text x="50" y="586" class="col">user_id FK</text>
+    <text x="50" y="604" class="col">slot enum</text>
+    <text x="50" y="622" class="col">item_id FK</text>
+    <text x="50" y="640" class="col">UNIQUE(user_id,slot)</text>
+  </g>
+
+  <!-- TITLES -->
+  <g>
+    <rect x="540" y="500" width="220" height="120" rx="8" class="tbl"/>
+    <rect x="540" y="500" width="220" height="26" rx="8" class="head"/>
+    <text x="550" y="518" class="label">titles</text>
+    <text x="550" y="546" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="550" y="564" class="col">name text</text>
+    <text x="550" y="582" class="col">hex_illust_url</text>
+    <text x="550" y="600" class="col">condition_json jsonb</text>
+  </g>
+
+  <!-- COMMUNITY ROOMS -->
+  <g>
+    <rect x="1100" y="320" width="240" height="120" rx="8" class="tbl"/>
+    <rect x="1100" y="320" width="240" height="26" rx="8" class="head"/>
+    <text x="1110" y="338" class="label">community_rooms</text>
+    <text x="1110" y="366" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="1110" y="384" class="col">theme text</text>
+    <text x="1110" y="402" class="col">color hex</text>
+    <text x="1110" y="420" class="col">"order" int</text>
+  </g>
+
+  <!-- POSTS -->
+  <g>
+    <rect x="1100" y="500" width="240" height="140" rx="8" class="tbl"/>
+    <rect x="1100" y="500" width="240" height="26" rx="8" class="head2"/>
+    <text x="1110" y="518" class="label">posts</text>
+    <text x="1110" y="546" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="1110" y="564" class="col">room_id FK</text>
+    <text x="1110" y="582" class="col">user_id FK</text>
+    <text x="1110" y="600" class="col">body text</text>
+    <text x="1110" y="618" class="col">created_at</text>
+  </g>
+
+  <!-- BOOKMARKS -->
+  <g>
+    <rect x="820" y="540" width="220" height="100" rx="8" class="tbl"/>
+    <rect x="820" y="540" width="220" height="26" rx="8" class="head2"/>
+    <text x="830" y="558" class="label">bookmarks</text>
+    <text x="830" y="586" class="col">user_id FK</text>
+    <text x="830" y="604" class="col">post_id FK</text>
+    <text x="830" y="622" class="col">created_at</text>
+  </g>
+
+  <!-- PUSH CAMPAIGNS -->
+  <g>
+    <rect x="40" y="700" width="300" height="140" rx="8" class="tbl"/>
+    <rect x="40" y="700" width="300" height="26" rx="8" class="head3"/>
+    <text x="50" y="718" class="label">push_campaigns</text>
+    <text x="50" y="746" class="col"><tspan class="pk">id</tspan> uuid</text>
+    <text x="50" y="764" class="col">segment_json jsonb</text>
+    <text x="50" y="782" class="col">title, body</text>
+    <text x="50" y="800" class="col">scheduled_at</text>
+    <text x="50" y="818" class="col">ab_variant text</text>
+  </g>
+
+  <!-- relations -->
+  <path class="rel" d="M220 160 L280 160"/>
+  <path class="rel" d="M480 170 L540 170"/>
+  <path class="rel" d="M760 180 L820 180"/>
+  <path class="rel" d="M1040 180 L1100 180"/>
+  <path class="rel" d="M930 260 L930 320"/>
+  <path class="rel" d="M260 380 L40 380" transform="translate(0,0)"/>
+  <path class="rel" d="M650 280 L650 320"/>
+  <path class="rel" d="M500 400 L540 400"/>
+  <path class="rel" d="M390 480 L390 540"/>
+  <path class="rel" d="M150 480 L150 540"/>
+  <path class="rel" d="M650 460 L650 500"/>
+  <path class="rel" d="M1220 440 L1220 500"/>
+  <path class="rel" d="M1100 580 L1040 580"/>
+  <path class="rel" d="M820 580 L500 580"/>
+</svg>

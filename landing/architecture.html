@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>자린고비 — 시스템 아키텍처</title>
+<meta name="description" content="자린고비 앱의 시스템 아키텍처. 4-Layer 구성, 데이터 플로우, ERD, 배포 파이프라인, 모듈 의존도."/>
+<link rel="stylesheet" href="styles.css"/>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23617C53'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-size='20' fill='white'%3E🏗%3C/text%3E%3C/svg%3E"/>
+<style>
+  .arch-page{padding:48px 24px}
+  .arch-header{max-width:var(--max);margin:0 auto 32px}
+  .tabs{
+    display:flex;flex-wrap:wrap;gap:8px;
+    max-width:var(--max);margin:0 auto 18px;padding:0 24px;
+  }
+  .tab{
+    padding:10px 16px;border-radius:999px;background:#fff;
+    border:1.5px solid rgba(81,76,68,.15);font-weight:700;font-size:14px;
+    color:var(--text);cursor:pointer;transition:all .15s ease;
+  }
+  .tab:hover{transform:translateY(-1px)}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+  .panel{
+    max-width:var(--max);margin:0 auto;padding:24px;
+    background:#fff;border:1px solid rgba(81,76,68,.1);
+    border-radius:var(--radius);box-shadow:var(--shadow);
+    display:none;
+  }
+  .panel.active{display:block}
+  .panel h3{margin:0 0 8px;font-size:22px}
+  .panel .desc{color:rgba(81,76,68,.85);margin:0 0 16px;max-width:780px}
+  .panel .img-wrap{
+    background:var(--bg);border-radius:14px;padding:14px;
+    overflow:auto;
+  }
+  .panel .img-wrap img{width:100%;height:auto;display:block}
+  .pill-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .pill{
+    background:rgba(97,124,83,.12);color:var(--accent);
+    padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;
+  }
+  .back{
+    display:inline-flex;align-items:center;gap:6px;
+    color:var(--accent);font-weight:700;font-size:14px;margin-bottom:12px;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="logo"><span class="fish">🐟</span>자린고비</a>
+    <div class="nav-links">
+      <a href="index.html#features">핵심 재미</a>
+      <a href="index.html#stack">제작 스택</a>
+      <a href="index.html#cost">운영비</a>
+      <a href="architecture.html" style="color:var(--accent);font-weight:700">아키텍처</a>
+      <a href="index.html#download">다운로드</a>
+    </div>
+    <a class="nav-cta" href="index.html#signup">사전예약</a>
+  </div>
+</nav>
+
+<header class="arch-page">
+  <div class="arch-header">
+    <a class="back" href="index.html">← 메인으로</a>
+    <span class="eyebrow">SYSTEM ARCHITECTURE</span>
+    <h1 class="h1" style="font-size:clamp(28px,4vw,44px);margin:14px 0 10px">자린고비 시스템 아키텍처</h1>
+    <p class="lead">5개 다이어그램으로 보는 전체 구조. 각 SVG는 다운로드 가능합니다.</p>
+  </div>
+</header>
+
+<div class="tabs" role="tablist">
+  <button class="tab active" data-i="0">① System Overview</button>
+  <button class="tab" data-i="1">② Data Flow</button>
+  <button class="tab" data-i="2">③ ERD</button>
+  <button class="tab" data-i="3">④ Deployment</button>
+  <button class="tab" data-i="4">⑤ Module Map</button>
+</div>
+
+<main class="arch-page" style="padding-top:0">
+  <section class="panel active">
+    <h3>① System Overview — 4-Layer 논리 구성</h3>
+    <p class="desc">
+      자린고비는 <b>Presentation → Edge/API → Data → External</b>의 4계층으로 구성됩니다.
+      모바일 앱·어드민·랜딩이 Supabase Edge Functions와 PostgREST를 통해 데이터에 접근하고,
+      외부 서비스(FCM, Sightengine, Amplitude, Sentry, Resend)는 Edge Function을 거쳐 시크릿이 노출되지 않도록 격리됩니다.
+    </p>
+    <div class="pill-row">
+      <span class="pill">RLS 100%</span><span class="pill">PostgREST</span>
+      <span class="pill">Edge Functions (Deno)</span><span class="pill">Realtime CDC</span>
+    </div>
+    <div class="img-wrap" style="margin-top:14px">
+      <img src="architecture-img/system-overview.svg" alt="System Overview Diagram"/>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>② Data Flow — 인증샷 → 보상</h3>
+    <p class="desc">
+      앱이 presigned URL로 사진을 Storage에 직접 업로드하면, Storage Webhook이 Edge Function을 트리거합니다.
+      EXIF GPS 제거, 해시 중복 체크, Sightengine NSFW 검사를 통과하면 PL/pgSQL 트랜잭션으로
+      <b>coins_ledger 적립 + challenge.saved_amount 증가 + mission status 갱신</b>이 원자적으로 일어나고,
+      Postgres CDC가 클라이언트로 Realtime 푸시되어 +10,000원/+100P 애니메이션이 즉시 재생됩니다.
+    </p>
+    <div class="pill-row">
+      <span class="pill">presigned URL</span><span class="pill">EXIF strip</span>
+      <span class="pill">SHA-256 dedupe</span><span class="pill">SERIALIZABLE</span>
+    </div>
+    <div class="img-wrap" style="margin-top:14px">
+      <img src="architecture-img/data-flow.svg" alt="Data Flow Diagram"/>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>③ ERD — 14개 핵심 테이블</h3>
+    <p class="desc">
+      회차 단위 <code>challenges</code>, 1~30일 <code>daily_missions</code>, append-only <code>coins_ledger</code>(이중기입),
+      그리고 캐릭터 꾸미기를 위한 <code>items / inventory / equipped / titles</code> 가 핵심입니다.
+      모든 사용자 종속 테이블에 RLS <code>auth.uid() = user_id</code>가 적용됩니다.
+    </p>
+    <div class="pill-row">
+      <span class="pill">14 tables</span><span class="pill">RLS 강제</span>
+      <span class="pill">append-only ledger</span>
+    </div>
+    <div class="img-wrap" style="margin-top:14px">
+      <img src="architecture-img/erd.svg" alt="ERD Diagram"/>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>④ Deployment — 3환경 + OTA 핫픽스</h3>
+    <p class="desc">
+      GitHub Actions가 변경 영역에 따라 dev / staging / prod로 자동 배포합니다.
+      모바일은 EAS Build/Submit으로 스토어에 올라가고, JS·이미지만 변경 시 <code>eas update</code>로
+      <b>심사 없이 분 단위 핫픽스</b>가 가능합니다. 시크릿은 1Password Connect + GitHub OIDC로 안전 주입.
+    </p>
+    <div class="pill-row">
+      <span class="pill">GitHub Actions</span><span class="pill">Vercel</span>
+      <span class="pill">EAS Update</span><span class="pill">Supabase Branch DB</span>
+    </div>
+    <div class="img-wrap" style="margin-top:14px">
+      <img src="architecture-img/deployment.svg" alt="Deployment Diagram"/>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h3>⑤ Module Map — 모노레포 의존도</h3>
+    <p class="desc">
+      pnpm + Turborepo 모노레포. <code>apps/*</code>는 <code>packages/*</code>에만 의존하고,
+      packages 사이의 횡단 의존은 금지됩니다. 디자인 토큰·이벤트 이름·zod 스키마를
+      모두 packages에 단일화해 비개발자가 어드민에서만 손대도 일관성이 유지됩니다.
+    </p>
+    <div class="pill-row">
+      <span class="pill">pnpm workspaces</span><span class="pill">Turborepo</span>
+      <span class="pill">single source of tokens</span>
+    </div>
+    <div class="img-wrap" style="margin-top:14px">
+      <img src="architecture-img/module-map.svg" alt="Module Map Diagram"/>
+    </div>
+  </section>
+</main>
+
+<section class="section">
+  <div class="container">
+    <div class="dl-box">
+      <div>
+        <span class="eyebrow" style="background:rgba(255,255,255,.18);color:#fff">DOWNLOAD</span>
+        <h2 class="h2">아키텍처 문서·다이어그램 다운로드</h2>
+        <p>마크다운 본문 + 5개 SVG. 어디서든 PDF로 변환 가능합니다.</p>
+      </div>
+      <div class="dl-actions">
+        <a class="dl-btn" href="downloads/자린고비-아키텍처.md" download><span>📄 ARCHITECTURE.md</span><span class="arrow">↓</span></a>
+        <a class="dl-btn" href="architecture-img/system-overview.svg" download><span>🖼 system-overview.svg</span><span class="arrow">↓</span></a>
+        <a class="dl-btn" href="architecture-img/data-flow.svg" download><span>🖼 data-flow.svg</span><span class="arrow">↓</span></a>
+        <a class="dl-btn" href="architecture-img/erd.svg" download><span>🖼 erd.svg</span><span class="arrow">↓</span></a>
+        <a class="dl-btn" href="architecture-img/deployment.svg" download><span>🖼 deployment.svg</span><span class="arrow">↓</span></a>
+        <a class="dl-btn" href="architecture-img/module-map.svg" download><span>🖼 module-map.svg</span><span class="arrow">↓</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  © 2026 자린고비 — <a href="index.html">메인</a> · <a href="index.html#download">전체 문서</a>
+</footer>
+
+<script>
+  document.querySelectorAll('.tab').forEach(t => {
+    t.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+      t.classList.add('active');
+      document.querySelectorAll('.panel')[+t.dataset.i].classList.add('active');
+      window.scrollTo({top: document.querySelector('.tabs').offsetTop - 80, behavior:'smooth'});
+    });
+  });
+</script>
+</body>
+</html>

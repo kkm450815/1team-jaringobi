@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" font-family="-apple-system,'Apple SD Gothic Neo','Pretendard',sans-serif">
+  <defs>
+    <style>
+      .bg{fill:#F6EEDE}
+      .card{fill:#FFFFFF;stroke:#514C44;stroke-width:1.5}
+      .primary{fill:#ABBCA2}
+      .accent{fill:#617C53}
+      .pink{fill:#F49496}
+      .text{fill:#514C44}
+      .title{font-size:20px;fill:#514C44;font-weight:700}
+      .label{font-size:14px;fill:#514C44;font-weight:700}
+      .head{font-size:13px;fill:#FFFFFF;font-weight:700}
+      .small{font-size:12px;fill:#514C44}
+      .arrow{stroke:#514C44;stroke-width:1.5;fill:none;marker-end:url(#arr)}
+    </style>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 Z" fill="#514C44"/>
+    </marker>
+  </defs>
+  <rect class="bg" width="1200" height="720"/>
+  <text x="40" y="46" class="title">Monorepo Module Map (pnpm + Turborepo)</text>
+  <text x="40" y="68" class="small">apps/* 는 packages/* 에만 의존 — 횡단 의존 금지</text>
+
+  <!-- apps -->
+  <rect x="40" y="110" width="1120" height="160" rx="14" fill="#ABBCA2" opacity="0.22"/>
+  <text x="60" y="138" class="label">apps/ (배포 단위)</text>
+
+  <rect x="80"  y="156" width="320" height="100" rx="10" class="card"/>
+  <rect x="80"  y="156" width="320" height="28"  rx="10" class="primary"/>
+  <text x="100" y="175" class="head">📱 apps/mobile</text>
+  <text x="100" y="204" class="small">Expo · TS · Reanimated · TanStack Query</text>
+  <text x="100" y="222" class="small">사용자 앱 (iOS/Android)</text>
+  <text x="100" y="240" class="small">→ ui · api · config · analytics</text>
+
+  <rect x="440" y="156" width="320" height="100" rx="10" class="card"/>
+  <rect x="440" y="156" width="320" height="28"  rx="10" class="primary"/>
+  <text x="460" y="175" class="head">🖥 apps/admin</text>
+  <text x="460" y="204" class="small">Next.js 14 · shadcn/ui</text>
+  <text x="460" y="222" class="small">CMS · Moderation · Push 캠페인</text>
+  <text x="460" y="240" class="small">→ ui · api · config · analytics</text>
+
+  <rect x="800" y="156" width="320" height="100" rx="10" class="card"/>
+  <rect x="800" y="156" width="320" height="28"  rx="10" class="primary"/>
+  <text x="820" y="175" class="head">🌐 apps/landing</text>
+  <text x="820" y="204" class="small">Static (HTML/CSS/JS)</text>
+  <text x="820" y="222" class="small">홍보 · 다운로드 · 사전 예약</text>
+  <text x="820" y="240" class="small">→ ui (디자인 토큰만)</text>
+
+  <!-- packages -->
+  <rect x="40" y="310" width="1120" height="170" rx="14" fill="#617C53" opacity="0.18"/>
+  <text x="60" y="338" class="label">packages/ (재사용)</text>
+
+  <rect x="80"  y="356" width="240" height="110" rx="10" class="card"/>
+  <rect x="80"  y="356" width="240" height="28"  rx="10" class="accent"/>
+  <text x="100" y="375" class="head">🎨 packages/ui</text>
+  <text x="100" y="404" class="small">tokens.ts (색·폰트·반경)</text>
+  <text x="100" y="422" class="small">Button, Card, Heart, HexBadge…</text>
+  <text x="100" y="440" class="small">Storybook 검증</text>
+
+  <rect x="340" y="356" width="240" height="110" rx="10" class="card"/>
+  <rect x="340" y="356" width="240" height="28"  rx="10" class="accent"/>
+  <text x="360" y="375" class="head">🔌 packages/api</text>
+  <text x="360" y="404" class="small">zod 스키마 + Supabase types</text>
+  <text x="360" y="422" class="small">RPC 호출 래퍼</text>
+  <text x="360" y="440" class="small">React Query 훅</text>
+
+  <rect x="600" y="356" width="240" height="110" rx="10" class="card"/>
+  <rect x="600" y="356" width="240" height="28"  rx="10" class="accent"/>
+  <text x="620" y="375" class="head">⚙️ packages/config</text>
+  <text x="620" y="404" class="small">enums (카테고리/난이도)</text>
+  <text x="620" y="422" class="small">상수 (회차 길이, 디폴트)</text>
+  <text x="620" y="440" class="small">i18n 키</text>
+
+  <rect x="860" y="356" width="240" height="110" rx="10" class="card"/>
+  <rect x="860" y="356" width="240" height="28"  rx="10" class="accent"/>
+  <text x="880" y="375" class="head">📈 packages/analytics</text>
+  <text x="880" y="404" class="small">events.ts (단일 정의)</text>
+  <text x="880" y="422" class="small">Amplitude/GA 어댑터</text>
+  <text x="880" y="440" class="small">trace_id 발급</text>
+
+  <!-- supabase -->
+  <rect x="40" y="520" width="1120" height="160" rx="14" fill="#F49496" opacity="0.18"/>
+  <text x="60" y="548" class="label">supabase/ (서버 사이드)</text>
+
+  <rect x="80"  y="566" width="320" height="100" rx="10" class="card"/>
+  <rect x="80"  y="566" width="320" height="28"  rx="10" class="pink"/>
+  <text x="100" y="585" class="head">🗃 migrations/</text>
+  <text x="100" y="614" class="small">SQL 단방향 마이그레이션</text>
+  <text x="100" y="632" class="small">PR마다 staging → prod 순서 자동화</text>
+
+  <rect x="440" y="566" width="320" height="100" rx="10" class="card"/>
+  <rect x="440" y="566" width="320" height="28"  rx="10" class="pink"/>
+  <text x="460" y="585" class="head">⚡ functions/</text>
+  <text x="460" y="614" class="small">Deno · 트랜잭션·외부호출 격리</text>
+  <text x="460" y="632" class="small">confirm_mission / verify_mission ...</text>
+
+  <rect x="800" y="566" width="320" height="100" rx="10" class="card"/>
+  <rect x="800" y="566" width="320" height="28"  rx="10" class="pink"/>
+  <text x="820" y="585" class="head">🌱 seed.sql</text>
+  <text x="820" y="614" class="small">미션 템플릿 / 칭호 / 상점 SKU 초기값</text>
+  <text x="820" y="632" class="small">로컬·preview에 자동 삽입</text>
+
+  <!-- arrows from apps to packages -->
+  <path class="arrow" d="M240 256 L200 356"/>
+  <path class="arrow" d="M240 256 L460 356"/>
+  <path class="arrow" d="M240 256 L720 356"/>
+  <path class="arrow" d="M240 256 L980 356"/>
+
+  <path class="arrow" d="M600 256 L200 356"/>
+  <path class="arrow" d="M600 256 L460 356"/>
+  <path class="arrow" d="M600 256 L720 356"/>
+  <path class="arrow" d="M600 256 L980 356"/>
+
+  <path class="arrow" d="M960 256 L200 356"/>
+</svg>
