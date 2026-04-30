@@ -85,12 +85,12 @@ export function RoomPreview({
         <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
       )}
 
-      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 — 캔버스 1x */}
+      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10 명시) — 캔버스 1x */}
       {front && (
         <img
           src={fitSrc(front)}
           alt=""
-          className="absolute left-0 bottom-[5%] h-[31%] w-auto object-contain pointer-events-none select-none"
+          className="absolute z-10 left-0 bottom-[5%] h-[31%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
