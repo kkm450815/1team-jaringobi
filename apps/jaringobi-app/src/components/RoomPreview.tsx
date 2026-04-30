@@ -52,21 +52,21 @@ export function RoomPreview({
         />
       )}
 
-      {/* 소품 - 좌상단 (작은 액세서리) — 캔버스 1x */}
+      {/* 소품 - 좌상단 (작은 액세서리) */}
       {left && (
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[6%] top-[24%] h-[11%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[6%] top-[24%] h-[14%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 우측 캐릭터 어깨 높이 — 캔버스 1x */}
+      {/* 가구2 - 우측, 캐릭터 어깨~허리 높이 */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[5%] top-[28%] h-[23%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[5%] top-[37%] h-[28%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
@@ -85,12 +85,12 @@ export function RoomPreview({
         <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
       )}
 
-      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10 명시) — 캔버스 1x */}
+      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10), Y 60px 아래로 */}
       {front && (
         <img
           src={fitSrc(front)}
           alt=""
-          className="absolute z-10 left-0 bottom-[5%] h-[31%] w-auto object-contain pointer-events-none select-none"
+          className="absolute z-10 left-0 bottom-[-8%] h-[31%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
