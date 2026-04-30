@@ -13,6 +13,7 @@ import ChallengeDetail from './screens/ChallengeDetail';
 import MyPage from './screens/MyPage';
 import Camera from './screens/Camera';
 import ScreenIndex from './screens/ScreenIndex';
+import Bookmarks from './screens/Bookmarks';
 
 export default function App() {
   return (
@@ -26,6 +27,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/talk" element={<TalkList />} />
         <Route path="/talk/:id" element={<TalkRoom />} />
+        <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="/challenges" element={<ChallengeList />} />
         <Route path="/challenges/:id" element={<ChallengeDetail />} />
         <Route path="/mypage" element={<MyPage />} />

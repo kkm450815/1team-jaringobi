@@ -42,6 +42,29 @@ export const TALK_ROOMS = [
   { id: 't4', title: '혼놀 취미 공유',    icon: '/jarin/talk_list_solo.png',       bg: '#D7D5EC' },
 ];
 
+export interface TalkPost {
+  id: string;
+  roomId: string;
+  nick: string;
+  body: string;
+}
+
+export const ME_NICK = '자린이 1호';
+
+export const TALK_POSTS: TalkPost[] = [
+  { id: 'p1',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
+  { id: 'p2',  roomId: 't1', nick: '자린이 2호',
+    body: '제육볶음은 돼지고기에 고추장과 고추가루로 만든 양념장을 넣고 굽거나 볶아서 만든 음식이다. 된장찌개·김치찌개처럼 대표적인 집밥이자 남초 음식이다.' },
+  { id: 'p3',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
+  { id: 'p4',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
+  { id: 'p5',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
+  { id: 'p6',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
+  { id: 'p7',  roomId: 't2', nick: '자린이 12호',  body: '레토르트 + 계란 + 김치 = 1식 1500원으로 해결' },
+  { id: 'p8',  roomId: 't2', nick: '자린이 47호',  body: '주말에 한 번 만들어두면 한 주 도시락 끝!' },
+  { id: 'p9',  roomId: 't3', nick: '자린이 88호',  body: '체험단 신청 꿀팁: 후기 짧게라도 꾸준히' },
+  { id: 'p10', roomId: 't4', nick: '자린이 33호',  body: '도서관에서 책 + 노트북 = 하루 0원 코스' },
+];
+
 export const TITLES = [
   { id: 'h1', name: '홈 바리스타', got: true,  active: true  },
   { id: 'h2', name: '배달 킬러',   got: true,  active: false },
