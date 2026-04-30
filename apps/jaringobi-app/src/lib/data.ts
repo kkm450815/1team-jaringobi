@@ -36,10 +36,10 @@ export const MISSIONS: Mission[] = [
 ];
 
 export const TALK_ROOMS = [
-  { id: 't1', title: '편의점 꿀조합',   icon: '/jarin/talk_list_store.png',     bg: '#F4D8D8' },
-  { id: 't2', title: '가성비 레시피',   icon: '/jarin/talk_list_cook.png',      bg: '#E8E1D2' },
-  { id: 't3', title: '체험단 꿀팁',     icon: '/jarin/talk_list_experience.png', bg: '#D5E4D2' },
-  { id: 't4', title: '혼놀 취미',       icon: '/jarin/talk_list_solo.png',      bg: '#E2DBE9' },
+  { id: 't1', title: '편의점 꿀조합',     icon: '/jarin/talk_list_store.png',      bg: '#CFE2EA' },
+  { id: 't2', title: '가성비 레시피',     icon: '/jarin/talk_list_cook.png',       bg: '#D8E6CF' },
+  { id: 't3', title: '체험단 꿀팁',       icon: '/jarin/talk_list_experience.png', bg: '#F3CFD2' },
+  { id: 't4', title: '혼놀 취미 공유',    icon: '/jarin/talk_list_solo.png',       bg: '#D7D5EC' },
 ];
 
 export const TITLES = [

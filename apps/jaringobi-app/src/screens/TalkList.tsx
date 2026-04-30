@@ -1,33 +1,49 @@
 import { Link } from 'react-router-dom';
-import { HangingFish } from '../components/UI';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { TALK_ROOMS } from '../lib/data';
 
 export default function TalkList() {
   return (
     <main className="min-h-full flex flex-col">
-      <header className="px-5 pt-12 flex items-center justify-center gap-3">
-        <span className="flex-1 h-px bg-text/20" />
-        <HangingFish size={42} />
-        <span className="flex-1 h-px bg-text/20" />
+      {/* 매달린 굴비 헤더 */}
+      <header className="pt-10 pb-4 flex justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-[2px] h-7 bg-[#8a6b3a]/60" />
+          <img
+            src="/jarin/logo_nobg.png"
+            alt=""
+            className="w-[120px] h-[120px] object-contain -mt-3"
+            draggable={false}
+          />
+        </div>
       </header>
-      <p className="text-center mt-1 font-bold tracking-[6px]">수 다 방</p>
 
-      <ul className="px-5 mt-5 space-y-3">
+      <ul className="px-5 pb-6 space-y-4">
         {TALK_ROOMS.map((r) => (
           <li key={r.id}>
             <Link
               to={`/talk/${r.id}`}
-              className="block rounded-2xl p-4 shadow-soft active:scale-[.99] transition"
+              className="block rounded-[22px] px-4 py-5 shadow-soft active:scale-[.99] transition"
               style={{ background: r.bg }}
             >
               <div className="flex items-center gap-3">
-                <img src={r.icon} alt="" className="w-14 h-14 object-contain" />
-                <div className="flex-1">
-                  <p className="font-bold">{r.title}</p>
-                  <p className="text-[12px] text-text/60 mt-0.5">매일 새로운 꿀팁이 올라와요</p>
+                <img
+                  src={r.icon}
+                  alt=""
+                  className="w-[88px] h-[88px] object-contain shrink-0"
+                  draggable={false}
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-center font-bold text-[20px] leading-tight text-text">
+                    {r.title}
+                  </p>
+                  <p className="text-center font-bold text-[20px] leading-tight text-text">
+                    수다방
+                  </p>
+                  <p className="mt-3 text-right text-[12px] text-text/70 font-medium pr-1">
+                    바로가기 <span aria-hidden>⟶</span>
+                  </p>
                 </div>
-                <span className="text-[18px] text-text/70">→</span>
               </div>
             </Link>
           </li>
