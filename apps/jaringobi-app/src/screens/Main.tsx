@@ -76,8 +76,8 @@ export default function Main() {
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="px-5 pt-10 grid grid-cols-[auto_1fr_auto] items-start gap-3">
-        <div className="flex flex-col">
+      <header className="px-5 pt-16 grid grid-cols-[auto_1fr_auto] items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex gap-1">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
@@ -91,10 +91,10 @@ export default function Main() {
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[16px] text-text font-bold">D-{dDay}</p>
+          <p className="text-[16px] text-text font-bold">D-{dDay}</p>
         </div>
 
-        <p className="text-center text-[34px] font-bold leading-none tracking-tight pt-2">
+        <p className="text-center text-[34px] font-bold leading-none tracking-tight">
           {dailyGoal.toLocaleString()}
         </p>
 
@@ -107,7 +107,7 @@ export default function Main() {
       </header>
 
       {/* 오늘의 절약미션 버튼 */}
-      <section className="px-10 pt-4 pb-3">
+      <section className="px-10 pt-5 pb-3">
         <button
           onClick={openMissionModal}
           className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
@@ -119,10 +119,6 @@ export default function Main() {
       {/* 캐릭터 룸 */}
       <section className="relative w-full">
         <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center pointer-events-none">
-          <div className="w-[2px] h-16 bg-[#8a6b3a]/60" />
-          <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[120px] h-[120px] object-contain -mt-6" />
-        </div>
         <img
           src="/jarin/main_character.png"
           alt="자린고비 캐릭터"
