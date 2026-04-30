@@ -111,6 +111,15 @@ export default function Login() {
         비밀번호를 잊으셨나요?
       </button>
 
+      {/* TODO: 임시 데모 접속 — 출시 전 제거 */}
+      <button
+        type="button"
+        onClick={() => nav('/mode')}
+        className="mt-3 self-center text-[12px] text-text/55 underline underline-offset-2"
+      >
+        데모로 접속하기
+      </button>
+
       <div className="mt-auto pt-10">
         <div className="flex items-center gap-3">
           <hr className="flex-1 border-t border-text/20" />
