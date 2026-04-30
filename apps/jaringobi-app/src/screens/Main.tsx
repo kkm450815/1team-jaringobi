@@ -76,25 +76,29 @@ export default function Main() {
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="px-5 pt-10 grid grid-cols-[auto_1fr_auto] items-start gap-3">
-        <div className="flex flex-col">
-          <div className="flex gap-1">
+      <header className="relative px-5 pt-16 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5">
+          <div className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
                 key={i}
                 disabled={i >= hearts}
                 onClick={() => { setPendingHeartIdx(i); setShowHeartModal(true); }}
-                className="w-7 h-7 grid place-items-center text-[26px] leading-none transition disabled:opacity-30"
+                className="w-5 h-6 grid place-items-center text-[20px] leading-none transition disabled:opacity-30"
                 aria-label={`양심 ${i + 1}`}
               >
                 <span className={i < hearts ? 'text-[#F26B6B]' : 'text-text/25'}>♥</span>
               </button>
             ))}
           </div>
-          <p className="mt-1 text-[16px] text-text font-bold">D-{dDay}</p>
+          <p className="text-[14px] text-text font-bold">D-{dDay}</p>
         </div>
 
-        <p className="text-center text-[34px] font-bold leading-none tracking-tight pt-2">
+        <p
+          aria-label="오늘의 목표"
+          style={{ top: 'calc(64px + (100% - 64px) / 2)' }}
+          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
+        >
           {dailyGoal.toLocaleString()}
         </p>
 
@@ -107,7 +111,7 @@ export default function Main() {
       </header>
 
       {/* 오늘의 절약미션 버튼 */}
-      <section className="px-10 pt-4 pb-3">
+      <section className="px-10 pt-5 pb-3">
         <button
           onClick={openMissionModal}
           className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
@@ -119,10 +123,6 @@ export default function Main() {
       {/* 캐릭터 룸 */}
       <section className="relative w-full">
         <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
-        <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center pointer-events-none">
-          <div className="w-[2px] h-16 bg-[#8a6b3a]/60" />
-          <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[120px] h-[120px] object-contain -mt-6" />
-        </div>
         <img
           src="/jarin/main_character.png"
           alt="자린고비 캐릭터"
@@ -132,7 +132,7 @@ export default function Main() {
         <Link
           to="/shop"
           aria-label="상점"
-          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white shadow-soft"
+          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white/40 shadow-soft"
         >
           <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
         </Link>

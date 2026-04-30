@@ -11,8 +11,8 @@ function ModeCard({
 }) {
   const isHard = variant === 'hard';
   const bg = isHard ? 'bg-accent' : 'bg-primary';
-  const labelColor = isHard ? 'text-[#F6EEDE]' : 'text-text/70';
-  const textColor = isHard ? 'text-[#F6EEDE]' : 'text-text/85';
+  const labelColor = isHard ? 'text-[#FFFFAD]' : 'text-text/70';
+  const textColor = isHard ? 'text-[#FFFFAD]' : 'text-text/85';
   const label = isHard ? 'HARD MODE' : 'NOMAL MODE';
 
   return (
@@ -20,14 +20,14 @@ function ModeCard({
       onClick={onClick}
       className={`w-full ${bg} rounded-2xl shadow-soft px-5 pt-5 pb-6 active:scale-[.99] transition`}
     >
-      <p className={`text-center text-[15px] tracking-[4px] font-semibold ${labelColor}`}>
+      <p className={`text-center text-[22px] tracking-[4px] font-semibold ${labelColor}`}>
         {label}
       </p>
       <div className="mt-4 grid grid-cols-[1fr_1fr] items-center gap-2">
         <div className="flex justify-center">
           <img src={image} alt={alt} className="w-[120px] h-[120px] object-contain" draggable={false} />
         </div>
-        <div className={`flex flex-col items-center gap-2 text-[18px] font-medium leading-tight ${textColor}`}>
+        <div className={`flex flex-col items-center gap-2 text-[26px] font-medium leading-tight whitespace-nowrap ${textColor}`}>
           <span>30일간</span>
           <span>{amount} 아끼기</span>
           <span className="tracking-[2px]">START</span>

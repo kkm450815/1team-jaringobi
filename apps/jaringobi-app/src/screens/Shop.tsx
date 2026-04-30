@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor } from '../lib/data';
+import { SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor, fitSrc } from '../lib/data';
 import { useUser } from '../lib/userState';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -67,11 +67,22 @@ export default function Shop() {
           className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
-        {selected && (
+        {/* 장착 중인 보유 아이템은 캐릭터 위에 합성 */}
+        {u.equipped.map((src) => (
           <img
-            src={selected}
+            key={src}
+            src={fitSrc(src)}
+            alt=""
+            className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
+            draggable={false}
+          />
+        ))}
+        {/* 미리보기로 탭한 아이템(미보유 포함) */}
+        {selected && !u.equipped.includes(selected) && (
+          <img
+            src={fitSrc(selected)}
             alt="선택 아이템"
-            className="absolute left-1/2 bottom-[28%] -translate-x-1/2 h-[28%] w-auto object-contain pointer-events-none select-none"
+            className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none opacity-90"
             draggable={false}
           />
         )}
