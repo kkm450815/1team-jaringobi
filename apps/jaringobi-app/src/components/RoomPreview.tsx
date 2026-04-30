@@ -52,21 +52,21 @@ export function RoomPreview({
         />
       )}
 
-      {/* 소품 - 좌상단 (가구1과 동일 배율 1x), Y 40px 다운 + X 20px 왼쪽 */}
+      {/* 소품 - 좌상단 (1.3x), Y 40px 다운 + X 20px 왼쪽 */}
       {left && (
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[1%] top-[33%] h-[11%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[1%] top-[33%] h-[14%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 우측 (가구1과 동일 배율 1x), Y 10px 업 + X 10px 오른쪽 */}
+      {/* 가구2 - 우측 (1.3x), Y 10px 업 + X 10px 오른쪽 */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[3%] top-[35%] h-[23%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[3%] top-[35%] h-[30%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
@@ -95,12 +95,12 @@ export function RoomPreview({
         />
       )}
 
-      {/* 천장 조명 - 상단 중앙 — 캔버스 1x */}
+      {/* 천장 조명 - 상단 중앙 (1.3x) */}
       {lamp && (
         <img
           src={fitSrc(lamp)}
           alt=""
-          className="absolute left-1/2 -translate-x-1/2 top-0 h-[13%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-[17%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
