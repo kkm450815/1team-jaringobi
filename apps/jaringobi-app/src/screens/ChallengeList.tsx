@@ -54,7 +54,7 @@ export default function ChallengeList() {
               to={`/challenges/${m.id}`}
               className="flex items-stretch bg-white rounded-2xl shadow-soft overflow-hidden active:scale-[.99] transition"
             >
-              <div className="w-20 grid place-items-center bg-bg">
+              <div className="w-20 grid place-items-center bg-accent">
                 <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-12 h-12 object-contain" />
               </div>
               <div className="flex-1 p-3">
