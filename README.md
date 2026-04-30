@@ -18,16 +18,33 @@
 │   ├── erd.svg
 │   ├── deployment.svg
 │   └── module-map.svg
-└── landing/                       # 홍보용 정적 랜딩 페이지
-    ├── index.html
-    ├── architecture.html          # 아키텍처 전용 페이지
-    ├── styles.css
-    ├── script.js
-    └── downloads/                 # 다운로드용 문서 사본
+├── landing/                       # 홍보용 정적 랜딩 페이지
+│   ├── index.html
+│   ├── architecture.html
+│   ├── styles.css
+│   ├── script.js
+│   └── downloads/
+├── apps/
+│   └── jaringobi-app/             # 모바일 앱 (Vite + React + TS + Tailwind)
+│       ├── src/
+│       │   ├── components/        # PhoneFrame, BottomTabBar, UI(Button/Card/Tag/Modal/Hex/TopBar/HangingFish)
+│       │   ├── screens/           # 12 screens (Splash, Login, ModeSelect, Main, Shop, Wardrobe, ...)
+│       │   ├── lib/data.ts        # 미션·수다방·칭호 시드
+│       │   └── styles/index.css   # GangwonEduAll @font-face + brand tokens
+│       └── UI_HANDOFF.md          # ← Claude Code / 개발자 인계 문서
+└── img/                           # 디자인 자료 (캐릭터·아이템·룸 PNG, 575개)
 ```
 
 ## 🚀 로컬 미리보기
 
+**모바일 앱 (Vite + React)**
+```bash
+cd apps/jaringobi-app
+pnpm install
+pnpm dev          # http://localhost:5173 — /index 경로로 화면 인덱스 진입 가능
+```
+
+**홍보 랜딩**
 ```bash
 cd landing
 python3 -m http.server 8080
@@ -41,6 +58,7 @@ python3 -m http.server 8080
 - 시스템 아키텍처: [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md)
 - 랜딩 페이지: [`landing/index.html`](./landing/index.html)
 - 아키텍처 페이지: [`landing/architecture.html`](./landing/architecture.html)
+- 모바일 앱: [`apps/jaringobi-app/`](./apps/jaringobi-app/) — handoff 문서 [`UI_HANDOFF.md`](./apps/jaringobi-app/UI_HANDOFF.md)
 
 ## 🎨 브랜드 팔레트
 

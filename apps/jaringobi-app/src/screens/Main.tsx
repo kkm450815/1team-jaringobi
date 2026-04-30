@@ -1,0 +1,181 @@
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Button, Modal, Tag } from '../components/UI';
+import { BottomTabBar } from '../components/BottomTabBar';
+import { MISSIONS, MissionCategory } from '../lib/data';
+
+export default function Main() {
+  const [hearts, setHearts] = useState(3);
+  const [showHeartModal, setShowHeartModal] = useState(false);
+  const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
+
+  const [showMissionSetup, setShowMissionSetup] = useState(false);
+  const [confirmed, setConfirmed] = useState<string[]>([]);
+  const [picks, setPicks] = useState<string[]>(['m1', 'm6', 'm12']);
+  const [changingFor, setChangingFor] = useState<number | null>(null); // 변경 모달 대상 슬롯
+  const [filter, setFilter] = useState<MissionCategory>('식비');
+
+  const dDay = 30 - confirmed.length;
+  const saved = confirmed.length * 10000;
+  const goal = 300_000;
+
+  function deleteHeart() {
+    if (pendingHeartIdx !== null) setHearts((h) => Math.max(0, h - 1));
+    setShowHeartModal(false);
+    setPendingHeartIdx(null);
+  }
+
+  function confirmToday() {
+    setConfirmed((c) => Array.from(new Set([...c, ...picks])));
+    setShowMissionSetup(false);
+  }
+
+  return (
+    <main className="flex flex-col min-h-full pb-0">
+      {/* 상단 정보 */}
+      <header className="px-5 pt-12 flex items-start justify-between">
+        <div className="flex flex-col">
+          <div className="flex gap-1.5">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <button
+                key={i}
+                disabled={i >= hearts}
+                onClick={() => { setPendingHeartIdx(i); setShowHeartModal(true); }}
+                className={`w-7 h-7 rounded-lg grid place-items-center text-white font-black text-[14px] transition
+                  ${i < hearts ? 'bg-pink shadow-[0_3px_0_rgba(244,148,150,.45)]' : 'bg-text/20'}`}
+                aria-label={`양심 ${i + 1}`}
+              >♥</button>
+            ))}
+          </div>
+          <p className="mt-2 text-[12px] text-text/70 font-bold">D-{dDay}</p>
+          <p className="text-[24px] font-bold leading-none mt-0.5">
+            {saved.toLocaleString()}<span className="text-[14px] ml-1 text-text/60">/ {goal.toLocaleString()}원</span>
+          </p>
+        </div>
+        <Link to="/mypage" aria-label="마이페이지"
+              className="w-10 h-10 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
+          <img src="/jarin/main_mypage.png" alt="" className="w-7 h-7 object-contain" />
+        </Link>
+      </header>
+
+      {/* 캐릭터 룸 */}
+      <section className="relative mt-2 mx-auto w-full">
+        <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
+        <Link to="/shop" aria-label="상점"
+              className="absolute right-3 bottom-3 w-14 h-14 rounded-full grid place-items-center shadow-soft bg-bg">
+          <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
+        </Link>
+      </section>
+
+      {/* 오늘의 절약 미션 */}
+      <section className="px-5 pt-3 pb-3">
+        {confirmed.length === 0 ? (
+          <Button variant="primary" size="lg" onClick={() => setShowMissionSetup(true)}>
+            오늘의 절약미션
+          </Button>
+        ) : (
+          <div className="bg-white rounded-2xl p-4 shadow-soft">
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-bold">오늘의 챌린지</p>
+              <Tag color="accent">진행 중</Tag>
+            </div>
+            <ul className="space-y-2">
+              {picks.map((id) => {
+                const m = MISSIONS.find((x) => x.id === id)!;
+                return (
+                  <li key={id} className="flex items-center gap-3 bg-bg rounded-xl px-3 py-2">
+                    <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-9 h-9 object-contain" />
+                    <span className="flex-1 text-[13px] font-bold">{m.title}</span>
+                    <span className="text-[12px] font-bold text-accent">+{m.amount.toLocaleString()}</span>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Button variant="ghost" onClick={() => { setHearts((h) => Math.max(0, h - 1)); }}>양심 깎기</Button>
+              <Link to="/camera"><Button variant="accent" className="w-full">카메라로 인증 →</Button></Link>
+            </div>
+          </div>
+        )}
+      </section>
+
+      {/* 하단 탭 */}
+      <div className="mt-auto"><BottomTabBar /></div>
+
+      {/* 양심 모달 */}
+      <Modal open={showHeartModal} onClose={() => setShowHeartModal(false)}>
+        <div className="text-[44px] tracking-widest text-pink py-1">♥ ♥ ♥</div>
+        <p className="font-bold text-[18px] mt-2">당신의 양심 지키시겠습니까?</p>
+        <p className="text-[13px] text-text/70 mt-1.5">한 번 깎인 양심은 돌아오지 않습니다.</p>
+        <div className="mt-5 flex gap-2">
+          <Button variant="ghost" className="flex-1" onClick={() => setShowHeartModal(false)}>취소하기</Button>
+          <Button variant="accent" className="flex-1" onClick={deleteHeart}>양심 삭제</Button>
+        </div>
+      </Modal>
+
+      {/* 오늘의 절약미션 세팅 팝업 */}
+      <Modal open={showMissionSetup && changingFor === null} onClose={() => setShowMissionSetup(false)}>
+        <p className="font-bold">오늘의 절약 미션</p>
+        <p className="text-[12px] text-text/60 mt-1">3개를 모아 1만원 목표를 채워주세요</p>
+        <ul className="mt-4 space-y-2 text-left">
+          {picks.map((id, idx) => {
+            const m = MISSIONS.find((x) => x.id === id)!;
+            return (
+              <li key={id} className="flex items-center gap-2 bg-white rounded-xl p-2.5">
+                <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-9 h-9 object-contain" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-bold leading-tight">{m.title}</p>
+                  <div className="flex gap-1 mt-1 items-center">
+                    <Tag color="pink">{m.difficulty}</Tag>
+                    <span className="text-[11px] text-text/60">{m.amount.toLocaleString()}원</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setChangingFor(idx)}
+                  className="text-[11px] text-accent font-bold underline"
+                >변경 →</button>
+              </li>
+            );
+          })}
+        </ul>
+        <Button variant="accent" size="lg" className="mt-4" onClick={confirmToday}>챌린지 확정하기</Button>
+      </Modal>
+
+      {/* 변경 팝업 (카테고리 선택 후 대체 미션) */}
+      <Modal open={changingFor !== null} onClose={() => setChangingFor(null)}>
+        <p className="font-bold mb-3">미션 변경</p>
+        <div className="flex gap-2 justify-center mb-3 flex-wrap">
+          {(['식비','여가','충동','통장'] as MissionCategory[]).map((c) => (
+            <button
+              key={c}
+              onClick={() => setFilter(c)}
+              className={`px-3 py-1 rounded-full text-[12px] font-bold ${filter === c ? 'bg-accent text-white' : 'bg-white text-text/70'}`}
+            >{c}</button>
+          ))}
+        </div>
+        <ul className="max-h-[260px] overflow-y-auto space-y-1.5 text-left">
+          {MISSIONS.filter((m) => m.category === filter).map((m) => (
+            <li key={m.id}>
+              <button
+                onClick={() => {
+                  setPicks((p) => p.map((id, i) => i === changingFor ? m.id : id));
+                  setChangingFor(null);
+                }}
+                className="w-full flex items-center gap-2 bg-white rounded-xl p-2.5 text-left active:scale-[.99]"
+              >
+                <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-8 h-8 object-contain" />
+                <div className="flex-1">
+                  <p className="text-[13px] font-bold leading-tight">{m.title}</p>
+                  <div className="flex gap-1 mt-0.5">
+                    <Tag color="pink">{m.difficulty}</Tag>
+                    <span className="text-[11px] text-text/60">{m.amount.toLocaleString()}원</span>
+                  </div>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </Modal>
+    </main>
+  );
+}
