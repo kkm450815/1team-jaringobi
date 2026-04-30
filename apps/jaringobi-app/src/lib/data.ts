@@ -99,8 +99,9 @@ const WALL_FILES: string[] = Array.from({ length: 27 }, (_, i) =>
   `/shop/wall_paper/interior_shop_${String(i + 1).padStart(2, '0')}.png`,
 );
 
+// 'lamp_shop_01-1.png'은 fit 매칭이 없어서 제외
 const LAMP_FILES: string[] = [
-  'lamp_shop_01-1', 'lamp_shop_01','lamp_shop_02','lamp_shop_03','lamp_shop_04','lamp_shop_05','lamp_shop_06','lamp_shop_07','lamp_shop_08','lamp_shop_09','lamp_shop_10',
+  'lamp_shop_01','lamp_shop_02','lamp_shop_03','lamp_shop_04','lamp_shop_05','lamp_shop_06','lamp_shop_07','lamp_shop_08','lamp_shop_09','lamp_shop_10',
   'lamp_shop_11','lamp_shop_12','lamp_shop_13','lamp_shop_14','lamp_shop_15','lamp_shop_16','lamp_shop_17','lamp_shop_18','lamp_shop_19','lamp_shop_20',
   'lamp_shop_21','lamp_shop_22','lamp_shop_23','lamp_shop_24','lamp_shop_25','lamp_shop_26','lamp_shop_27','lamp_shop_28','lamp_shop_29','lamp_shop_30',
   'lamp_shop_31','lamp_shop_32','lamp_shop_33','lamp_shop_34','lamp_shop_35','lamp_shop_36','lamp_shop_37','lamp_shop_38','lamp_shop_39',
@@ -150,6 +151,18 @@ export function topCategoryOf(src: string): Exclude<ShopCategory, '전체'> {
   if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
   if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
   return '리모델링';
+}
+
+// 장착 슬롯: 사치품/티셔츠/조명/소품/가구1/가구2/벽지 — 슬롯당 동시 1개씩만 장착 가능
+export type EquipSlot = '사치품' | '티셔츠' | '조명' | '소품' | '가구1' | '가구2' | '벽지';
+export function equipSlotOf(src: string): EquipSlot {
+  if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
+  if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
+  if (src.startsWith('/shop/lamp/') || src.startsWith('/fit/lamp/')) return '조명';
+  if (src.startsWith('/shop/left/') || src.startsWith('/fit/left/')) return '소품';
+  if (src.startsWith('/shop/front/') || src.startsWith('/fit/front/')) return '가구1';
+  if (src.startsWith('/shop/right/') || src.startsWith('/fit/right/')) return '가구2';
+  return '벽지'; // /shop/wall_paper/, /fit/wall_paper/
 }
 
 // shop 경로의 표시용 PNG → 캐릭터 좌표계에 정렬된 fit 경로 PNG
