@@ -9,10 +9,9 @@ export default function Splash() {
   }, [nav]);
 
   return (
-    <main className="h-full grid place-items-center">
-      <div className="flex flex-col items-center gap-3 animate-pulse">
-        <img src="/jarin/logo.png" alt="자린고비 로고" className="w-[110px] h-[110px] object-contain" />
-        <p className="font-bold tracking-widest text-text/80">자 린 고 비</p>
+    <main className="h-full grid place-items-center bg-bg">
+      <div className="w-[110px] h-[110px] bg-primary rounded-3xl grid place-items-center shadow-soft">
+        <img src="/jarin/logo_nobg.png" alt="자린고비 로고" className="w-[68%] h-[68%] object-contain" />
       </div>
     </main>
   );
