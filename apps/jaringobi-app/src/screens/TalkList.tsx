@@ -1,20 +1,28 @@
 import { Link } from 'react-router-dom';
-import { BottomTabBar } from '../components/BottomTabBar';
 import { TALK_ROOMS } from '../lib/data';
 
 export default function TalkList() {
   return (
     <main className="min-h-full flex flex-col">
-      {/* 매달린 굴비 헤더 */}
-      <header className="pt-10 pb-4 flex justify-center">
-        <div className="flex flex-col items-center">
-          <div className="w-[2px] h-7 bg-[#8a6b3a]/60" />
-          <img
-            src="/jarin/logo_nobg.png"
-            alt=""
-            className="w-[120px] h-[120px] object-contain -mt-3"
-            draggable={false}
-          />
+      {/* 헤더: 뒤로가기 + 매달린 굴비 */}
+      <header className="relative pt-10 pb-4">
+        <Link
+          to="/main"
+          aria-label="뒤로"
+          className="absolute left-4 top-10 text-[26px] leading-none text-text/80 px-2"
+        >
+          ‹
+        </Link>
+        <div className="flex justify-center">
+          <div className="flex flex-col items-center">
+            <div className="w-[2px] h-7 bg-[#8a6b3a]/60" />
+            <img
+              src="/jarin/logo_nobg.png"
+              alt=""
+              className="w-[120px] h-[120px] object-contain -mt-3"
+              draggable={false}
+            />
+          </div>
         </div>
       </header>
 
@@ -50,7 +58,6 @@ export default function TalkList() {
         ))}
       </ul>
 
-      <div className="mt-auto"><BottomTabBar /></div>
     </main>
   );
 }
