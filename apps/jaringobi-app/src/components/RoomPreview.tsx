@@ -28,10 +28,10 @@ export function RoomPreview({
   const clothes = pick('티셔츠');
   const acc = pick('사치품');
 
-  // 사치품/티셔츠는 캐릭터와 동일한 박스(같은 가로/세로 중앙 정렬) 안에서 렌더
-  const charBoxStyle = { aspectRatio: '242 / 458' } as const;
-  const charBoxClass =
-    'absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] -translate-z-0';
+  // 사치품/티셔츠는 캐릭터와 같은 좌/높이를 사용하되 w-auto로 캔버스 자연 폭 유지
+  // (캐릭터보다 넓은 캔버스(예: 도구가 옆으로 뻗는 사치품)도 그대로 렌더)
+  const charPosClass =
+    'absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none';
 
   return (
     <section className={`relative rounded-2xl overflow-hidden shadow-soft ${className}`}>
@@ -70,31 +70,19 @@ export function RoomPreview({
         />
       )}
 
-      {/* 캐릭터 + 옷 + 사치품 (같은 박스, 가로/세로 중앙 정렬) */}
-      <div className={charBoxClass} style={charBoxStyle}>
-        <img
-          src="/jarin/main_character.png"
-          alt="캐릭터"
-          className="absolute inset-0 w-full h-full object-contain"
-          draggable={false}
-        />
-        {clothes && (
-          <img
-            src={fitSrc(clothes)}
-            alt=""
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-            draggable={false}
-          />
-        )}
-        {acc && (
-          <img
-            src={fitSrc(acc)}
-            alt=""
-            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
-            draggable={false}
-          />
-        )}
-      </div>
+      {/* 캐릭터 + 옷 + 사치품 (모두 같은 좌표/높이, 캔버스 자연 폭) */}
+      <img
+        src="/jarin/main_character.png"
+        alt="캐릭터"
+        className={charPosClass}
+        draggable={false}
+      />
+      {clothes && (
+        <img src={fitSrc(clothes)} alt="" className={charPosClass} draggable={false} />
+      )}
+      {acc && (
+        <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
+      )}
 
       {/* 캐릭터 앞 가구 (가구1: 식탁) */}
       {front && (
