@@ -73,7 +73,7 @@ export default function Shop() {
           <Link
             to="/main"
             aria-label="뒤로"
-            className="w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80 -ml-1"
+            className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
           >‹</Link>
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
