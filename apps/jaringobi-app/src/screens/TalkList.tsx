@@ -31,28 +31,28 @@ export default function TalkList() {
           <li key={r.id}>
             <Link
               to={`/talk/${r.id}`}
-              className="block rounded-[22px] px-4 py-3 shadow-soft active:scale-[.99] transition"
+              className="relative block rounded-[22px] px-4 py-3 shadow-soft active:scale-[.99] transition"
               style={{ background: r.bg }}
             >
               <div className="flex items-center gap-3">
                 <img
                   src={r.icon}
                   alt=""
-                  className="w-[88px] h-[88px] object-contain shrink-0 scale-[1.4]"
+                  className="w-[88px] h-[88px] ml-3 object-contain shrink-0 scale-[1.4]"
                   draggable={false}
                 />
-                <div className="flex-1 min-w-0 flex flex-col items-center">
+                <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
                   <p className="font-bold text-[20px] leading-snug text-text text-center">
                     {r.title}
                   </p>
-                  <p className="font-bold text-[15px] leading-snug text-text/80 mt-0.5">
+                  <p className="font-bold text-[18px] leading-snug text-text/80 mt-0.5">
                     수다방
-                  </p>
-                  <p className="mt-2 self-end text-[15px] text-text/70 font-medium">
-                    바로가기 <span aria-hidden>⟶</span>
                   </p>
                 </div>
               </div>
+              <p className="absolute right-4 bottom-2 text-[15px] text-text/70 font-medium">
+                바로가기 <span aria-hidden>⟶</span>
+              </p>
             </Link>
           </li>
         ))}
