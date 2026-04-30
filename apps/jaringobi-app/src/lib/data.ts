@@ -128,6 +128,12 @@ export const SHOP_ALL: string[] = [
   ...SHOP_GROUPS.리모델링,
 ];
 
+// shop 경로의 표시용 PNG → 캐릭터 좌표계에 정렬된 fit 경로 PNG
+// 예) /shop/clothes/clo_shop_03.png → /fit/clothes/clo_fit_03.png
+export function fitSrc(shopSrc: string): string {
+  return shopSrc.replace('/shop/', '/fit/').replace('_shop_', '_fit_');
+}
+
 // 가격은 src 해시 기반으로 결정적 분배 (재렌더해도 같은 값 유지)
 const PRICE_BUCKET = [20, 50, 80, 100, 120, 150, 180, 200];
 export function priceFor(src: string): number {

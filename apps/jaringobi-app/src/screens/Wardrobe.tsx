@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SHOP_GROUPS, ShopCategory } from '../lib/data';
+import { SHOP_GROUPS, ShopCategory, fitSrc } from '../lib/data';
 import { useUser } from '../lib/userState';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -67,9 +67,9 @@ export default function Wardrobe() {
         {u.equipped.map((src) => (
           <img
             key={src}
-            src={src}
+            src={fitSrc(src)}
             alt=""
-            className="absolute left-1/2 bottom-[28%] -translate-x-1/2 h-[28%] w-auto object-contain pointer-events-none select-none"
+            className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
             draggable={false}
           />
         ))}
