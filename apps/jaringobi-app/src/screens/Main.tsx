@@ -16,8 +16,8 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const dDay = 30 - confirmed.length;
-  const saved = confirmed.length * 10000;
-  const goal = 300_000;
+  const dailyGoal = 10_000;
+  const saved = confirmed.length === 0 ? dailyGoal : confirmed.length * dailyGoal;
 
   function deleteHeart() {
     if (pendingHeartIdx !== null) setHearts((h) => Math.max(0, h - 1));
@@ -33,47 +33,76 @@ export default function Main() {
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="px-5 pt-12 flex items-start justify-between">
+      <header className="px-5 pt-10 grid grid-cols-[auto_1fr_auto] items-start gap-3">
         <div className="flex flex-col">
-          <div className="flex gap-1.5">
+          <div className="flex gap-1">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
                 key={i}
                 disabled={i >= hearts}
                 onClick={() => { setPendingHeartIdx(i); setShowHeartModal(true); }}
-                className={`w-7 h-7 rounded-lg grid place-items-center text-white font-black text-[14px] transition
-                  ${i < hearts ? 'bg-pink shadow-[0_3px_0_rgba(244,148,150,.45)]' : 'bg-text/20'}`}
+                className="w-7 h-7 grid place-items-center text-[26px] leading-none transition disabled:opacity-30"
                 aria-label={`양심 ${i + 1}`}
-              >♥</button>
+              >
+                <span className={i < hearts ? 'text-[#F26B6B] drop-shadow-[0_2px_0_rgba(0,0,0,0.04)]' : 'text-text/25'}>
+                  ♥
+                </span>
+              </button>
             ))}
           </div>
-          <p className="mt-2 text-[12px] text-text/70 font-bold">D-{dDay}</p>
-          <p className="text-[24px] font-bold leading-none mt-0.5">
-            {saved.toLocaleString()}<span className="text-[14px] ml-1 text-text/60">/ {goal.toLocaleString()}원</span>
-          </p>
+          <p className="mt-1 text-[16px] text-text font-bold">D-{dDay}</p>
         </div>
+
+        <p className="text-center text-[34px] font-bold leading-none tracking-tight pt-2">
+          {saved.toLocaleString()}
+        </p>
+
         <Link to="/mypage" aria-label="마이페이지"
-              className="w-10 h-10 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
-          <img src="/jarin/main_mypage.png" alt="" className="w-7 h-7 object-contain" />
+              className="flex flex-col items-center gap-0.5">
+          <span className="w-11 h-11 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
+            <img src="/jarin/main_mypage.png" alt="" className="w-9 h-9 object-contain" />
+          </span>
+          <span className="text-[11px] font-bold text-text">MY</span>
         </Link>
       </header>
 
+      {/* 오늘의 절약 미션 */}
+      <section className="px-10 pt-4 pb-3">
+        {confirmed.length === 0 ? (
+          <button
+            onClick={() => setShowMissionSetup(true)}
+            className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
+          >
+            오늘의 절약미션
+          </button>
+        ) : null}
+      </section>
+
       {/* 캐릭터 룸 */}
-      <section className="relative mt-2 mx-auto w-full">
+      <section className="relative w-full">
         <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
+        {/* 매달린 굴비 */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center pointer-events-none">
+          <div className="w-[2px] h-16 bg-[#8a6b3a]/60" />
+          <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[120px] h-[120px] object-contain -mt-6" />
+        </div>
+        {/* 메인 캐릭터 */}
+        <img
+          src="/jarin/main_character.png"
+          alt="자린고비 캐릭터"
+          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[44%] object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+        {/* 상점 진입 */}
         <Link to="/shop" aria-label="상점"
-              className="absolute right-3 bottom-3 w-14 h-14 rounded-full grid place-items-center shadow-soft bg-bg">
+              className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white shadow-soft">
           <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
         </Link>
       </section>
 
-      {/* 오늘의 절약 미션 */}
+      {/* 진행 중 챌린지 (오늘의 미션 확정 후) */}
       <section className="px-5 pt-3 pb-3">
-        {confirmed.length === 0 ? (
-          <Button variant="primary" size="lg" onClick={() => setShowMissionSetup(true)}>
-            오늘의 절약미션
-          </Button>
-        ) : (
+        {confirmed.length > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-soft">
             <div className="flex items-center justify-between mb-2">
               <p className="font-bold">오늘의 챌린지</p>

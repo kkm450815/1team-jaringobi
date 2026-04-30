@@ -9,15 +9,15 @@ const tabs = [
 export function BottomTabBar() {
   const { pathname } = useLocation();
   return (
-    <nav className="sticky bottom-0 left-0 right-0 bg-bg border-t border-text/10 px-3 pt-2 pb-3 flex items-center justify-around text-[14px]">
+    <nav className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-3 pb-5 grid grid-cols-3 gap-3 text-[15px]">
       {tabs.map((t) => {
         const active = pathname.startsWith(t.to) || (t.to === '/main' && pathname === '/');
         return (
           <Link
             key={t.to}
             to={t.to}
-            className={`px-3 py-1.5 rounded-full transition-colors ${
-              active ? 'text-white bg-accent font-bold' : 'text-text/70'
+            className={`text-center py-3 rounded-2xl font-bold transition-colors ${
+              active ? 'bg-accent text-white shadow-soft' : 'bg-primary/60 text-text/80'
             }`}
           >
             {t.label}
