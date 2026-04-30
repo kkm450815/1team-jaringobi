@@ -1,42 +1,74 @@
 import { useNavigate } from 'react-router-dom';
-import { HangingFish } from '../components/UI';
+
+function ModeCard({
+  variant, image, alt, amount, onClick,
+}: {
+  variant: 'normal' | 'hard';
+  image: string;
+  alt: string;
+  amount: string;
+  onClick: () => void;
+}) {
+  const isHard = variant === 'hard';
+  const bg = isHard ? 'bg-accent' : 'bg-primary';
+  const labelColor = isHard ? 'text-[#F6EEDE]' : 'text-text/70';
+  const textColor = isHard ? 'text-[#F6EEDE]' : 'text-text/85';
+  const label = isHard ? 'HARD MODE' : 'NOMAL MODE';
+
+  return (
+    <button
+      onClick={onClick}
+      className={`w-full ${bg} rounded-2xl shadow-soft px-5 pt-5 pb-6 active:scale-[.99] transition`}
+    >
+      <p className={`text-center text-[15px] tracking-[4px] font-semibold ${labelColor}`}>
+        {label}
+      </p>
+      <div className="mt-4 grid grid-cols-[1fr_1fr] items-center gap-2">
+        <div className="flex justify-center">
+          <img src={image} alt={alt} className="w-[120px] h-[120px] object-contain" draggable={false} />
+        </div>
+        <div className={`flex flex-col items-center gap-2 text-[18px] font-medium leading-tight ${textColor}`}>
+          <span>30일간</span>
+          <span>{amount} 아끼기</span>
+          <span className="tracking-[2px]">START</span>
+        </div>
+      </div>
+    </button>
+  );
+}
 
 export default function ModeSelect() {
   const nav = useNavigate();
   return (
-    <main className="px-6 pt-12 pb-10">
-      <div className="flex justify-center"><HangingFish size={56} /></div>
-      <h1 className="text-center mt-3 font-bold text-[18px]">모드를 선택해주세요</h1>
-
-      <button
-        onClick={() => nav('/main')}
-        className="mt-6 w-full rounded-3xl bg-primary text-white py-7 px-5 shadow-soft text-left active:scale-[.99] transition"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[12px] tracking-[3px] opacity-90">NORMAL MODE</p>
-            <p className="font-bold text-[20px] mt-1">30일 / 30만원</p>
-            <p className="text-[13px] opacity-90 mt-1">하루 1만원씩 모으는 기본 모드</p>
-          </div>
-          <img src="/jarin/mode_normal.png" alt="노말" className="w-[110px] h-[110px] object-contain" />
+    <main className="px-6 pt-10 pb-10">
+      <div className="flex justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-[2px] h-5 bg-[#8a6b3a]/60" />
+          <img
+            src="/jarin/logo_nobg.png"
+            alt="자린고비"
+            className="w-[88px] h-[88px] object-contain -mt-2"
+            draggable={false}
+          />
         </div>
-        <p className="mt-4 text-[12px] inline-block bg-white/25 rounded-full px-3 py-1">START →</p>
-      </button>
+      </div>
 
-      <button
-        onClick={() => nav('/main')}
-        className="mt-4 w-full rounded-3xl bg-accent text-white py-7 px-5 shadow-soft text-left active:scale-[.99] transition"
-      >
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-[12px] tracking-[3px] opacity-90">HARD MODE</p>
-            <p className="font-bold text-[20px] mt-1">30일 / 100만원</p>
-            <p className="text-[13px] opacity-90 mt-1">매일 3~4만원 + 추가 절약 등록</p>
-          </div>
-          <img src="/jarin/mode_hard.png" alt="하드" className="w-[110px] h-[110px] object-contain" />
-        </div>
-        <p className="mt-4 text-[12px] inline-block bg-white/25 rounded-full px-3 py-1">START →</p>
-      </button>
+      <div className="mt-8 space-y-5">
+        <ModeCard
+          variant="normal"
+          image="/jarin/mode_normal.png"
+          alt="노말 모드"
+          amount="30만원"
+          onClick={() => nav('/main')}
+        />
+        <ModeCard
+          variant="hard"
+          image="/jarin/mode_hard.png"
+          alt="하드 모드"
+          amount="100만원"
+          onClick={() => nav('/main')}
+        />
+      </div>
     </main>
   );
 }
