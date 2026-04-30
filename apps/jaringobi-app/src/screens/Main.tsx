@@ -114,7 +114,7 @@ export default function Main() {
       <section className="px-10 pt-5 pb-3">
         <button
           onClick={openMissionModal}
-          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
+          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition"
         >
           오늘의 절약미션
         </button>
