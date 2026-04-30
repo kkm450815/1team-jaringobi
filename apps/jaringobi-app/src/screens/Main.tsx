@@ -131,16 +131,43 @@ export default function Main() {
       {/* 하단 탭 */}
       <div className="mt-auto"><BottomTabBar /></div>
 
-      {/* 양심 모달 */}
-      <Modal open={showHeartModal} onClose={() => setShowHeartModal(false)}>
-        <div className="text-[44px] tracking-widest text-pink py-1">♥ ♥ ♥</div>
-        <p className="font-bold text-[18px] mt-2">당신의 양심 지키시겠습니까?</p>
-        <p className="text-[13px] text-text/70 mt-1.5">한 번 깎인 양심은 돌아오지 않습니다.</p>
-        <div className="mt-5 flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={() => setShowHeartModal(false)}>취소하기</Button>
-          <Button variant="accent" className="flex-1" onClick={deleteHeart}>양심 삭제</Button>
+      {/* 양심 확인 오버레이 */}
+      {showHeartModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 flex flex-col items-center justify-center px-7"
+          onClick={() => { setShowHeartModal(false); setPendingHeartIdx(null); }}
+        >
+          <div className="w-full max-w-[340px] text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="font-bold text-[20px] text-text drop-shadow-sm">당신의 양심 지키시겠습니까?</p>
+
+            <div className="mt-7 flex justify-center items-center gap-5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <svg key={i} viewBox="0 0 32 30" className="w-[72px] h-[68px]" aria-hidden>
+                  <path
+                    d="M16 27.5 C 6 21 1.5 14.5 1.5 9 C 1.5 4.6 5 1.5 9 1.5 C 12 1.5 14.5 3.2 16 5.6 C 17.5 3.2 20 1.5 23 1.5 C 27 1.5 30.5 4.6 30.5 9 C 30.5 14.5 26 21 16 27.5 Z"
+                    fill="#F49496"
+                  />
+                </svg>
+              ))}
+            </div>
+
+            <div className="mt-8 flex gap-3 justify-center">
+              <button
+                onClick={() => { setShowHeartModal(false); setPendingHeartIdx(null); }}
+                className="flex-1 max-w-[150px] bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
+              >
+                취소하기
+              </button>
+              <button
+                onClick={deleteHeart}
+                className="flex-1 max-w-[150px] bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
+              >
+                양심 삭제
+              </button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
 
       {/* 오늘의 절약미션 세팅 팝업 */}
       <Modal open={showMissionSetup && changingFor === null} onClose={() => setShowMissionSetup(false)}>
