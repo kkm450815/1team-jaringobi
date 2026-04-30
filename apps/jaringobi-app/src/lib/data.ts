@@ -77,17 +77,61 @@ export const TITLES = [
   { id: 'h9', name: '재테크 입문', got: false, active: false },
 ];
 
-export const SHOP_ITEMS: { category: '전체' | '사치품' | '티셔츠' | '리모델링'; items: { src: string }[] }[] = [
-  { category: '전체', items: [] }, // 런타임에 전 카테고리 합쳐서 보여줌
-  { category: '사치품', items: Array.from({ length: 12 }, (_, i) => ({
-      src: `/shop/acc/acc_shop_${String(i + 1).padStart(2, '0')}.png`,
-    })) },
-  { category: '티셔츠', items: Array.from({ length: 12 }, (_, i) => ({
-      src: `/shop/clothes/clo_shop_${String(i + 1).padStart(2, '0')}.png`,
-    })) },
-  { category: '리모델링', items: Array.from({ length: 12 }, (_, i) => ({
-      src: `/shop/wall_paper/interior_shop_${String(i + 1).padStart(2, '0')}.png`,
-    })) },
+export type ShopCategory = '전체' | '사치품' | '티셔츠' | '리모델링';
+
+// img/shop 폴더 실제 파일을 그대로 반영 (새 파일 추가/삭제 시 동기화)
+const ACC_FILES: string[] = [
+  'acc_shop_01','acc_shop_02','acc_shop_03','acc_shop_04','acc_shop_05','acc_shop_06','acc_shop_07','acc_shop_08','acc_shop_09',
+  'acc_shop_11','acc_shop_12','acc_shop_13','acc_shop_14','acc_shop_15','acc_shop_16','acc_shop_17','acc_shop_18',
+  'acc_shop_21','acc_shop_22','acc_shop_23','acc_shop_24','acc_shop_25','acc_shop_26','acc_shop_27','acc_shop_28','acc_shop_29','acc_shop_30',
+  'acc_shop_31','acc_shop_32','acc_shop_33','acc_shop_34','acc_shop_35','acc_shop_36','acc_shop_37','acc_shop_38','acc_shop_39','acc_shop_40',
+  'acc_shop_41','acc_shop_42','acc_shop_43','acc_shop_44','acc_shop_45','acc_shop_46','acc_shop_47','acc_shop_48','acc_shop_49','acc_shop_50',
+  'acc_shop_51','acc_shop_52','acc_shop_53','acc_shop_54','acc_shop_55','acc_shop_56','acc_shop_57','acc_shop_58','acc_shop_59','acc_shop_60',
+  'acc_shop_61','acc_shop_62','acc_shop_63','acc_shop_64','acc_shop_65','acc_shop_66','acc_shop_67','acc_shop_68','acc_shop_69','acc_shop_70',
+  'acc_shop_71','acc_shop_72','acc_shop_73','acc_shop_74','acc_shop_75','acc_shop_77','acc_shop_78','acc_shop_79','acc_shop_80','acc_shop_81',
+].map((n) => `/shop/acc/${n}.png`);
+
+const CLO_FILES: string[] = Array.from({ length: 55 }, (_, i) =>
+  `/shop/clothes/clo_shop_${String(i + 1).padStart(2, '0')}.png`,
+);
+
+const WALL_FILES: string[] = Array.from({ length: 27 }, (_, i) =>
+  `/shop/wall_paper/interior_shop_${String(i + 1).padStart(2, '0')}.png`,
+);
+
+const LAMP_FILES: string[] = [
+  'lamp_shop_01-1', 'lamp_shop_01','lamp_shop_02','lamp_shop_03','lamp_shop_04','lamp_shop_05','lamp_shop_06','lamp_shop_07','lamp_shop_08','lamp_shop_09','lamp_shop_10',
+  'lamp_shop_11','lamp_shop_12','lamp_shop_13','lamp_shop_14','lamp_shop_15','lamp_shop_16','lamp_shop_17','lamp_shop_18','lamp_shop_19','lamp_shop_20',
+  'lamp_shop_21','lamp_shop_22','lamp_shop_23','lamp_shop_24','lamp_shop_25','lamp_shop_26','lamp_shop_27','lamp_shop_28','lamp_shop_29','lamp_shop_30',
+  'lamp_shop_31','lamp_shop_32','lamp_shop_33','lamp_shop_34','lamp_shop_35','lamp_shop_36','lamp_shop_37','lamp_shop_38','lamp_shop_39',
+].map((n) => `/shop/lamp/${n}.png`);
+
+const LEFT_FILES: string[] = Array.from({ length: 12 }, (_, i) =>
+  `/shop/left/left_shop_${String(i + 1).padStart(2, '0')}.png`,
+);
+const RIGHT_FILES: string[] = Array.from({ length: 21 }, (_, i) =>
+  `/shop/right/right_shop_${String(i + 1).padStart(2, '0')}.png`,
+);
+const FRONT_FILES: string[] = Array.from({ length: 32 }, (_, i) =>
+  `/shop/front/front_shop_${String(i + 1).padStart(2, '0')}.png`,
+);
+
+export const SHOP_GROUPS: Record<Exclude<ShopCategory, '전체'>, string[]> = {
+  사치품: ACC_FILES,
+  티셔츠: CLO_FILES,
+  리모델링: [...WALL_FILES, ...LAMP_FILES, ...LEFT_FILES, ...RIGHT_FILES, ...FRONT_FILES],
+};
+
+export const SHOP_ALL: string[] = [
+  ...SHOP_GROUPS.사치품,
+  ...SHOP_GROUPS.티셔츠,
+  ...SHOP_GROUPS.리모델링,
 ];
 
-export const PRICES = [50, 80, 100, 120, 150, 180, 200, 250, 300, 350, 400, 450];
+// 가격은 src 해시 기반으로 결정적 분배 (재렌더해도 같은 값 유지)
+const PRICE_BUCKET = [20, 50, 80, 100, 120, 150, 180, 200];
+export function priceFor(src: string): number {
+  let h = 0;
+  for (let i = 0; i < src.length; i += 1) h = (h * 31 + src.charCodeAt(i)) | 0;
+  return PRICE_BUCKET[Math.abs(h) % PRICE_BUCKET.length];
+}
