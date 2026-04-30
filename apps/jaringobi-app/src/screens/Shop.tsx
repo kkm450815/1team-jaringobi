@@ -1,6 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor, fitSrc } from '../lib/data';
+import {
+  REMODEL_FILES, REMODEL_SUBS, RemodelSub,
+  SHOP_ALL, SHOP_GROUPS, ShopCategory, fitSrc, priceFor,
+} from '../lib/data';
 import { useUser } from '../lib/userState';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -26,88 +29,110 @@ function CoinIcon({ size = 18 }: { size?: number }) {
 export default function Shop() {
   const u = useUser();
   const [cat, setCat] = useState<ShopCategory>('전체');
+  const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
   const [selected, setSelected] = useState<string | null>(null);
 
-  const items = useMemo(() => (cat === '전체' ? SHOP_ALL : SHOP_GROUPS[cat]), [cat]);
+  const items = useMemo(() => {
+    if (cat === '전체') return SHOP_ALL;
+    if (cat === '리모델링') return REMODEL_FILES[remodelSub];
+    return SHOP_GROUPS[cat];
+  }, [cat, remodelSub]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
-      {/* 상단바 */}
-      <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
-        <Link
-          to="/main"
-          aria-label="뒤로"
-          className="w-11 h-11 grid place-items-center text-[34px] leading-none text-text/80 -ml-1"
-        >‹</Link>
-        <div className="flex items-center gap-2">
-          <CoinIcon size={26} />
-          <span className="text-[22px] font-bold text-text">{u.coins}P</span>
-        </div>
-        <Link to="/wardrobe" aria-label="옷장" className="justify-self-end pr-1">
+      {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
+      <div className="sticky top-0 z-10 bg-bg pb-3">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
+          <Link
+            to="/main"
+            aria-label="뒤로"
+            className="w-11 h-11 grid place-items-center text-[34px] leading-none text-text/80 -ml-1"
+          >‹</Link>
+          <div className="flex items-center gap-2">
+            <CoinIcon size={26} />
+            <span className="text-[22px] font-bold text-text">{u.coins}P</span>
+          </div>
+          <Link to="/wardrobe" aria-label="옷장" className="justify-self-end pr-1">
+            <img
+              src="/jarin/wardrobe_icon.png"
+              alt="옷장"
+              className="w-[58px] h-[58px] object-contain"
+              draggable={false}
+            />
+          </Link>
+        </header>
+
+        <section className="relative mx-5 rounded-2xl overflow-hidden shadow-soft">
           <img
-            src="/jarin/wardrobe_icon.png"
-            alt="옷장"
-            className="w-[58px] h-[58px] object-contain"
+            src="/jarin/main_ room.png"
+            alt="미리보기"
+            className="w-full h-auto block select-none"
             draggable={false}
           />
-        </Link>
-      </header>
-
-      {/* 미리보기 룸 + 캐릭터 */}
-      <section className="relative mx-5 rounded-2xl overflow-hidden shadow-soft">
-        <img
-          src="/jarin/main_ room.png"
-          alt="미리보기"
-          className="w-full h-auto block select-none"
-          draggable={false}
-        />
-        <img
-          src="/jarin/main_character.png"
-          alt="캐릭터"
-          className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
-          draggable={false}
-        />
-        {/* 장착 중인 보유 아이템은 캐릭터 위에 합성 */}
-        {u.equipped.map((src) => (
           <img
-            key={src}
-            src={fitSrc(src)}
-            alt=""
+            src="/jarin/main_character.png"
+            alt="캐릭터"
             className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
             draggable={false}
           />
-        ))}
-        {/* 미리보기로 탭한 아이템(미보유 포함) */}
-        {selected && !u.equipped.includes(selected) && (
-          <img
-            src={fitSrc(selected)}
-            alt="선택 아이템"
-            className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none opacity-90"
-            draggable={false}
-          />
-        )}
-      </section>
+          {u.equipped.map((src) => (
+            <img
+              key={src}
+              src={fitSrc(src)}
+              alt=""
+              className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
+              draggable={false}
+            />
+          ))}
+          {selected && !u.equipped.includes(selected) && (
+            <img
+              src={fitSrc(selected)}
+              alt="선택 아이템"
+              className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
+              draggable={false}
+            />
+          )}
+        </section>
 
-      {/* 카테고리 필터 */}
-      <div className="px-5 mt-5 flex gap-2.5 overflow-x-auto no-scrollbar">
-        {CATS.map((c) => {
-          const active = c === cat;
-          return (
-            <button
-              key={c}
-              onClick={() => setCat(c)}
-              className={`px-5 py-2 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors ${
-                active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
-              }`}
-            >
-              {c}
-            </button>
-          );
-        })}
+        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
+          {CATS.map((c) => {
+            const active = c === cat;
+            return (
+              <button
+                key={c}
+                onClick={() => setCat(c)}
+                className={`px-5 py-2 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors ${
+                  active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
+                }`}
+              >
+                {c}
+              </button>
+            );
+          })}
+        </div>
+
+        {cat === '리모델링' && (
+          <div className="px-5 mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+            {REMODEL_SUBS.map((s) => {
+              const active = s === remodelSub;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setRemodelSub(s)}
+                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${
+                    active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
-      {/* 그리드 */}
-      <section className="px-5 mt-4 grid grid-cols-3 gap-2.5">
+      {/* 아이템 그리드 (스크롤 대상) */}
+      <section className="px-5 mt-3 grid grid-cols-3 gap-2.5">
         {items.map((src) => {
           const owned = u.owned.includes(src);
           const isSelected = src === selected;
@@ -123,10 +148,7 @@ export default function Shop() {
                 isSelected ? 'bg-text/25' : 'bg-white/70'
               }`}
             >
-              <span
-                className="absolute top-1.5 left-1.5 text-text/80"
-                aria-hidden
-              >
+              <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="4" y="11" width="16" height="10" rx="2" />
                   <path d="M8 11V8a4 4 0 0 1 8 0v3" />
