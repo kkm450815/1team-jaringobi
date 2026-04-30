@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
@@ -8,6 +8,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
+const CHUNK = 30;
 
 function CoinIcon({ size = 18 }: { size?: number }) {
   return (
@@ -38,6 +39,31 @@ export default function Shop() {
     if (cat === '리모델링') return REMODEL_FILES[remodelSub];
     return SHOP_GROUPS[cat];
   }, [cat, remodelSub]);
+
+  // 점진 로드: 카테고리/서브가 바뀔 때 30개부터, 스크롤이 하단 근처 도달하면 30개씩 추가
+  const [visible, setVisible] = useState(CHUNK);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => { setVisible(CHUNK); }, [cat, remodelSub]);
+
+  useEffect(() => {
+    function check() {
+      const el = sentinelRef.current;
+      if (!el) return;
+      const r = el.getBoundingClientRect();
+      // 센티넬이 화면 하단 200px 이내로 들어오면 다음 청크 노출
+      if (r.top < window.innerHeight + 200) {
+        setVisible((v) => (v < items.length ? Math.min(v + CHUNK, items.length) : v));
+      }
+    }
+    window.addEventListener('scroll', check, { passive: true });
+    const scroller = document.querySelector('.no-scrollbar');
+    scroller?.addEventListener('scroll', check, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', check);
+      scroller?.removeEventListener('scroll', check);
+    };
+  }, [items.length]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
@@ -108,7 +134,7 @@ export default function Shop() {
 
       {/* 아이템 그리드 (스크롤 대상) */}
       <section className="px-5 mt-3 grid grid-cols-3 gap-2.5">
-        {items.map((src) => {
+        {items.slice(0, visible).map((src) => {
           const owned = u.owned.includes(src);
           const isSelected = src === selected;
           const price = priceFor(src);
@@ -123,12 +149,14 @@ export default function Shop() {
                 isSelected ? 'bg-text/25' : 'bg-white/70'
               }`}
             >
-              <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="4" y="11" width="16" height="10" rx="2" />
-                  <path d="M8 11V8a4 4 0 0 1 8 0v3" />
-                </svg>
-              </span>
+              {!owned && (
+                <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="4" y="11" width="16" height="10" rx="2" />
+                    <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                  </svg>
+                </span>
+              )}
               <div className="aspect-square grid place-items-center px-3 pt-4 pb-2">
                 <img
                   src={src}
@@ -142,14 +170,17 @@ export default function Shop() {
                 <CoinIcon size={14} />
                 <span className="text-[13px] font-bold text-text">{price}P</span>
               </div>
-              {owned && (
-                <div className="absolute top-1.5 right-1.5 text-[10px] font-bold bg-accent text-white px-1.5 py-0.5 rounded-full">
-                  보유
-                </div>
-              )}
             </button>
           );
         })}
+        {visible < items.length && (
+          <div
+            ref={sentinelRef}
+            className="col-span-3 h-12 grid place-items-center text-text/40 text-[12px]"
+          >
+            더 불러오는 중…
+          </div>
+        )}
       </section>
     </main>
   );
