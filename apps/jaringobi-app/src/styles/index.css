@@ -1,0 +1,53 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* GangwonEduAll — projectnoonnu(한국 무료 웹폰트 호스팅) CDN. 외부 차단 환경에서는
+   /public/fonts/ 에 .woff2 를 두고 src 를 로컬로 변경하세요. (UI_HANDOFF.md 참고) */
+@font-face {
+  font-family: 'GangwonEduAll';
+  font-style: normal;
+  font-weight: 300;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/GangwonEduAllOTFLight.woff') format('woff');
+}
+@font-face {
+  font-family: 'GangwonEduAll';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/GangwonEduAllOTFBold.woff') format('woff');
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  background: #514C44; /* 밖 영역(데스크톱 미리보기)에서 폰 프레임이 돋보이도록 */
+  -webkit-font-smoothing: antialiased;
+  font-family: 'GangwonEduAll', 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  color: #514C44;
+}
+
+/* 모눈종이 다이어리 배경(마이페이지 / 챌린지 상세) */
+.bg-grid-paper {
+  background-color: #FAF5E9;
+  background-image:
+    linear-gradient(rgba(81,76,68,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(81,76,68,0.08) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* 형광펜 하이라이트 */
+.hl-pink {
+  background: linear-gradient(transparent 60%, rgba(244,148,150,0.55) 60%);
+  padding: 0 4px;
+}
+
+/* 헥사곤 (clip-path) */
+.hex {
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+}
+
+/* 가로 스크롤 숨김 */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
