@@ -43,7 +43,7 @@ export default function Wardrobe() {
           <Link
             to="/main"
             aria-label="뒤로"
-            className="w-11 h-11 grid place-items-center text-[34px] leading-none text-text/80 -ml-1"
+            className="w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80 -ml-1"
           >‹</Link>
           <h1 className="text-[24px] font-bold tracking-[6px] text-text">MY</h1>
           <Link to="/shop" aria-label="상점" className="justify-self-end pr-1">

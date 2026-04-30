@@ -42,15 +42,12 @@ export default function ModeSelect() {
   return (
     <main className="px-6 pt-10 pb-10">
       <div className="flex justify-center">
-        <div className="flex flex-col items-center">
-          <div className="w-[2px] h-5 bg-[#8a6b3a]/60" />
-          <img
-            src="/jarin/logo_nobg.png"
-            alt="자린고비"
-            className="w-[88px] h-[88px] object-contain -mt-2"
-            draggable={false}
-          />
-        </div>
+        <img
+          src="/jarin/logo_nobg.png"
+          alt="자린고비"
+          className="w-[88px] h-[88px] object-contain"
+          draggable={false}
+        />
       </div>
 
       <div className="mt-8 space-y-5">

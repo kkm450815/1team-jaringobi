@@ -23,18 +23,15 @@ export default function MyPage() {
         <Link
           to="/main"
           aria-label="뒤로"
-          className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80"
         >‹</Link>
         <div className="flex justify-center">
-          <div className="flex flex-col items-center">
-            <div className="w-[2px] h-5 bg-[#8a6b3a]/60" />
-            <img
-              src="/jarin/logo_nobg.png"
-              alt="자린고비"
-              className="w-[72px] h-[72px] object-contain -mt-2"
-              draggable={false}
-            />
-          </div>
+          <img
+            src="/jarin/logo_nobg.png"
+            alt="자린고비"
+            className="w-[72px] h-[72px] object-contain"
+            draggable={false}
+          />
         </div>
         <Link
           to="/settings"

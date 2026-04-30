@@ -54,22 +54,19 @@ export default function TalkRoom() {
             ‹
           </Link>
           <div className="flex justify-center">
-            <div className="flex flex-col items-center">
-              <div className="w-[2px] h-6 bg-[#8a6b3a]/60" />
-              <img
-                src="/jarin/logo_nobg.png"
-                alt={room.title}
-                className="w-[96px] h-[96px] object-contain -mt-2"
-                draggable={false}
-              />
-            </div>
+            <img
+              src="/jarin/logo_nobg.png"
+              alt={room.title}
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
           </div>
           <Link
             to="/bookmarks"
             aria-label="북마크 보관함"
             className="absolute right-4 top-10 p-1"
           >
-            <BookmarkIcon filled size={42} />
+            <BookmarkIcon filled size={34} />
           </Link>
         </header>
 
