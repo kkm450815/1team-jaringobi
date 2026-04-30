@@ -1,0 +1,120 @@
+import { EquipSlot, equipSlotOf, fitSrc } from '../lib/data';
+
+/**
+ * 미리보기 룸: 캐릭터 + 장착/미리보기 fit 이미지를 슬롯별 정확한 위치/크기/z-order로 렌더.
+ * 슬롯별 동시 1개씩만 표시 (extra가 같은 슬롯이면 equipped 대신 그것을 보여줌).
+ */
+export function RoomPreview({
+  equipped,
+  extra = [],
+  className = '',
+}: {
+  equipped: string[];
+  extra?: string[];
+  className?: string;
+}) {
+  // 슬롯별로 최우선 표시 src 결정 (extra 우선)
+  const all = [...equipped, ...extra];
+  function pick(slot: EquipSlot): string | undefined {
+    let chosen: string | undefined;
+    for (const s of all) if (equipSlotOf(s) === slot) chosen = s; // 뒤에 오는게 우선
+    return chosen;
+  }
+  const wall = pick('벽지');
+  const lamp = pick('조명');
+  const left = pick('소품');
+  const right = pick('가구2');
+  const front = pick('가구1');
+  const clothes = pick('티셔츠');
+  const acc = pick('사치품');
+
+  // 사치품/티셔츠는 캐릭터와 동일한 박스(같은 가로/세로 중앙 정렬) 안에서 렌더
+  const charBoxStyle = { aspectRatio: '242 / 458' } as const;
+  const charBoxClass =
+    'absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] -translate-z-0';
+
+  return (
+    <section className={`relative rounded-2xl overflow-hidden shadow-soft ${className}`}>
+      <img
+        src="/jarin/main_ room.png"
+        alt="미리보기"
+        className="w-full h-auto block select-none"
+        draggable={false}
+      />
+
+      {/* 벽지 - 가장 뒤 (방 배경) */}
+      {wall && (
+        <img
+          src={fitSrc(wall)}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+
+      {/* 캐릭터 뒤쪽 가구·소품 */}
+      {left && (
+        <img
+          src={fitSrc(left)}
+          alt=""
+          className="absolute left-[6%] bottom-[10%] h-[16%] w-auto object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+      {right && (
+        <img
+          src={fitSrc(right)}
+          alt=""
+          className="absolute right-[6%] bottom-[10%] h-[22%] w-auto object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+
+      {/* 캐릭터 + 옷 + 사치품 (같은 박스, 가로/세로 중앙 정렬) */}
+      <div className={charBoxClass} style={charBoxStyle}>
+        <img
+          src="/jarin/main_character.png"
+          alt="캐릭터"
+          className="absolute inset-0 w-full h-full object-contain"
+          draggable={false}
+        />
+        {clothes && (
+          <img
+            src={fitSrc(clothes)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+            draggable={false}
+          />
+        )}
+        {acc && (
+          <img
+            src={fitSrc(acc)}
+            alt=""
+            className="absolute inset-0 w-full h-full object-contain pointer-events-none select-none"
+            draggable={false}
+          />
+        )}
+      </div>
+
+      {/* 캐릭터 앞 가구 (가구1: 식탁) */}
+      {front && (
+        <img
+          src={fitSrc(front)}
+          alt=""
+          className="absolute left-1/2 -translate-x-1/2 bottom-[5%] h-[16%] w-auto object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+
+      {/* 천장 조명 - 상단 중앙 */}
+      {lamp && (
+        <img
+          src={fitSrc(lamp)}
+          alt=""
+          className="absolute left-1/2 -translate-x-1/2 top-[2%] h-[22%] w-auto object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+    </section>
+  );
+}

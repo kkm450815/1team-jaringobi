@@ -2,8 +2,9 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
-  SHOP_GROUPS, ShopCategory, fitSrc,
+  SHOP_GROUPS, ShopCategory,
 } from '../lib/data';
+import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -55,29 +56,7 @@ export default function Wardrobe() {
           </Link>
         </header>
 
-        <section className="relative mx-5 mt-4 rounded-2xl overflow-hidden shadow-soft">
-          <img
-            src="/jarin/main_ room.png"
-            alt="미리보기"
-            className="w-full h-auto block select-none"
-            draggable={false}
-          />
-          <img
-            src="/jarin/main_character.png"
-            alt="캐릭터"
-            className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
-            draggable={false}
-          />
-          {u.equipped.map((src) => (
-            <img
-              key={src}
-              src={fitSrc(src)}
-              alt=""
-              className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
-              draggable={false}
-            />
-          ))}
-        </section>
+        <RoomPreview equipped={u.equipped} className="mx-5 mt-4" />
 
         <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
           {CATS.map((c) => {

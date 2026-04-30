@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { topCategoryOf } from './data';
+import { equipSlotOf } from './data';
 
 const KEY = 'jaringobi.user.v1';
 
@@ -133,15 +133,16 @@ export function useUser() {
     return ok;
   }, []);
 
-  // 옷장에서 장착/해제 토글 (사치품/티셔츠/리모델링 각 카테고리당 1개만 동시 장착)
+  // 옷장에서 장착/해제 토글
+  // 슬롯당 1개만 장착: 사치품/티셔츠/조명/소품/가구1/가구2/벽지 (총 7개 슬롯, 서로 동시 장착 가능)
   const toggleEquip = useCallback((src: string) => {
     setState((s) => {
       if (!s.owned.includes(src)) return s;
       if (s.equipped.includes(src)) {
         return { ...s, equipped: s.equipped.filter((x) => x !== src) };
       }
-      const cat = topCategoryOf(src);
-      const others = s.equipped.filter((x) => topCategoryOf(x) !== cat);
+      const slot = equipSlotOf(src);
+      const others = s.equipped.filter((x) => equipSlotOf(x) !== slot);
       return { ...s, equipped: [...others, src] };
     });
   }, []);
