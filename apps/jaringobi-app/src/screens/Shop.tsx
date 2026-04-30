@@ -74,7 +74,7 @@ export default function Shop() {
             to="/main"
             aria-label="뒤로"
             className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
-          >‹</Link>
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
             <span className="text-[22px] font-bold text-text">{u.coins}P</span>
