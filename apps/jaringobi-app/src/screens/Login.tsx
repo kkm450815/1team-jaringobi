@@ -1,6 +1,48 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+function GoogleIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 48 48" aria-hidden>
+      <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3c-1.6 4.7-6 8-11.3 8-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.2-.1-2.4-.4-3.5z"/>
+      <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.8 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
+      <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.3l-6.3-5.2C29.2 35 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
+      <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.3 5.2C40.9 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z"/>
+    </svg>
+  );
+}
+
+function KakaoIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+      <path fill="#3C1E1E" d="M12 3C6.5 3 2 6.6 2 11.1c0 2.9 1.9 5.4 4.7 6.9-.2.7-.7 2.6-.8 3-.1.5.2.5.4.4.2-.1 2.5-1.7 3.5-2.4.7.1 1.5.2 2.2.2 5.5 0 10-3.6 10-8.1S17.5 3 12 3z"/>
+    </svg>
+  );
+}
+
+function AppleIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
+      <path fill="#000" d="M16.4 12.5c0-2.3 1.9-3.4 2-3.4-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.1-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7 1.4 0 1.8.7 3 .7 1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1-.1-2.6-1-2.6-3.8zM14.2 5.7c.6-.8 1.1-1.9 1-3-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z"/>
+    </svg>
+  );
+}
+
+function SocialButton({
+  label, bg = 'bg-white', children, onClick,
+}: { label: string; bg?: string; children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={label}
+      className={`w-12 h-12 rounded-full ${bg} grid place-items-center shadow-soft active:scale-[.95] transition`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export default function Login() {
   const nav = useNavigate();
   const [showPw, setShowPw] = useState(false);
@@ -19,12 +61,12 @@ export default function Login() {
       </div>
 
       <form className="mt-12 space-y-3" onSubmit={submit}>
-        <button
-          type="button"
-          className="w-full bg-white/70 rounded-full px-5 py-4 text-[14px] text-text/70 font-medium"
-        >
-          소셜 계정으로 로그인
-        </button>
+        <input
+          type="text"
+          placeholder="아이디"
+          required
+          className="w-full bg-white/70 rounded-full px-5 py-4 outline-none text-[14px] text-text placeholder:text-text/70 placeholder:font-medium text-center"
+        />
 
         <div className="relative">
           <input
@@ -65,11 +107,28 @@ export default function Login() {
         </button>
       </form>
 
-      <hr className="mt-8 border-t border-text/20" />
-
       <button className="mt-5 text-center text-[13px] text-text/70">
         비밀번호를 잊으셨나요?
       </button>
+
+      <div className="mt-auto pt-10">
+        <div className="flex items-center gap-3">
+          <hr className="flex-1 border-t border-text/20" />
+          <span className="text-[12px] text-text/55">소셜 계정으로 로그인</span>
+          <hr className="flex-1 border-t border-text/20" />
+        </div>
+        <div className="mt-4 flex justify-center gap-5">
+          <SocialButton label="Google로 로그인" onClick={() => nav('/mode')}>
+            <GoogleIcon />
+          </SocialButton>
+          <SocialButton label="카카오로 로그인" bg="bg-[#FEE500]" onClick={() => nav('/mode')}>
+            <KakaoIcon />
+          </SocialButton>
+          <SocialButton label="Apple로 로그인" onClick={() => nav('/mode')}>
+            <AppleIcon />
+          </SocialButton>
+        </div>
+      </div>
     </main>
   );
 }
