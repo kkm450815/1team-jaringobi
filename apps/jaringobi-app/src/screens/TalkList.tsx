@@ -9,46 +9,46 @@ export default function TalkList() {
         <Link
           to="/main"
           aria-label="뒤로"
-          className="absolute left-4 top-10 text-[26px] leading-none text-text/80 px-2"
+          className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
         >
           ‹
         </Link>
         <div className="flex justify-center">
           <div className="flex flex-col items-center">
-            <div className="w-[2px] h-7 bg-[#8a6b3a]/60" />
+            <div className="w-[2px] h-6 bg-[#8a6b3a]/60" />
             <img
               src="/jarin/logo_nobg.png"
               alt=""
-              className="w-[120px] h-[120px] object-contain -mt-3"
+              className="w-[96px] h-[96px] object-contain -mt-2"
               draggable={false}
             />
           </div>
         </div>
       </header>
 
-      <ul className="px-5 pb-6 space-y-4">
+      <ul className="px-5 pb-4 space-y-3">
         {TALK_ROOMS.map((r) => (
           <li key={r.id}>
             <Link
               to={`/talk/${r.id}`}
-              className="block rounded-[22px] px-5 py-5 shadow-soft active:scale-[.99] transition"
+              className="block rounded-[22px] px-4 py-3 shadow-soft active:scale-[.99] transition"
               style={{ background: r.bg }}
             >
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
                 <img
                   src={r.icon}
                   alt=""
-                  className="w-[160px] h-[160px] object-contain shrink-0"
+                  className="w-[88px] h-[88px] object-contain shrink-0"
                   draggable={false}
                 />
                 <div className="flex-1 min-w-0 flex flex-col items-center">
-                  <p className="font-bold text-[22px] leading-snug text-text text-center">
+                  <p className="font-bold text-[20px] leading-snug text-text text-center">
                     {r.title}
                   </p>
-                  <p className="font-bold text-[16px] leading-snug text-text/80 mt-1">
+                  <p className="font-bold text-[15px] leading-snug text-text/80 mt-0.5">
                     수다방
                   </p>
-                  <p className="mt-3 self-end text-[12px] text-text/70 font-medium">
+                  <p className="mt-2 self-end text-[15px] text-text/70 font-medium">
                     바로가기 <span aria-hidden>⟶</span>
                   </p>
                 </div>
