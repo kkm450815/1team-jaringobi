@@ -38,7 +38,7 @@ export default function TalkList() {
                 <img
                   src={r.icon}
                   alt=""
-                  className="w-[88px] h-[88px] object-contain shrink-0"
+                  className="w-[88px] h-[88px] object-contain shrink-0 scale-[1.4]"
                   draggable={false}
                 />
                 <div className="flex-1 min-w-0 flex flex-col items-center">
