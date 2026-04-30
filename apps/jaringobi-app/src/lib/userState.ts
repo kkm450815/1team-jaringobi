@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { topCategoryOf } from './data';
 
 const KEY = 'jaringobi.user.v1';
 
@@ -132,12 +133,16 @@ export function useUser() {
     return ok;
   }, []);
 
-  // 옷장에서 장착/해제 토글
+  // 옷장에서 장착/해제 토글 (사치품/티셔츠/리모델링 각 카테고리당 1개만 동시 장착)
   const toggleEquip = useCallback((src: string) => {
     setState((s) => {
       if (!s.owned.includes(src)) return s;
-      const has = s.equipped.includes(src);
-      return { ...s, equipped: has ? s.equipped.filter((x) => x !== src) : [...s.equipped, src] };
+      if (s.equipped.includes(src)) {
+        return { ...s, equipped: s.equipped.filter((x) => x !== src) };
+      }
+      const cat = topCategoryOf(src);
+      const others = s.equipped.filter((x) => topCategoryOf(x) !== cat);
+      return { ...s, equipped: [...others, src] };
     });
   }, []);
 

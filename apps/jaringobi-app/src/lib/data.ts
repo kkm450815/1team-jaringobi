@@ -116,10 +116,27 @@ const FRONT_FILES: string[] = Array.from({ length: 32 }, (_, i) =>
   `/shop/front/front_shop_${String(i + 1).padStart(2, '0')}.png`,
 );
 
+// 리모델링 서브 카테고리 (조명/소품/가구1/가구2/벽지)
+export type RemodelSub = '조명' | '소품' | '가구1' | '가구2' | '벽지';
+export const REMODEL_SUBS: RemodelSub[] = ['조명', '소품', '가구1', '가구2', '벽지'];
+export const REMODEL_FILES: Record<RemodelSub, string[]> = {
+  조명: LAMP_FILES,
+  소품: LEFT_FILES,
+  가구1: FRONT_FILES,
+  가구2: RIGHT_FILES,
+  벽지: WALL_FILES,
+};
+
 export const SHOP_GROUPS: Record<Exclude<ShopCategory, '전체'>, string[]> = {
   사치품: ACC_FILES,
   티셔츠: CLO_FILES,
-  리모델링: [...WALL_FILES, ...LAMP_FILES, ...LEFT_FILES, ...RIGHT_FILES, ...FRONT_FILES],
+  리모델링: [
+    ...REMODEL_FILES.조명,
+    ...REMODEL_FILES.소품,
+    ...REMODEL_FILES.가구1,
+    ...REMODEL_FILES.가구2,
+    ...REMODEL_FILES.벽지,
+  ],
 };
 
 export const SHOP_ALL: string[] = [
@@ -127,6 +144,13 @@ export const SHOP_ALL: string[] = [
   ...SHOP_GROUPS.티셔츠,
   ...SHOP_GROUPS.리모델링,
 ];
+
+// 장착 시 동시 1개만 허용하기 위한 상위 카테고리 판별
+export function topCategoryOf(src: string): Exclude<ShopCategory, '전체'> {
+  if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
+  if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
+  return '리모델링';
+}
 
 // shop 경로의 표시용 PNG → 캐릭터 좌표계에 정렬된 fit 경로 PNG
 // 예) /shop/clothes/clo_shop_03.png → /fit/clothes/clo_fit_03.png
