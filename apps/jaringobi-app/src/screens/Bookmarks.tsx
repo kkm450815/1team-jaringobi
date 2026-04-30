@@ -29,7 +29,7 @@ export default function Bookmarks() {
         <Link
           to="/talk"
           aria-label="뒤로"
-          className="absolute left-4 top-10 text-[26px] leading-none text-text/80 px-2"
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80"
         >
           ‹
         </Link>

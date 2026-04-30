@@ -69,7 +69,7 @@ export default function TalkRoom() {
             aria-label="북마크 보관함"
             className="absolute right-4 top-10 p-1"
           >
-            <BookmarkIcon filled size={42} />
+            <BookmarkIcon filled size={34} />
           </Link>
         </header>
 
