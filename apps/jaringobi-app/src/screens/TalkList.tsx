@@ -11,12 +11,14 @@ export default function TalkList() {
           className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
         ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
         <div className="flex justify-center">
-          <img
-            src="/jarin/logo_nobg.png"
-            alt=""
-            className="w-[96px] h-[96px] object-contain"
-            draggable={false}
-          />
+          <Link to="/main" aria-label="홈으로">
+            <img
+              src="/jarin/logo_nobg.png"
+              alt=""
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
+          </Link>
         </div>
       </header>
 
