@@ -52,21 +52,21 @@ export function RoomPreview({
         />
       )}
 
-      {/* 소품 - 좌상단 (작은 액세서리) */}
+      {/* 소품 - 좌상단 (작은 액세서리) — 캔버스 1x */}
       {left && (
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[6%] top-[26%] h-[8%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[6%] top-[24%] h-[11%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 우측 캐릭터 어깨 높이 (중간) */}
+      {/* 가구2 - 우측 캐릭터 어깨 높이 — 캔버스 1x */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[5%] top-[34%] h-[13%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[5%] top-[28%] h-[23%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
@@ -85,22 +85,22 @@ export function RoomPreview({
         <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
       )}
 
-      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (작은 사이즈, Y 약간 아래) */}
+      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10 명시) — 캔버스 1x */}
       {front && (
         <img
           src={fitSrc(front)}
           alt=""
-          className="absolute left-0 bottom-[6%] h-[16%] w-auto object-contain pointer-events-none select-none"
+          className="absolute z-10 left-0 bottom-[5%] h-[31%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
 
-      {/* 천장 조명 - 상단 중앙 (Y 살짝 위) */}
+      {/* 천장 조명 - 상단 중앙 — 캔버스 1x */}
       {lamp && (
         <img
           src={fitSrc(lamp)}
           alt=""
-          className="absolute left-1/2 -translate-x-1/2 top-0 h-[22%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-[13%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
