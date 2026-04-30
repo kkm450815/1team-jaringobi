@@ -57,16 +57,7 @@ export function RoomPreview({
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[6%] top-[24%] h-[16%] w-auto object-contain pointer-events-none select-none"
-          draggable={false}
-        />
-      )}
-      {/* 가구1 - 좌하단 (큰 가구) */}
-      {front && (
-        <img
-          src={fitSrc(front)}
-          alt=""
-          className="absolute left-[5%] bottom-[8%] h-[32%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[6%] top-[26%] h-[8%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
@@ -75,7 +66,7 @@ export function RoomPreview({
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[5%] top-[30%] h-[26%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[5%] top-[34%] h-[13%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
@@ -94,12 +85,22 @@ export function RoomPreview({
         <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
       )}
 
-      {/* 천장 조명 - 상단 중앙 */}
+      {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (작은 사이즈, Y 약간 아래) */}
+      {front && (
+        <img
+          src={fitSrc(front)}
+          alt=""
+          className="absolute left-0 bottom-[6%] h-[16%] w-auto object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+      )}
+
+      {/* 천장 조명 - 상단 중앙 (Y 살짝 위) */}
       {lamp && (
         <img
           src={fitSrc(lamp)}
           alt=""
-          className="absolute left-1/2 -translate-x-1/2 top-[2%] h-[22%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-1/2 -translate-x-1/2 top-0 h-[22%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
