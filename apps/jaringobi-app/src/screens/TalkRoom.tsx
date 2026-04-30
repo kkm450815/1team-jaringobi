@@ -49,7 +49,7 @@ export default function TalkRoom() {
           <Link
             to="/talk"
             aria-label="뒤로"
-            className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
+            className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80"
           >
             ‹
           </Link>
@@ -69,7 +69,7 @@ export default function TalkRoom() {
             aria-label="북마크 보관함"
             className="absolute right-4 top-10 p-1"
           >
-            <BookmarkIcon filled size={30} />
+            <BookmarkIcon filled size={42} />
           </Link>
         </header>
 
