@@ -54,15 +54,12 @@ export default function TalkRoom() {
             ‹
           </Link>
           <div className="flex justify-center">
-            <div className="flex flex-col items-center">
-              <div className="w-[2px] h-6 bg-[#8a6b3a]/60" />
-              <img
-                src="/jarin/logo_nobg.png"
-                alt={room.title}
-                className="w-[96px] h-[96px] object-contain -mt-2"
-                draggable={false}
-              />
-            </div>
+            <img
+              src="/jarin/logo_nobg.png"
+              alt={room.title}
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
           </div>
           <Link
             to="/bookmarks"
