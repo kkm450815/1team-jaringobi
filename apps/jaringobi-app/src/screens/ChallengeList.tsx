@@ -33,7 +33,19 @@ export default function ChallengeList() {
 
   return (
     <main className="min-h-full pb-12">
-      <TopBar back="/main" title="챌린지 정보" />
+      <TopBar
+        back="/main"
+        title={
+          <Link to="/main" aria-label="홈으로">
+            <img
+              src="/jarin/logo_nobg.png"
+              alt="자린고비"
+              className="h-9 object-contain"
+              draggable={false}
+            />
+          </Link>
+        }
+      />
 
       <div className="px-5 flex gap-2 overflow-x-auto no-scrollbar">
         {CATS.map((c) => (
@@ -54,16 +66,18 @@ export default function ChallengeList() {
               to={`/challenges/${m.id}`}
               className="flex items-stretch bg-white rounded-2xl shadow-soft overflow-hidden active:scale-[.99] transition"
             >
-              <div className="w-20 grid place-items-center bg-accent">
-                <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-12 h-12 object-contain" />
+              <div className="w-24 grid place-items-center bg-accent">
+                <img src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`} alt="" className="w-20 h-20 object-contain" />
               </div>
-              <div className="flex-1 p-3">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold">{m.title}</p>
-                  <Tag color="pink">{m.difficulty}</Tag>
+              <div className="flex-1 p-3 flex items-center gap-2">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="font-bold">{m.title}</p>
+                    <Tag color="pink">{m.difficulty}</Tag>
+                  </div>
+                  <p className="text-[12px] text-text/60 mt-1 line-clamp-2">{TIPS[m.iconKey]}</p>
                 </div>
-                <p className="text-[12px] text-text/60 mt-1 line-clamp-2">{TIPS[m.iconKey]}</p>
-                <p className="text-[12px] text-accent font-bold mt-1.5">바로가기 →</p>
+                <p className="text-[12px] text-accent font-bold whitespace-nowrap">바로가기 →</p>
               </div>
             </Link>
           </li>
