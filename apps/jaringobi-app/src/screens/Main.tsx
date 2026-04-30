@@ -16,8 +16,8 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const dDay = 30 - confirmed.length;
-  const saved = confirmed.length * 10000;
-  const goal = 300_000;
+  const dailyGoal = 10_000;
+  const saved = confirmed.length === 0 ? dailyGoal : confirmed.length * dailyGoal;
 
   function deleteHeart() {
     if (pendingHeartIdx !== null) setHearts((h) => Math.max(0, h - 1));
@@ -33,47 +33,76 @@ export default function Main() {
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="px-5 pt-12 flex items-start justify-between">
+      <header className="px-5 pt-10 grid grid-cols-[auto_1fr_auto] items-start gap-3">
         <div className="flex flex-col">
-          <div className="flex gap-1.5">
+          <div className="flex gap-1">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
                 key={i}
                 disabled={i >= hearts}
                 onClick={() => { setPendingHeartIdx(i); setShowHeartModal(true); }}
-                className={`w-7 h-7 rounded-lg grid place-items-center text-white font-black text-[14px] transition
-                  ${i < hearts ? 'bg-pink shadow-[0_3px_0_rgba(244,148,150,.45)]' : 'bg-text/20'}`}
+                className="w-7 h-7 grid place-items-center text-[26px] leading-none transition disabled:opacity-30"
                 aria-label={`양심 ${i + 1}`}
-              >♥</button>
+              >
+                <span className={i < hearts ? 'text-[#F26B6B] drop-shadow-[0_2px_0_rgba(0,0,0,0.04)]' : 'text-text/25'}>
+                  ♥
+                </span>
+              </button>
             ))}
           </div>
-          <p className="mt-2 text-[12px] text-text/70 font-bold">D-{dDay}</p>
-          <p className="text-[24px] font-bold leading-none mt-0.5">
-            {saved.toLocaleString()}<span className="text-[14px] ml-1 text-text/60">/ {goal.toLocaleString()}원</span>
-          </p>
+          <p className="mt-1 text-[16px] text-text font-bold">D-{dDay}</p>
         </div>
+
+        <p className="text-center text-[34px] font-bold leading-none tracking-tight pt-2">
+          {saved.toLocaleString()}
+        </p>
+
         <Link to="/mypage" aria-label="마이페이지"
-              className="w-10 h-10 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
-          <img src="/jarin/main_mypage.png" alt="" className="w-7 h-7 object-contain" />
+              className="flex flex-col items-center gap-0.5">
+          <span className="w-11 h-11 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
+            <img src="/jarin/main_mypage.png" alt="" className="w-9 h-9 object-contain" />
+          </span>
+          <span className="text-[11px] font-bold text-text">MY</span>
         </Link>
       </header>
 
+      {/* 오늘의 절약 미션 */}
+      <section className="px-10 pt-4 pb-3">
+        {confirmed.length === 0 ? (
+          <button
+            onClick={() => setShowMissionSetup(true)}
+            className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
+          >
+            오늘의 절약미션
+          </button>
+        ) : null}
+      </section>
+
       {/* 캐릭터 룸 */}
-      <section className="relative mt-2 mx-auto w-full">
+      <section className="relative w-full">
         <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
+        {/* 매달린 굴비 */}
+        <div className="absolute left-1/2 -translate-x-1/2 top-0 flex flex-col items-center pointer-events-none">
+          <div className="w-[2px] h-16 bg-[#8a6b3a]/60" />
+          <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[120px] h-[120px] object-contain -mt-6" />
+        </div>
+        {/* 메인 캐릭터 */}
+        <img
+          src="/jarin/main_character.png"
+          alt="자린고비 캐릭터"
+          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[44%] object-contain pointer-events-none select-none"
+          draggable={false}
+        />
+        {/* 상점 진입 */}
         <Link to="/shop" aria-label="상점"
-              className="absolute right-3 bottom-3 w-14 h-14 rounded-full grid place-items-center shadow-soft bg-bg">
+              className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white shadow-soft">
           <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
         </Link>
       </section>
 
-      {/* 오늘의 절약 미션 */}
+      {/* 진행 중 챌린지 (오늘의 미션 확정 후) */}
       <section className="px-5 pt-3 pb-3">
-        {confirmed.length === 0 ? (
-          <Button variant="primary" size="lg" onClick={() => setShowMissionSetup(true)}>
-            오늘의 절약미션
-          </Button>
-        ) : (
+        {confirmed.length > 0 && (
           <div className="bg-white rounded-2xl p-4 shadow-soft">
             <div className="flex items-center justify-between mb-2">
               <p className="font-bold">오늘의 챌린지</p>
@@ -102,16 +131,43 @@ export default function Main() {
       {/* 하단 탭 */}
       <div className="mt-auto"><BottomTabBar /></div>
 
-      {/* 양심 모달 */}
-      <Modal open={showHeartModal} onClose={() => setShowHeartModal(false)}>
-        <div className="text-[44px] tracking-widest text-pink py-1">♥ ♥ ♥</div>
-        <p className="font-bold text-[18px] mt-2">당신의 양심 지키시겠습니까?</p>
-        <p className="text-[13px] text-text/70 mt-1.5">한 번 깎인 양심은 돌아오지 않습니다.</p>
-        <div className="mt-5 flex gap-2">
-          <Button variant="ghost" className="flex-1" onClick={() => setShowHeartModal(false)}>취소하기</Button>
-          <Button variant="accent" className="flex-1" onClick={deleteHeart}>양심 삭제</Button>
+      {/* 양심 확인 오버레이 */}
+      {showHeartModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 flex flex-col items-center justify-center px-7"
+          onClick={() => { setShowHeartModal(false); setPendingHeartIdx(null); }}
+        >
+          <div className="w-full max-w-[340px] text-center" onClick={(e) => e.stopPropagation()}>
+            <p className="font-bold text-[20px] text-text drop-shadow-sm">당신의 양심 지키시겠습니까?</p>
+
+            <div className="mt-7 flex justify-center items-center gap-5">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <svg key={i} viewBox="0 0 32 30" className="w-[72px] h-[68px]" aria-hidden>
+                  <path
+                    d="M16 27.5 C 6 21 1.5 14.5 1.5 9 C 1.5 4.6 5 1.5 9 1.5 C 12 1.5 14.5 3.2 16 5.6 C 17.5 3.2 20 1.5 23 1.5 C 27 1.5 30.5 4.6 30.5 9 C 30.5 14.5 26 21 16 27.5 Z"
+                    fill="#F49496"
+                  />
+                </svg>
+              ))}
+            </div>
+
+            <div className="mt-8 flex gap-3 justify-center">
+              <button
+                onClick={() => { setShowHeartModal(false); setPendingHeartIdx(null); }}
+                className="flex-1 max-w-[150px] bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
+              >
+                취소하기
+              </button>
+              <button
+                onClick={deleteHeart}
+                className="flex-1 max-w-[150px] bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
+              >
+                양심 삭제
+              </button>
+            </div>
+          </div>
         </div>
-      </Modal>
+      )}
 
       {/* 오늘의 절약미션 세팅 팝업 */}
       <Modal open={showMissionSetup && changingFor === null} onClose={() => setShowMissionSetup(false)}>
