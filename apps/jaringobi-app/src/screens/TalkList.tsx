@@ -8,7 +8,7 @@ export default function TalkList() {
         <Link
           to="/main"
           aria-label="뒤로"
-          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[48px] leading-none text-text/80"
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
         >
           ‹
         </Link>
