@@ -17,6 +17,8 @@ export interface UserState {
   totalSaved: number;   // 누적 저축액
   goal: number;         // 회차 목표액
   coins: number;        // 보유 코인
+  owned: string[];      // 보유 중인 상점 아이템 src 목록
+  equipped: string[];   // 현재 장착(즐겨찾기) src 목록 (owned의 부분집합)
   settings: UserSettings;
 }
 
@@ -28,6 +30,8 @@ const DEFAULT: UserState = {
   totalSaved: 10_000,
   goal: 300_000,
   coins: 180,
+  owned: ['/shop/clothes/clo_shop_01.png'],
+  equipped: [],
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -46,6 +50,8 @@ function read(): UserState {
       ...parsed,
       settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
       photos: parsed.photos ?? {},
+      owned: parsed.owned ?? DEFAULT.owned,
+      equipped: parsed.equipped ?? DEFAULT.equipped,
     };
   } catch {
     return DEFAULT;
@@ -114,7 +120,28 @@ export function useUser() {
     setState(DEFAULT);
   }, []);
 
-  return { ...state, setNickname, setSetting, savePhoto, update, reset };
+  // 상점에서 구매: 코인 차감 + owned 추가. 이미 보유했거나 코인 부족이면 false.
+  const buy = useCallback((src: string, price: number) => {
+    let ok = false;
+    setState((s) => {
+      if (s.owned.includes(src)) return s;
+      if (s.coins < price) return s;
+      ok = true;
+      return { ...s, coins: s.coins - price, owned: [...s.owned, src] };
+    });
+    return ok;
+  }, []);
+
+  // 옷장에서 장착/해제 토글
+  const toggleEquip = useCallback((src: string) => {
+    setState((s) => {
+      if (!s.owned.includes(src)) return s;
+      const has = s.equipped.includes(src);
+      return { ...s, equipped: has ? s.equipped.filter((x) => x !== src) : [...s.equipped, src] };
+    });
+  }, []);
+
+  return { ...state, setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip };
 }
 
 // 카메라 사진을 작게 리사이즈해서 dataURL 반환 (localStorage 용량 절약)

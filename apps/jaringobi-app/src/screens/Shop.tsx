@@ -26,7 +26,6 @@ function CoinIcon({ size = 18 }: { size?: number }) {
 export default function Shop() {
   const u = useUser();
   const [cat, setCat] = useState<ShopCategory>('전체');
-  const [bought, setBought] = useState<string[]>(['/shop/clothes/clo_shop_01.png']);
   const [selected, setSelected] = useState<string | null>(null);
 
   const items = useMemo(() => (cat === '전체' ? SHOP_ALL : SHOP_GROUPS[cat]), [cat]);
@@ -99,7 +98,7 @@ export default function Shop() {
       {/* 그리드 */}
       <section className="px-5 mt-4 grid grid-cols-3 gap-2.5">
         {items.map((src) => {
-          const owned = bought.includes(src);
+          const owned = u.owned.includes(src);
           const isSelected = src === selected;
           const price = priceFor(src);
           return (
@@ -107,9 +106,7 @@ export default function Shop() {
               key={src}
               onClick={() => {
                 setSelected(src);
-                if (!owned && u.coins >= price) {
-                  setBought((b) => (b.includes(src) ? b : [...b, src]));
-                }
+                if (!owned) u.buy(src, price);
               }}
               className={`relative rounded-xl overflow-hidden transition-colors ${
                 isSelected ? 'bg-text/25' : 'bg-white/70'
