@@ -57,25 +57,25 @@ export function RoomPreview({
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[5%] top-[26%] h-[12%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[6%] top-[24%] h-[16%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구1 - 우측, 캐릭터 어깨 높이 (중간 사이즈) */}
+      {/* 가구1 - 좌하단 (큰 가구) */}
       {front && (
         <img
           src={fitSrc(front)}
           alt=""
-          className="absolute right-[6%] top-[34%] h-[18%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[5%] bottom-[8%] h-[32%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 좌하단 (큰 가구) */}
+      {/* 가구2 - 우측 캐릭터 어깨 높이 (중간) */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute left-[6%] bottom-[10%] h-[26%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[5%] top-[30%] h-[26%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}

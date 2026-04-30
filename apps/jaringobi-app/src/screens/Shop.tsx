@@ -83,7 +83,7 @@ export default function Shop() {
             <img
               src="/jarin/wardrobe_icon.png"
               alt="옷장"
-              className="w-[58px] h-[58px] object-contain"
+              className="w-[44px] h-[44px] object-contain"
               draggable={false}
             />
           </Link>

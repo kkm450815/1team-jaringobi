@@ -39,7 +39,7 @@ export default function Wardrobe() {
   return (
     <main className="min-h-full pb-10 bg-bg">
       <div className="sticky top-0 z-10 bg-bg pb-3">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-3 border-b border-text/10">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
           <Link
             to="/main"
             aria-label="뒤로"
@@ -50,7 +50,7 @@ export default function Wardrobe() {
             <img
               src="/jarin/main_shop.png"
               alt="상점"
-              className="w-[58px] h-[58px] object-contain"
+              className="w-[44px] h-[44px] object-contain"
               draggable={false}
             />
           </Link>
