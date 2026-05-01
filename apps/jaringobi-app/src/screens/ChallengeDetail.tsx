@@ -30,7 +30,7 @@ export default function ChallengeDetail() {
 
         <h3 className="mt-5 font-bold text-[15px]">기대 절약 효과</h3>
         <p className="mt-1 text-[13px] text-text/80">
-          한 달 기준 약 {monthly.toLocaleString()}원, 1년이면 {(monthly * 12).toLocaleString()}원의 절약 효과를 기대할 수 있어요.
+          한 달 기준 약 {monthly.toLocaleString()}원 절약 효과를 기대할 수 있어요.
         </p>
 
         <h3 className="mt-4 font-bold text-[15px]">실천 팁</h3>
