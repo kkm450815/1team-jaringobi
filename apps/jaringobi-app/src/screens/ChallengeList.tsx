@@ -53,7 +53,7 @@ export default function ChallengeList() {
             key={c}
             onClick={() => setCat(c)}
             className={`px-4 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap ${
-              cat === c ? 'bg-accent text-white' : 'bg-white text-text/70'
+              cat === c ? 'bg-accent text-[#FFFFAD]' : 'bg-white text-text/70'
             }`}
           >{c} 절약</button>
         ))}
@@ -71,11 +71,11 @@ export default function ChallengeList() {
               </div>
               <div className="flex-1 p-3 flex flex-col min-w-0">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="font-bold">{m.title}</p>
+                  <p className="font-bold text-[20px] leading-tight">{m.title}</p>
                   <Tag color="pink">{m.difficulty}</Tag>
                 </div>
-                <p className="text-[12px] text-text/60 mt-2 whitespace-pre-line leading-snug">{TIPS[m.iconKey]}</p>
-                <p className="mt-auto self-end text-[16px] text-text/70 font-bold leading-none" aria-label="바로가기">→</p>
+                <p className="text-[16px] font-light text-text/70 mt-2 whitespace-pre-line leading-snug">{TIPS[m.iconKey]}</p>
+                <p className="mt-auto self-end text-[28px] text-text/70 font-bold leading-none" aria-label="바로가기">→</p>
               </div>
             </Link>
           </li>
