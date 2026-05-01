@@ -8,10 +8,12 @@ export function RoomPreview({
   equipped,
   extra = [],
   className = '',
+  framed = true,
 }: {
   equipped: string[];
   extra?: string[];
   className?: string;
+  framed?: boolean;
 }) {
   // 슬롯별로 최우선 표시 src 결정 (extra 우선)
   const all = [...equipped, ...extra];
@@ -34,7 +36,9 @@ export function RoomPreview({
     'absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none';
 
   return (
-    <section className={`relative rounded-2xl overflow-hidden shadow-soft ${className}`}>
+    <section
+      className={`relative overflow-hidden ${framed ? 'rounded-2xl shadow-soft' : ''} ${className}`}
+    >
       <img
         src="/jarin/main_ room.png"
         alt="미리보기"
@@ -52,21 +56,21 @@ export function RoomPreview({
         />
       )}
 
-      {/* 소품 - 좌상단 (1.5x), Y 40px 다운 + X 20px 왼쪽 */}
+      {/* 소품 - 좌상단 (1.5x), Y 살짝 다운 */}
       {left && (
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[1%] top-[33%] h-[17%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[1%] top-[34%] h-[17%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 우측 (1.5x), Y 10px 업 + X 10px 오른쪽 */}
+      {/* 가구2 - 우측 (1.5x), Y 살짝 업 */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[3%] top-[35%] h-[35%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[3%] top-[34%] h-[35%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}

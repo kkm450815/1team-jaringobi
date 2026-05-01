@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
+import { useUser } from '../lib/userState';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -17,6 +19,7 @@ function iconUrl(key: string) {
 }
 
 export default function Main() {
+  const u = useUser();
   const [hearts, setHearts] = useState(3);
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
@@ -120,15 +123,9 @@ export default function Main() {
         </button>
       </section>
 
-      {/* 캐릭터 룸 */}
-      <section className="relative w-full">
-        <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
-        <img
-          src="/jarin/main_character.png"
-          alt="자린고비 캐릭터"
-          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[44%] object-contain pointer-events-none select-none"
-          draggable={false}
-        />
+      {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
+      <div className="relative w-full">
+        <RoomPreview equipped={u.equipped} framed={false} />
         <Link
           to="/shop"
           aria-label="상점"
@@ -136,7 +133,7 @@ export default function Main() {
         >
           <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
         </Link>
-      </section>
+      </div>
 
       <div className="mt-auto"><BottomTabBar /></div>
 
