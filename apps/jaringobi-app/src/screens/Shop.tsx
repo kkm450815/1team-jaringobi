@@ -33,6 +33,12 @@ export default function Shop() {
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
   const [selected, setSelected] = useState<string | null>(null);
+  const [confirmBuy, setConfirmBuy] = useState(false);
+
+  const selectedPrice = selected ? priceFor(selected) : 0;
+  const selectedOwned = !!selected && u.owned.includes(selected);
+  const showBuyCta = !!selected && !selectedOwned;
+  const canAfford = u.coins >= selectedPrice;
 
   const items = useMemo(() => {
     if (cat === '전체') return SHOP_ALL;
@@ -130,6 +136,33 @@ export default function Shop() {
             })}
           </div>
         )}
+
+        {/* 미보유 아이템 미리보기 시 구매 CTA (sticky 영역 안쪽 - 항상 상단에 노출) */}
+        {showBuyCta && (
+          <div className="px-5 mt-3 flex items-center gap-2">
+            <div className="flex-1 min-w-0 flex items-center gap-2">
+              <CoinIcon size={18} />
+              <span className="text-[16px] font-bold text-text">{selectedPrice.toLocaleString()}P</span>
+              {!canAfford && (
+                <span className="text-[12px] text-pink font-bold">코인 부족</span>
+              )}
+            </div>
+            <button
+              onClick={() => canAfford && setConfirmBuy(true)}
+              disabled={!canAfford}
+              className={`px-5 py-2 rounded-full text-[14px] font-bold transition ${
+                canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
+              }`}
+            >
+              구매하기
+            </button>
+            <button
+              onClick={() => setSelected(null)}
+              aria-label="미리보기 닫기"
+              className="w-8 h-8 grid place-items-center text-text/60 text-[20px]"
+            >×</button>
+          </div>
+        )}
       </div>
 
       {/* 아이템 그리드 (스크롤 대상) */}
@@ -141,10 +174,7 @@ export default function Shop() {
           return (
             <button
               key={src}
-              onClick={() => {
-                setSelected(src);
-                if (!owned) u.buy(src, price);
-              }}
+              onClick={() => setSelected(src)}
               className={`relative rounded-xl overflow-hidden transition-colors ${
                 isSelected ? 'bg-text/25' : 'bg-white/70'
               }`}
@@ -182,6 +212,41 @@ export default function Shop() {
           </div>
         )}
       </section>
+
+      {/* 구매 확인 모달 */}
+      {confirmBuy && selected && (
+        <div
+          className="fixed inset-0 z-30 bg-black/45 grid place-items-center px-7"
+          onClick={() => setConfirmBuy(false)}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[16px] font-bold text-text">이 아이템을 구매하시겠어요?</p>
+            <div className="mt-3 flex items-center justify-center gap-2">
+              <CoinIcon size={20} />
+              <span className="text-[18px] font-bold text-text">{selectedPrice.toLocaleString()}P</span>
+            </div>
+            <p className="text-[12px] text-text/55 mt-1">
+              현재 보유: {u.coins.toLocaleString()}P → 구매 후 {(u.coins - selectedPrice).toLocaleString()}P
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setConfirmBuy(false)}
+                className="flex-1 bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
+              >취소</button>
+              <button
+                onClick={() => {
+                  u.buy(selected, selectedPrice);
+                  setConfirmBuy(false);
+                }}
+                className="flex-1 bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
+              >구매</button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
