@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ACC_FILES_BY_SUB, ACC_SUBS, AccSub,
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor,
 } from '../lib/data';
@@ -32,6 +33,7 @@ export default function Shop() {
   const u = useUser();
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
+  const [accSub, setAccSub] = useState<AccSub>('모자');
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmBuy, setConfirmBuy] = useState(false);
 
@@ -43,14 +45,15 @@ export default function Shop() {
   const items = useMemo(() => {
     if (cat === '전체') return SHOP_ALL;
     if (cat === '리모델링') return REMODEL_FILES[remodelSub];
+    if (cat === '사치품') return ACC_FILES_BY_SUB[accSub];
     return SHOP_GROUPS[cat];
-  }, [cat, remodelSub]);
+  }, [cat, remodelSub, accSub]);
 
   // 점진 로드: 카테고리/서브가 바뀔 때 30개부터, 스크롤이 하단 근처 도달하면 30개씩 추가
   const [visible, setVisible] = useState(CHUNK);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
-  useEffect(() => { setVisible(CHUNK); }, [cat, remodelSub]);
+  useEffect(() => { setVisible(CHUNK); }, [cat, remodelSub, accSub]);
 
   useEffect(() => {
     function check() {
@@ -126,6 +129,25 @@ export default function Shop() {
                 <button
                   key={s}
                   onClick={() => setRemodelSub(s)}
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
+                    active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {cat === '사치품' && (
+          <div className="px-5 mt-2 grid grid-cols-3 gap-2">
+            {ACC_SUBS.map((s) => {
+              const active = s === accSub;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setAccSub(s)}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}

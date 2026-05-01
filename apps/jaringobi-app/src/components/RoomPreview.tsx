@@ -56,7 +56,9 @@ export function RoomPreview({
   const right = pick('가구2');
   const front = pick('가구1');
   const clothes = pick('티셔츠');
-  const acc = pick('사치품');
+  const hat = pick('모자');
+  const glasses = pick('안경');
+  const handItem = pick('소지품');
 
   return (
     <section
@@ -106,7 +108,9 @@ export function RoomPreview({
         draggable={false}
       />
       {clothes && <CharFitImage key={clothes} src={fitSrc(clothes)} />}
-      {acc && <CharFitImage key={acc} src={fitSrc(acc)} />}
+      {handItem && <CharFitImage key={handItem} src={fitSrc(handItem)} />}
+      {glasses && <CharFitImage key={glasses} src={fitSrc(glasses)} />}
+      {hat && <CharFitImage key={hat} src={fitSrc(hat)} />}
 
       {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10), Y 30px 위로 */}
       {front && (
