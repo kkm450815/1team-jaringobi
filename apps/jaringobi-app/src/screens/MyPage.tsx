@@ -1,5 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fitSrc } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { useUser } from '../lib/userState';
 
 const MAX_NICK = 10;
@@ -20,21 +22,16 @@ export default function MyPage() {
     <main className="min-h-full pb-10">
       {/* 상단바 */}
       <header className="relative pt-10 pb-3">
-        <Link
-          to="/main"
-          aria-label="뒤로"
-          className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
-        >‹</Link>
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/main" />
         <div className="flex justify-center">
-          <div className="flex flex-col items-center">
-            <div className="w-[2px] h-5 bg-[#8a6b3a]/60" />
+          <Link to="/main" aria-label="홈으로">
             <img
               src="/jarin/logo_nobg.png"
               alt="자린고비"
-              className="w-[72px] h-[72px] object-contain -mt-2"
+              className="w-[72px] h-[72px] object-contain"
               draggable={false}
             />
-          </div>
+          </Link>
         </div>
         <Link
           to="/settings"
@@ -70,14 +67,25 @@ export default function MyPage() {
 
         {/* 프로필 영역 */}
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-1">
-          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden">
+          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative">
+            {/* 캐릭터 + 장착 fit을 메인/상점과 동일한 캔버스 비율로 그려 어깨선까지 보이게 */}
             <img
               src="/jarin/main_character.png"
               alt={`${u.nickname} 캐릭터`}
-              className="w-full h-full object-cover"
-              style={{ objectPosition: '50% 12%' }}
+              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
               draggable={false}
             />
+            {u.equipped
+              .filter((s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'))
+              .map((s) => (
+                <img
+                  key={s}
+                  src={fitSrc(s)}
+                  alt=""
+                  className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
+                  draggable={false}
+                />
+              ))}
           </div>
           <div>
             <p className="text-[14px] font-bold text-text">
@@ -126,6 +134,14 @@ export default function MyPage() {
                 >
                   ₩
                 </span>
+              </Link>
+              <Link to="/wardrobe" aria-label="옷장" className="p-1">
+                <img
+                  src="/jarin/wardrobe_icon.png"
+                  alt="옷장"
+                  className="w-7 h-7 object-contain"
+                  draggable={false}
+                />
               </Link>
             </div>
           </div>

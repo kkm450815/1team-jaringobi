@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { TALK_POSTS, TALK_ROOMS } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 
 const AVATAR = '/jarin/main_mypage.png';
@@ -26,13 +27,7 @@ export default function Bookmarks() {
   return (
     <main className="min-h-full pb-10">
       <header className="relative pt-10 pb-3">
-        <Link
-          to="/talk"
-          aria-label="뒤로"
-          className="absolute left-4 top-10 text-[26px] leading-none text-text/80 px-2"
-        >
-          ‹
-        </Link>
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/talk" />
         <h1 className="text-center font-bold text-[18px] tracking-[4px]">북마크 보관함</h1>
       </header>
 
