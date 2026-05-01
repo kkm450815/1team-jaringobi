@@ -1,9 +1,27 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ME_NICK, TALK_POSTS, TALK_ROOMS, TalkPost } from '../lib/data';
+import { TALK_POSTS, TALK_ROOMS, TalkPost } from '../lib/data';
 import { useBookmarks } from '../lib/useBookmarks';
+import { useUser } from '../lib/userState';
 
-const AVATAR = '/jarin/main_mypage.png';
+const SEED_AVATAR = '/jarin/main_mypage.png';
+const ME_AVATAR = '/jarin/main_character.png';
+
+function postsKey(roomId: string) {
+  return `jaringobi.talk.posts.${roomId}.v1`;
+}
+
+function loadPosts(roomId: string, seed: TalkPost[]): TalkPost[] {
+  try {
+    const raw = localStorage.getItem(postsKey(roomId));
+    if (!raw) return seed;
+    const parsed = JSON.parse(raw) as TalkPost[];
+    if (!Array.isArray(parsed)) return seed;
+    return parsed;
+  } catch {
+    return seed;
+  }
+}
 
 function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number }) {
   const w = size;
@@ -26,19 +44,50 @@ export default function TalkRoom() {
   const { id } = useParams();
   const room = TALK_ROOMS.find((r) => r.id === id) ?? TALK_ROOMS[0];
   const seed = useMemo(() => TALK_POSTS.filter((p) => p.roomId === room.id), [room.id]);
+  const u = useUser();
 
-  const [posts, setPosts] = useState<TalkPost[]>(seed);
+  const [posts, setPosts] = useState<TalkPost[]>(() => loadPosts(room.id, seed));
   const [input, setInput] = useState('');
   const { has, toggle } = useBookmarks();
+
+  // 방 변경 시 해당 방의 영속 데이터 로드
+  useEffect(() => {
+    setPosts(loadPosts(room.id, seed));
+  }, [room.id, seed]);
+
+  // 변경 시 localStorage 영속화
+  useEffect(() => {
+    localStorage.setItem(postsKey(room.id), JSON.stringify(posts));
+  }, [room.id, posts]);
+
+  // 다른 탭/창에서의 변경을 실시간 반영
+  useEffect(() => {
+    const key = postsKey(room.id);
+    function onStorage(e: StorageEvent) {
+      if (e.key !== key || e.newValue == null) return;
+      try {
+        const next = JSON.parse(e.newValue) as TalkPost[];
+        if (Array.isArray(next)) setPosts(next);
+      } catch {
+        // ignore
+      }
+    }
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [room.id]);
 
   function send() {
     const body = input.trim();
     if (!body) return;
     setPosts((p) => [
-      { id: crypto.randomUUID(), roomId: room.id, nick: ME_NICK, body },
+      { id: crypto.randomUUID(), roomId: room.id, nick: u.nickname, body },
       ...p,
     ]);
     setInput('');
+  }
+
+  function avatarFor(nick: string) {
+    return nick === u.nickname ? ME_AVATAR : SEED_AVATAR;
   }
 
   return (
@@ -51,7 +100,7 @@ export default function TalkRoom() {
             aria-label="뒤로"
             className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
           ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center">
             <Link to="/main" aria-label="홈으로">
               <img
                 src="/jarin/logo_nobg.png"
@@ -60,6 +109,7 @@ export default function TalkRoom() {
                 draggable={false}
               />
             </Link>
+            <h2 className="mt-1 font-bold text-[18px] text-text">{room.title}</h2>
           </div>
           <Link
             to="/bookmarks"
@@ -73,9 +123,9 @@ export default function TalkRoom() {
         {/* 입력 영역 */}
         <section className="px-5 pt-4">
           <div className="flex items-start gap-3">
-            <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
+            <img src={ME_AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-cover shrink-0" />
             <div className="flex-1">
-              <p className="text-[15px] font-bold text-text">{ME_NICK}</p>
+              <p className="text-[15px] font-bold text-text">{u.nickname}</p>
               <textarea
                 rows={1}
                 value={input}
@@ -104,7 +154,7 @@ export default function TalkRoom() {
           const marked = has(p.id);
           return (
             <li key={p.id} className="flex items-start gap-3">
-              <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
+              <img src={avatarFor(p.nick)} alt="" className="w-11 h-11 rounded-full bg-white object-cover shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-bold text-text">{p.nick}</p>
                 <p className="text-[15px] mt-1.5 leading-relaxed text-text/90 whitespace-pre-wrap">

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TopBar, Tag } from '../components/UI';
+import { Tag } from '../components/UI';
 import { MISSIONS, MissionCategory } from '../lib/data';
 
 const CATS: MissionCategory[] = ['식비', '여가', '충동', '통장'];
@@ -11,7 +11,24 @@ export default function ChallengeList() {
 
   return (
     <main className="min-h-full pb-12">
-      <TopBar back="/main" title="챌린지 정보" />
+      <header className="relative pt-10 pb-4">
+        <Link
+          to="/main"
+          aria-label="뒤로"
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
+        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+        <div className="flex flex-col items-center">
+          <Link to="/main" aria-label="홈으로">
+            <img
+              src="/jarin/logo_nobg.png"
+              alt=""
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
+          </Link>
+          <h2 className="mt-1 font-bold text-[18px] text-text">챌린지 정보</h2>
+        </div>
+      </header>
 
       <div className="px-5 grid grid-cols-4 gap-2">
         {CATS.map((c) => (

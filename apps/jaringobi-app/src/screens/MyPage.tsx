@@ -31,7 +31,7 @@ export default function MyPage() {
             <img
               src="/jarin/logo_nobg.png"
               alt="자린고비"
-              className="w-[72px] h-[72px] object-contain"
+              className="w-[96px] h-[96px] object-contain"
               draggable={false}
             />
           </Link>
