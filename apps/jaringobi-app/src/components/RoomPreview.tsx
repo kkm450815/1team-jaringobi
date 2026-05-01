@@ -56,21 +56,21 @@ export function RoomPreview({
         />
       )}
 
-      {/* 소품 - 좌상단 (1.5x), Y 살짝 다운 */}
+      {/* 소품 - 좌상단 (2.1x) */}
       {left && (
         <img
           src={fitSrc(left)}
           alt=""
-          className="absolute left-[1%] top-[34%] h-[17%] w-auto object-contain pointer-events-none select-none"
+          className="absolute left-[1%] top-[34%] h-[24%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
-      {/* 가구2 - 우측 (1.5x), Y 살짝 업 */}
+      {/* 가구2 - 우측 (2.1x), X 5px 오른쪽 */}
       {right && (
         <img
           src={fitSrc(right)}
           alt=""
-          className="absolute right-[3%] top-[34%] h-[35%] w-auto object-contain pointer-events-none select-none"
+          className="absolute right-[1.5%] top-[34%] h-[49%] w-auto object-contain pointer-events-none select-none"
           draggable={false}
         />
       )}
