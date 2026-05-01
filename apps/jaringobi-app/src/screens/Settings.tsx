@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { BackButton } from '../components/UI';
 import { useUser, UserSettings } from '../lib/userState';
 
 const APP_VERSION = '0.1.0';
@@ -70,11 +71,7 @@ export default function Settings() {
   return (
     <main className="min-h-full pb-12">
       <header className="relative pt-10 pb-3">
-        <Link
-          to="/mypage"
-          aria-label="뒤로"
-          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
-        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/mypage" />
         <h1 className="text-center font-bold text-[18px] tracking-[4px] text-text">설정</h1>
       </header>
 

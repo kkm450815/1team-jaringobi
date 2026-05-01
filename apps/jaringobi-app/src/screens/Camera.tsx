@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { downscaleImage, useUser } from '../lib/userState';
 
 function iconUrl(key: string) {
@@ -41,11 +42,7 @@ export default function Camera() {
   return (
     <main className="min-h-full pb-10">
       <header className="relative pt-10 pb-3">
-        <Link
-          to="/main"
-          aria-label="뒤로"
-          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
-        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/main" />
         <h1 className="text-center font-bold text-[18px] tracking-[3px] text-text">
           {u.day}일차 인증하기
         </h1>

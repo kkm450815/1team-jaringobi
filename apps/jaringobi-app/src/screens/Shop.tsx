@@ -5,6 +5,7 @@ import {
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor,
 } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 
@@ -79,11 +80,7 @@ export default function Shop() {
       {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
       <div className="sticky top-0 z-10 bg-bg pb-3">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
-          <Link
-            to="/main"
-            aria-label="뒤로"
-            className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
-          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+          <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" fallback="/main" />
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
             <span className="text-[22px] font-bold text-text">{u.coins}P</span>
