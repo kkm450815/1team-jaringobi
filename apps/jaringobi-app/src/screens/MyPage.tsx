@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fitSrc } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { useUser } from '../lib/userState';
 
 const MAX_NICK = 10;
@@ -21,11 +22,7 @@ export default function MyPage() {
     <main className="min-h-full pb-10">
       {/* 상단바 */}
       <header className="relative pt-10 pb-3">
-        <Link
-          to="/main"
-          aria-label="뒤로"
-          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
-        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/main" />
         <div className="flex justify-center">
           <Link to="/main" aria-label="홈으로">
             <img

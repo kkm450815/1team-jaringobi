@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { TALK_POSTS, TALK_ROOMS, TalkPost } from '../lib/data';
+import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useUser } from '../lib/userState';
 
@@ -95,11 +96,7 @@ export default function TalkRoom() {
       {/* 상단 고정 영역: 헤더 + 입력 + 구분선 */}
       <div className="sticky top-0 z-10 bg-bg">
         <header className="relative pt-10 pb-4">
-          <Link
-            to="/talk"
-            aria-label="뒤로"
-            className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
-          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+          <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/talk" />
           <div className="flex flex-col items-center">
             <Link to="/main" aria-label="홈으로">
               <img
