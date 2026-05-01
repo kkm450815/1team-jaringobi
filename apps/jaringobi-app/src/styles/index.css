@@ -2,21 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
-/* GangwonEduAll — projectnoonnu(한국 무료 웹폰트 호스팅) CDN. 외부 차단 환경에서는
-   /public/fonts/ 에 .woff2 를 두고 src 를 로컬로 변경하세요. (UI_HANDOFF.md 참고) */
+/* GangwonEducationModuche (강원교육모두체) — projectnoonnu CDN */
 @font-face {
-  font-family: 'GangwonEduAll';
+  font-family: 'GangwonEducationModuche';
   font-style: normal;
   font-weight: 300;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_one@1.0/GangwonEduAllOTFLight.woff') format('woff');
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFLightA.woff') format('woff');
 }
 @font-face {
-  font-family: 'GangwonEduAll';
+  font-family: 'GangwonEducationModuche';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/GangwonEduAllOTFBold.woff') format('woff');
+  src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2201-2@1.0/GangwonEdu_OTFBoldA.woff') format('woff');
 }
 
 html, body, #root { height: 100%; }
@@ -24,7 +23,9 @@ body {
   margin: 0;
   background: #514C44; /* 밖 영역(데스크톱 미리보기)에서 폰 프레임이 돋보이도록 */
   -webkit-font-smoothing: antialiased;
-  font-family: 'GangwonEduAll', 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-family: 'GangwonEducationModuche', 'Pretendard', 'Apple SD Gothic Neo', system-ui, sans-serif;
   color: #514C44;
 }
 

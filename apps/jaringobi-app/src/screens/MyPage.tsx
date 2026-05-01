@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { fitSrc } from '../lib/data';
 import { useUser } from '../lib/userState';
 
 const MAX_NICK = 10;
@@ -69,14 +70,25 @@ export default function MyPage() {
 
         {/* 프로필 영역 */}
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-1">
-          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden">
+          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative">
+            {/* 캐릭터 + 장착 fit을 메인/상점과 동일한 캔버스 비율로 그려 어깨선까지 보이게 */}
             <img
               src="/jarin/main_character.png"
               alt={`${u.nickname} 캐릭터`}
-              className="w-full h-full object-cover"
-              style={{ objectPosition: '50% 12%' }}
+              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
               draggable={false}
             />
+            {u.equipped
+              .filter((s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'))
+              .map((s) => (
+                <img
+                  key={s}
+                  src={fitSrc(s)}
+                  alt=""
+                  className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
+                  draggable={false}
+                />
+              ))}
           </div>
           <div>
             <p className="text-[14px] font-bold text-text">
@@ -125,6 +137,14 @@ export default function MyPage() {
                 >
                   ₩
                 </span>
+              </Link>
+              <Link to="/wardrobe" aria-label="옷장" className="p-1">
+                <img
+                  src="/jarin/wardrobe_icon.png"
+                  alt="옷장"
+                  className="w-7 h-7 object-contain"
+                  draggable={false}
+                />
               </Link>
             </div>
           </div>

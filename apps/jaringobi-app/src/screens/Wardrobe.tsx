@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ACC_FILES_BY_SUB, ACC_SUBS, AccSub,
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_GROUPS, ShopCategory,
 } from '../lib/data';
@@ -26,20 +27,22 @@ export default function Wardrobe() {
   const u = useUser();
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
+  const [accSub, setAccSub] = useState<AccSub>('모자');
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
   const items = useMemo(() => {
     let pool: string[];
     if (cat === '전체') pool = [...SHOP_GROUPS.사치품, ...SHOP_GROUPS.티셔츠, ...SHOP_GROUPS.리모델링];
     else if (cat === '리모델링') pool = REMODEL_FILES[remodelSub];
+    else if (cat === '사치품') pool = ACC_FILES_BY_SUB[accSub];
     else pool = SHOP_GROUPS[cat];
     return pool.filter((src) => ownedSet.has(src));
-  }, [cat, remodelSub, ownedSet]);
+  }, [cat, remodelSub, accSub, ownedSet]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
       <div className="sticky top-0 z-10 bg-bg pb-3">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-3 border-b border-text/10">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
           <Link
             to="/main"
             aria-label="뒤로"
@@ -50,22 +53,22 @@ export default function Wardrobe() {
             <img
               src="/jarin/main_shop.png"
               alt="상점"
-              className="w-[58px] h-[58px] object-contain"
+              className="w-[44px] h-[44px] object-contain"
               draggable={false}
             />
           </Link>
         </header>
 
-        <RoomPreview equipped={u.equipped} className="mx-5 mt-4" />
+        <RoomPreview equipped={u.equipped} className="mx-5" />
 
-        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
+        <div className="px-5 mt-4 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
             const active = c === cat;
             return (
               <button
                 key={c}
                 onClick={() => setCat(c)}
-                className={`px-5 py-2 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors ${
+                className={`py-2 rounded-full text-[15px] font-bold text-center transition-colors ${
                   active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
                 }`}
               >
@@ -76,14 +79,33 @@ export default function Wardrobe() {
         </div>
 
         {cat === '리모델링' && (
-          <div className="px-5 mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="px-5 mt-2 grid grid-cols-5 gap-2">
             {REMODEL_SUBS.map((s) => {
               const active = s === remodelSub;
               return (
                 <button
                   key={s}
                   onClick={() => setRemodelSub(s)}
-                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
+                    active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {cat === '사치품' && (
+          <div className="px-5 mt-2 grid grid-cols-3 gap-2">
+            {ACC_SUBS.map((s) => {
+              const active = s === accSub;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setAccSub(s)}
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
                 >

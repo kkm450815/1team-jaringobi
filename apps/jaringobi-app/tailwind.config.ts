@@ -12,7 +12,7 @@ export default {
         pink: '#F49496',
       },
       fontFamily: {
-        sans: ['GangwonEduAll', 'Pretendard', 'Apple SD Gothic Neo', 'system-ui', 'sans-serif'],
+        sans: ['GangwonEducationModuche', 'Pretendard', 'Apple SD Gothic Neo', 'system-ui', 'sans-serif'],
       },
       borderRadius: { xl2: '20px' },
       boxShadow: {

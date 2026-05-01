@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
+import { useUser } from '../lib/userState';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -17,14 +19,17 @@ function iconUrl(key: string) {
 }
 
 export default function Main() {
+  const u = useUser();
   const [hearts, setHearts] = useState(3);
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
-  const [confirmed, setConfirmed] = useState<string[]>([]);
-  const [picks, setPicks] = useState<string[]>(['m2', 'm12', 'm13']);
-  const [successes, setSuccesses] = useState<string[]>([]);
+  const picks = u.missionPicks;
+  const confirmed = u.missionConfirmed;
+  const successes = u.missionSuccesses;
+  const setPicks = (v: string[] | ((prev: string[]) => string[])) =>
+    u.setMissionPicks(typeof v === 'function' ? v(u.missionPicks) : v);
   const [changingFor, setChangingFor] = useState<number | null>(null);
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
@@ -36,8 +41,8 @@ export default function Main() {
     [picks],
   );
   const savedToday = useMemo(
-    () => successes.reduce((sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0), 0),
-    [successes],
+    () => successes.reduce((sum, idx) => sum + (MISSIONS.find((m) => m.id === confirmed[idx])?.amount ?? 0), 0),
+    [successes, confirmed],
   );
 
   function deleteHeart() {
@@ -51,18 +56,16 @@ export default function Main() {
   }
 
   function confirmToday() {
-    setConfirmed([...picks]);
-    setSuccesses([]);
+    u.confirmMission();
     setMissionModal(null);
   }
 
-  function toggleSuccess(id: string) {
-    setSuccesses((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+  function toggleSuccess(idx: number) {
+    u.toggleMissionSuccess(idx);
   }
 
   function completeToday() {
-    setConfirmed([]);
-    setSuccesses([]);
+    u.resetTodayMission();
     setMissionModal(null);
   }
 
@@ -77,7 +80,7 @@ export default function Main() {
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-16 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-col items-center gap-1">
           <div className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
@@ -95,11 +98,11 @@ export default function Main() {
         </div>
 
         <p
-          aria-label="오늘의 목표"
+          aria-label="누적 저축액"
           style={{ top: 'calc(64px + (100% - 64px) / 2)' }}
           className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
         >
-          {dailyGoal.toLocaleString()}
+          {u.totalSaved.toLocaleString()}
         </p>
 
         <Link to="/mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
@@ -111,32 +114,26 @@ export default function Main() {
       </header>
 
       {/* 오늘의 절약미션 버튼 */}
-      <section className="px-10 pt-5 pb-3">
+      <section className="px-10 pt-8 pb-8">
         <button
           onClick={openMissionModal}
-          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
+          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition"
         >
           오늘의 절약미션
         </button>
       </section>
 
-      {/* 캐릭터 룸 */}
-      <section className="relative w-full">
-        <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
-        <img
-          src="/jarin/main_character.png"
-          alt="자린고비 캐릭터"
-          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[44%] object-contain pointer-events-none select-none"
-          draggable={false}
-        />
+      {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
+      <div className="relative w-full mt-2">
+        <RoomPreview equipped={u.equipped} framed={false} />
         <Link
           to="/shop"
           aria-label="상점"
-          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white/40 shadow-soft"
+          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-bg shadow-soft"
         >
-          <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
+          <img src="/jarin/main_shop.png" alt="상점" className="w-10 h-10 object-contain" />
         </Link>
-      </section>
+      </div>
 
       <div className="mt-auto"><BottomTabBar /></div>
 
@@ -183,23 +180,18 @@ export default function Main() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 패널 헤더 */}
-            <div className="relative h-7 mb-3">
-              {missionModal === 'change' && (
+            {missionModal !== 'change' && (
+              <div className="relative h-7 mb-3">
+                <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
+                  오늘의 절약 미션
+                </p>
                 <button
-                  onClick={() => { setChangingFor(null); setMissionModal('recommend'); }}
-                  aria-label="뒤로"
-                  className="absolute left-0 top-0 text-[26px] leading-none text-text/80"
-                >‹</button>
-              )}
-              <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
-                오늘의 절약 미션
-              </p>
-              <button
-                onClick={() => { setMissionModal(null); setChangingFor(null); }}
-                aria-label="닫기"
-                className="absolute right-0 top-0 text-[20px] leading-none text-text/70 font-bold"
-              >×</button>
-            </div>
+                  onClick={() => { setMissionModal(null); setChangingFor(null); }}
+                  aria-label="닫기"
+                  className="absolute right-0 top-0 text-[20px] leading-none text-text/70 font-bold"
+                >×</button>
+              </div>
+            )}
 
             {missionModal === 'recommend' && (
               <RecommendPanel
@@ -279,7 +271,7 @@ function RecommendPanel({
         </div>
         <button
           onClick={onConfirm}
-          className="mt-3 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+          className="mt-3 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
         >
           챌린지 확정하기
         </button>
@@ -344,8 +336,8 @@ function ReviewPanel({
   picks, successes, onToggle, savedToday, dailyGoal, onComplete,
 }: {
   picks: string[];
-  successes: string[];
-  onToggle: (id: string) => void;
+  successes: number[];
+  onToggle: (idx: number) => void;
   savedToday: number;
   dailyGoal: number;
   onComplete: () => void;
@@ -354,18 +346,18 @@ function ReviewPanel({
   return (
     <>
       <ul className="space-y-3">
-        {picks.map((id) => {
+        {picks.map((id, idx) => {
           const m = MISSIONS.find((x) => x.id === id)!;
-          const done = successes.includes(id);
+          const done = successes.includes(idx);
           return (
-            <li key={id} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
+            <li key={`${id}-${idx}`} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
               <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-bold text-text">{m.title}</p>
                 <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
               </div>
               <button
-                onClick={() => onToggle(id)}
+                onClick={() => onToggle(idx)}
                 aria-pressed={done}
                 className={`shrink-0 px-5 py-2 rounded-full text-[14px] font-bold transition ${
                   done ? 'bg-pink text-white' : 'bg-pink/40 text-white/90'
@@ -393,7 +385,7 @@ function ReviewPanel({
 
       <button
         onClick={onComplete}
-        className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3.5 text-[16px] active:scale-[.98]"
+        className="mt-4 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3.5 text-[16px] active:scale-[.98]"
       >
         챌린지 완료하기
       </button>
