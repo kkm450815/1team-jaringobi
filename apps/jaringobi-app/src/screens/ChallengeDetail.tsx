@@ -9,11 +9,18 @@ const PLANS: Record<string, string[]> = {
     '인증샷은 빈 도시락 + 영수증 OR 매장 외부 컷',
     '하루 끝, 절약한 금액을 자유 적금으로 자동 이체',
   ],
+  zero: [
+    '아침에 카드/지갑 두고 가볍게 외출하기',
+    '점심은 집에 있는 재료로 한 끼 해결',
+    '집에서 즐기는 루틴 - 유튜브 요리 영상, 도서관 전자책, 밀린 드라마 등 = 0원',
+    '하루 끝, 절약한 금액을 자유 적금으로 자동 이체',
+  ],
 };
 
 export default function ChallengeDetail() {
   const { id } = useParams();
   const m = MISSIONS.find((x) => x.id === id) ?? MISSIONS[0];
+  const plans = PLANS[m.iconKey] ?? PLANS.default;
 
   return (
     <main className="min-h-full pb-12 bg-grid-paper">
@@ -41,7 +48,7 @@ export default function ChallengeDetail() {
 
         <h3 className="mt-4 font-bold text-[15px]">실천 가이드</h3>
         <ul className="mt-2 space-y-1.5">
-          {PLANS.default.map((p) => (
+          {plans.map((p) => (
             <li key={p} className="flex gap-2 text-[13px]">
               <span className="text-accent font-bold">✔</span>
               <span>{p}</span>
