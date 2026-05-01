@@ -340,17 +340,57 @@ export const SHOP_ALL: string[] = [
   ...SHOP_GROUPS.리모델링,
 ];
 
-// 장착 시 동시 1개만 허용하기 위한 상위 카테고리 판별
+// 사치품 서브 카테고리: 모자 / 안경 / 소지품 — 각각 독립 슬롯이라 동시 착용 가능
+export type AccSub = '모자' | '안경' | '소지품';
+export const ACC_SUBS: AccSub[] = ['모자', '안경', '소지품'];
+
+// 사치품 파일별 서브 분류 (acc_fit 이미지 분석 기반)
+const ACC_HAT_NUMS = new Set([
+  1, 2, 3, 4, 5, 6, 7, 8, 9,
+  11, 12, 13, 14, 15, 16, 21,
+  49, 50, 51, 52, 53,
+  60, 61, 63, 64, 65, 66, 68,
+  71, 72, 74,
+  78, 79, 80, 81,
+]);
+const ACC_GLASSES_NUMS = new Set([
+  17, 18, 27, 28,
+  37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48,
+  55, 56, 67, 73, 75,
+]);
+
+function accNumOf(src: string): number | null {
+  const m = src.match(/acc_(?:shop|fit)_(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+export function accSubOf(src: string): AccSub {
+  const n = accNumOf(src);
+  if (n != null && ACC_HAT_NUMS.has(n)) return '모자';
+  if (n != null && ACC_GLASSES_NUMS.has(n)) return '안경';
+  return '소지품';
+}
+
+export const ACC_FILES_BY_SUB: Record<AccSub, string[]> = {
+  모자: SHOP_GROUPS.사치품.filter((s) => accSubOf(s) === '모자'),
+  안경: SHOP_GROUPS.사치품.filter((s) => accSubOf(s) === '안경'),
+  소지품: SHOP_GROUPS.사치품.filter((s) => accSubOf(s) === '소지품'),
+};
+
+// 장착 시 동시 1개만 허용하기 위한 상위 카테고리 판별 (UI 그룹용)
 export function topCategoryOf(src: string): Exclude<ShopCategory, '전체'> {
   if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
   if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
   return '리모델링';
 }
 
-// 장착 슬롯: 사치품/티셔츠/조명/소품/가구1/가구2/벽지 — 슬롯당 동시 1개씩만 장착 가능
-export type EquipSlot = '사치품' | '티셔츠' | '조명' | '소품' | '가구1' | '가구2' | '벽지';
+// 장착 슬롯: 사치품 3종(모자/안경/소지품) + 티셔츠 + 리모델링 5종 = 9슬롯, 슬롯당 1개씩 동시 장착
+export type EquipSlot =
+  | '모자' | '안경' | '소지품'
+  | '티셔츠'
+  | '조명' | '소품' | '가구1' | '가구2' | '벽지';
 export function equipSlotOf(src: string): EquipSlot {
-  if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
+  if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return accSubOf(src);
   if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
   if (src.startsWith('/shop/lamp/') || src.startsWith('/fit/lamp/')) return '조명';
   if (src.startsWith('/shop/left/') || src.startsWith('/fit/left/')) return '소품';

@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
+  ACC_FILES_BY_SUB, ACC_SUBS, AccSub,
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_GROUPS, ShopCategory,
 } from '../lib/data';
@@ -26,15 +27,17 @@ export default function Wardrobe() {
   const u = useUser();
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
+  const [accSub, setAccSub] = useState<AccSub>('모자');
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
   const items = useMemo(() => {
     let pool: string[];
     if (cat === '전체') pool = [...SHOP_GROUPS.사치품, ...SHOP_GROUPS.티셔츠, ...SHOP_GROUPS.리모델링];
     else if (cat === '리모델링') pool = REMODEL_FILES[remodelSub];
+    else if (cat === '사치품') pool = ACC_FILES_BY_SUB[accSub];
     else pool = SHOP_GROUPS[cat];
     return pool.filter((src) => ownedSet.has(src));
-  }, [cat, remodelSub, ownedSet]);
+  }, [cat, remodelSub, accSub, ownedSet]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
@@ -83,6 +86,25 @@ export default function Wardrobe() {
                 <button
                   key={s}
                   onClick={() => setRemodelSub(s)}
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
+                    active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
+                  }`}
+                >
+                  {s}
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {cat === '사치품' && (
+          <div className="px-5 mt-2 grid grid-cols-3 gap-2">
+            {ACC_SUBS.map((s) => {
+              const active = s === accSub;
+              return (
+                <button
+                  key={s}
+                  onClick={() => setAccSub(s)}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
