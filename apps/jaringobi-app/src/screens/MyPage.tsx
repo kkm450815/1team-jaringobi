@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fitSrc } from '../lib/data';
+import { Hex, Modal } from '../components/UI';
+import { TITLES, fitSrc } from '../lib/data';
 import { useUser } from '../lib/userState';
 
 const MAX_NICK = 10;
@@ -9,6 +10,9 @@ export default function MyPage() {
   const u = useUser();
   const [editing, setEditing] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
+  const [showTitles, setShowTitles] = useState(false);
+
+  const activeTitle = TITLES.find((t) => t.active)?.name ?? '편의점 미식가';
 
   function commitNick() {
     u.setNickname(nickDraft);
@@ -152,9 +156,14 @@ export default function MyPage() {
 
         {/* 하단 라벨들 */}
         <div className="mt-3 flex items-center justify-between">
-          <span className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5">
-            <span aria-hidden>🏅</span> 편의점 미식가
-          </span>
+          <button
+            type="button"
+            onClick={() => setShowTitles(true)}
+            aria-label="칭호 목록"
+            className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5 active:scale-[.98] transition"
+          >
+            <span aria-hidden>🏅</span> {activeTitle}
+          </button>
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
         </div>
 
@@ -186,6 +195,18 @@ export default function MyPage() {
           </ul>
         </div>
       </section>
+
+      {/* 칭호 목록 모달 */}
+      <Modal open={showTitles} onClose={() => setShowTitles(false)}>
+        <p className="font-bold text-[16px] mb-4 tracking-[2px]">칭호</p>
+        <div className="grid grid-cols-3 gap-3">
+          {TITLES.map((t) => (
+            <Hex key={t.id} locked={!t.got} active={t.active} color={t.active ? 'accent' : 'primary'}>
+              {t.name}
+            </Hex>
+          ))}
+        </div>
+      </Modal>
     </main>
   );
 }
