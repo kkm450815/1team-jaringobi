@@ -95,14 +95,14 @@ export default function Shop() {
           className="mx-5"
         />
 
-        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
+        <div className="px-5 mt-4 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
             const active = c === cat;
             return (
               <button
                 key={c}
                 onClick={() => setCat(c)}
-                className={`px-5 py-2 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors ${
+                className={`py-2 rounded-full text-[15px] font-bold text-center transition-colors ${
                   active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
                 }`}
               >
@@ -113,14 +113,14 @@ export default function Shop() {
         </div>
 
         {cat === '리모델링' && (
-          <div className="px-5 mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="px-5 mt-2 grid grid-cols-5 gap-2">
             {REMODEL_SUBS.map((s) => {
               const active = s === remodelSub;
               return (
                 <button
                   key={s}
                   onClick={() => setRemodelSub(s)}
-                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
                 >
