@@ -71,14 +71,13 @@ export default function MyPage() {
         {/* 프로필 영역 */}
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-1">
           <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative">
-            {/* 캐릭터를 메인/상점과 동일한 캔버스 스케일로 그려 어깨선까지만 보이게 (overflow-hidden) */}
+            {/* 캐릭터 + 장착 fit을 메인/상점과 동일한 캔버스 비율로 그려 어깨선까지 보이게 */}
             <img
               src="/jarin/main_character.png"
               alt={`${u.nickname} 캐릭터`}
-              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto"
+              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
               draggable={false}
             />
-            {/* 옷장에서 장착한 옷·사치품을 같은 스케일로 합성 */}
             {u.equipped
               .filter((s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'))
               .map((s) => (
@@ -86,7 +85,7 @@ export default function MyPage() {
                   key={s}
                   src={fitSrc(s)}
                   alt=""
-                  className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto pointer-events-none"
+                  className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
                   draggable={false}
                 />
               ))}
