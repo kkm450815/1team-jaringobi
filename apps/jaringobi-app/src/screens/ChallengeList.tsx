@@ -28,7 +28,7 @@ export default function ChallengeList() {
               key={c}
               onClick={() => setCat(c)}
               className={`flex items-center justify-center text-center py-2 rounded-full text-[13px] font-bold transition-colors ${
-                active ? 'bg-[#FFFFAD] text-text' : 'bg-primary/40 text-text/70'
+                active ? 'bg-accent text-[#FFFFAD]' : 'bg-primary/40 text-text/70'
               }`}
             >
               {CAT_LABEL[c]}
@@ -37,32 +37,31 @@ export default function ChallengeList() {
         })}
       </div>
 
-      {/* 챌린지 카드 리스트 */}
-      <ul className="px-5 mt-4 space-y-3">
+      {/* 챌린지 카드 리스트 (수다방 리스트와 동일 폭/사이즈) */}
+      <ul className="px-5 mt-4 pb-4 space-y-3">
         {items.map((m) => (
           <li key={m.id}>
             <Link
               to={`/challenges/${m.id}`}
-              className="relative flex items-stretch bg-white rounded-2xl shadow-soft overflow-hidden active:scale-[.99] transition"
+              className="relative block rounded-[22px] px-4 py-3 bg-white shadow-soft active:scale-[.99] transition overflow-hidden"
             >
-              {/* 아이콘 영역 */}
-              <div className="w-[128px] grid place-items-center bg-[#ABBCA2] shrink-0">
-                <img
-                  src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
-                  alt=""
-                  className="w-[88px] h-[88px] object-contain"
-                  onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
-                />
-              </div>
-
-              {/* 텍스트 영역 */}
-              <div className="flex-1 p-4 min-w-0 pr-16">
-                <p className="text-[20pt] font-bold text-[#514C44] leading-tight">
-                  {m.title}
-                </p>
-                <p className="mt-2 text-[16pt] text-[#514C44] leading-snug line-clamp-2">
-                  {m.intro}
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-[128px] h-[128px] grid place-items-center bg-[#ABBCA2] rounded-2xl shrink-0">
+                  <img
+                    src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
+                    alt=""
+                    className="w-[88px] h-[88px] object-contain scale-[1.4]"
+                    onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0 pr-12">
+                  <p className="font-bold text-[20px] leading-snug text-text">
+                    {m.title}
+                  </p>
+                  <p className="text-[18px] text-text/80 leading-snug mt-1.5 line-clamp-2">
+                    {m.intro}
+                  </p>
+                </div>
               </div>
 
               {/* 난이도 뱃지 (우상단) */}
