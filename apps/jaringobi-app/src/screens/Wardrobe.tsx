@@ -56,7 +56,7 @@ export default function Wardrobe() {
           </Link>
         </header>
 
-        <RoomPreview equipped={u.equipped} className="mx-5 mt-4" />
+        <RoomPreview equipped={u.equipped} className="mx-5" />
 
         <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
           {CATS.map((c) => {
