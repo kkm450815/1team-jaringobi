@@ -26,7 +26,9 @@ export default function Main() {
 
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
   const [confirmed, setConfirmed] = useState<string[]>([]);
-  const [picks, setPicks] = useState<string[]>(['m2', 'm12', 'm13']);
+  const picks = u.missionPicks;
+  const setPicks = (v: string[] | ((prev: string[]) => string[])) =>
+    u.setMissionPicks(typeof v === 'function' ? v(u.missionPicks) : v);
   const [successes, setSuccesses] = useState<string[]>([]);
   const [changingFor, setChangingFor] = useState<number | null>(null);
   const [filter, setFilter] = useState<MissionCategory>('식비');

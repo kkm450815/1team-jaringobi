@@ -20,6 +20,7 @@ export interface UserState {
   coins: number;        // 보유 코인
   owned: string[];      // 보유 중인 상점 아이템 src 목록
   equipped: string[];   // 현재 장착(즐겨찾기) src 목록 (owned의 부분집합)
+  missionPicks: string[]; // 오늘의 챌린지 미션 ID 목록 (Main↔Camera 공유)
   settings: UserSettings;
 }
 
@@ -33,6 +34,7 @@ const DEFAULT: UserState = {
   coins: 180,
   owned: ['/shop/clothes/clo_shop_01.png'],
   equipped: [],
+  missionPicks: ['m2', 'm12', 'm13'],
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -53,6 +55,7 @@ function read(): UserState {
       photos: parsed.photos ?? {},
       owned: parsed.owned ?? DEFAULT.owned,
       equipped: parsed.equipped ?? DEFAULT.equipped,
+      missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
     };
   } catch {
     return DEFAULT;
@@ -144,7 +147,15 @@ export function useUser() {
     });
   }, []);
 
-  return { ...state, setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip };
+  const setMissionPicks = useCallback((picks: string[]) => {
+    setState((s) => {
+      const next = { ...s, missionPicks: picks };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  return { ...state, setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip, setMissionPicks };
 }
 
 // 카메라 사진을 작게 리사이즈해서 dataURL 반환 (localStorage 용량 절약)
