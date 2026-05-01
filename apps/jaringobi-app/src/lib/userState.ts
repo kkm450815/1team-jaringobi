@@ -20,6 +20,9 @@ export interface UserState {
   coins: number;        // 보유 코인
   owned: string[];      // 보유 중인 상점 아이템 src 목록
   equipped: string[];   // 현재 장착(즐겨찾기) src 목록 (owned의 부분집합)
+  missionPicks: string[]; // 오늘의 챌린지 미션 ID 목록 (Main↔Camera 공유)
+  missionConfirmed: string[]; // 챌린지 확정 후 스냅샷 (비어있으면 미확정 상태)
+  missionSuccesses: number[]; // 확정 미션 중 성공 표시한 슬롯 인덱스(중복 미션 대응)
   settings: UserSettings;
 }
 
@@ -33,6 +36,9 @@ const DEFAULT: UserState = {
   coins: 180,
   owned: ['/shop/clothes/clo_shop_01.png'],
   equipped: [],
+  missionPicks: ['m2', 'm12', 'm13'],
+  missionConfirmed: [],
+  missionSuccesses: [],
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -53,6 +59,11 @@ function read(): UserState {
       photos: parsed.photos ?? {},
       owned: parsed.owned ?? DEFAULT.owned,
       equipped: parsed.equipped ?? DEFAULT.equipped,
+      missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
+      missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
+      missionSuccesses: (parsed.missionSuccesses ?? DEFAULT.missionSuccesses).filter(
+        (v): v is number => typeof v === 'number',
+      ),
     };
   } catch {
     return DEFAULT;
@@ -93,26 +104,17 @@ export function useUser() {
   const savePhoto = useCallback((dataUrl: string) => {
     setState((s) => {
       const day = s.day;
-      const newPhotos = { ...s.photos, [day]: dataUrl };
       const reward = Math.round(s.goal / 30); // 일평균 목표
-      // 30일 끝 → 다음 회차로
-      if (day >= 30) {
-        return {
-          ...s,
-          photos: {},
-          day: 1,
-          cycle: s.cycle + 1,
-          totalSaved: s.totalSaved + reward,
-          coins: s.coins + 100,
-        };
-      }
-      return {
+      const next: UserState = {
         ...s,
-        photos: newPhotos,
-        day: day + 1,
+        photos: { ...s.photos, [day]: dataUrl },
+        day: Math.min(30, day + 1), // 30일에서 멈춤 (다음 회차는 별도 트리거)
         totalSaved: s.totalSaved + reward,
         coins: s.coins + 100,
       };
+      // 즉시 영속화: 직후 nav() 등으로 mount되는 다른 컴포넌트가 최신 상태를 읽도록
+      write(next);
+      return next;
     });
   }, []);
 
@@ -128,7 +130,9 @@ export function useUser() {
       if (s.owned.includes(src)) return s;
       if (s.coins < price) return s;
       ok = true;
-      return { ...s, coins: s.coins - price, owned: [...s.owned, src] };
+      const next = { ...s, coins: s.coins - price, owned: [...s.owned, src] };
+      write(next);
+      return next;
     });
     return ok;
   }, []);
@@ -138,16 +142,65 @@ export function useUser() {
   const toggleEquip = useCallback((src: string) => {
     setState((s) => {
       if (!s.owned.includes(src)) return s;
+      let next: UserState;
       if (s.equipped.includes(src)) {
-        return { ...s, equipped: s.equipped.filter((x) => x !== src) };
+        next = { ...s, equipped: s.equipped.filter((x) => x !== src) };
+      } else {
+        const slot = equipSlotOf(src);
+        const others = s.equipped.filter((x) => equipSlotOf(x) !== slot);
+        next = { ...s, equipped: [...others, src] };
       }
-      const slot = equipSlotOf(src);
-      const others = s.equipped.filter((x) => equipSlotOf(x) !== slot);
-      return { ...s, equipped: [...others, src] };
+      write(next);
+      return next;
     });
   }, []);
 
-  return { ...state, setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip };
+  const setMissionPicks = useCallback((picks: string[]) => {
+    setState((s) => {
+      const next = { ...s, missionPicks: picks };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // 챌린지 확정: missionPicks 스냅샷을 missionConfirmed로 복사, successes 초기화
+  const confirmMission = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, missionConfirmed: [...s.missionPicks], missionSuccesses: [] };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // review 화면에서 성공 토글 (슬롯 인덱스 기반: 동일 미션 중복 픽 시 각 슬롯 독립)
+  const toggleMissionSuccess = useCallback((idx: number) => {
+    setState((s) => {
+      const has = s.missionSuccesses.includes(idx);
+      const next = {
+        ...s,
+        missionSuccesses: has
+          ? s.missionSuccesses.filter((x) => x !== idx)
+          : [...s.missionSuccesses, idx],
+      };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // 오늘 챌린지 완료/리셋: confirmed/successes 초기화
+  const resetTodayMission = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, missionConfirmed: [], missionSuccesses: [] };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  return {
+    ...state,
+    setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip,
+    setMissionPicks, confirmMission, toggleMissionSuccess, resetTodayMission,
+  };
 }
 
 // 카메라 사진을 작게 리사이즈해서 dataURL 반환 (localStorage 용량 절약)

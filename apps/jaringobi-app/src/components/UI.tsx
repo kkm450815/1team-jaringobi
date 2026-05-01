@@ -95,14 +95,18 @@ export function TopBar({
   back, title, right,
 }: { back?: string; title?: ReactNode; right?: ReactNode }) {
   return (
-    <header className="px-5 pt-12 pb-3 flex items-center justify-between">
-      <div className="w-8">
+    <header className="px-5 pt-10 pb-3 flex items-center justify-between">
+      <div className="w-14">
         {back && (
-          <Link to={back} aria-label="뒤로" className="text-[22px] leading-none">‹</Link>
+          <Link
+            to={back}
+            aria-label="뒤로"
+            className="w-14 h-14 grid place-items-center text-text/80 -ml-2"
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
         )}
       </div>
       <h1 className="font-bold text-[16px] flex items-center gap-2">{title}</h1>
-      <div className="w-8 text-right">{right}</div>
+      <div className="w-14 text-right">{right}</div>
     </header>
   );
 }

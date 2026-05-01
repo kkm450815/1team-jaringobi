@@ -39,33 +39,33 @@ export default function Wardrobe() {
   return (
     <main className="min-h-full pb-10 bg-bg">
       <div className="sticky top-0 z-10 bg-bg pb-3">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-3 border-b border-text/10">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
           <Link
             to="/main"
             aria-label="뒤로"
-            className="w-11 h-11 grid place-items-center text-[34px] leading-none text-text/80 -ml-1"
-          >‹</Link>
+            className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
           <h1 className="text-[24px] font-bold tracking-[6px] text-text">MY</h1>
           <Link to="/shop" aria-label="상점" className="justify-self-end pr-1">
             <img
               src="/jarin/main_shop.png"
               alt="상점"
-              className="w-[58px] h-[58px] object-contain"
+              className="w-[44px] h-[44px] object-contain"
               draggable={false}
             />
           </Link>
         </header>
 
-        <RoomPreview equipped={u.equipped} className="mx-5 mt-4" />
+        <RoomPreview equipped={u.equipped} className="mx-5" />
 
-        <div className="px-5 mt-4 flex gap-2.5 overflow-x-auto no-scrollbar">
+        <div className="px-5 mt-4 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
             const active = c === cat;
             return (
               <button
                 key={c}
                 onClick={() => setCat(c)}
-                className={`px-5 py-2 rounded-full text-[15px] font-bold whitespace-nowrap transition-colors ${
+                className={`py-2 rounded-full text-[15px] font-bold text-center transition-colors ${
                   active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
                 }`}
               >
@@ -76,14 +76,14 @@ export default function Wardrobe() {
         </div>
 
         {cat === '리모델링' && (
-          <div className="px-5 mt-2 flex gap-2 overflow-x-auto no-scrollbar">
+          <div className="px-5 mt-2 grid grid-cols-5 gap-2">
             {REMODEL_SUBS.map((s) => {
               const active = s === remodelSub;
               return (
                 <button
                   key={s}
                   onClick={() => setRemodelSub(s)}
-                  className={`px-3.5 py-1.5 rounded-full text-[13px] font-bold whitespace-nowrap transition-colors ${
+                  className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
                 >

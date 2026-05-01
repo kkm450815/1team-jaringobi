@@ -1,7 +1,9 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
+import { useUser } from '../lib/userState';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -17,14 +19,17 @@ function iconUrl(key: string) {
 }
 
 export default function Main() {
+  const u = useUser();
   const [hearts, setHearts] = useState(3);
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
-  const [confirmed, setConfirmed] = useState<string[]>([]);
-  const [picks, setPicks] = useState<string[]>(['m2', 'm12', 'm13']);
-  const [successes, setSuccesses] = useState<number[]>([]);
+  const picks = u.missionPicks;
+  const confirmed = u.missionConfirmed;
+  const successes = u.missionSuccesses;
+  const setPicks = (v: string[] | ((prev: string[]) => string[])) =>
+    u.setMissionPicks(typeof v === 'function' ? v(u.missionPicks) : v);
   const [changingFor, setChangingFor] = useState<number | null>(null);
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
@@ -51,18 +56,16 @@ export default function Main() {
   }
 
   function confirmToday() {
-    setConfirmed([...picks]);
-    setSuccesses([]);
+    u.confirmMission();
     setMissionModal(null);
   }
 
   function toggleSuccess(idx: number) {
-    setSuccesses((s) => (s.includes(idx) ? s.filter((x) => x !== idx) : [...s, idx]));
+    u.toggleMissionSuccess(idx);
   }
 
   function completeToday() {
-    setConfirmed([]);
-    setSuccesses([]);
+    u.resetTodayMission();
     setMissionModal(null);
   }
 
@@ -95,11 +98,11 @@ export default function Main() {
         </div>
 
         <p
-          aria-label="오늘의 목표"
+          aria-label="누적 저축액"
           style={{ top: 'calc(64px + (100% - 64px) / 2)' }}
           className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
         >
-          {dailyGoal.toLocaleString()}
+          {u.totalSaved.toLocaleString()}
         </p>
 
         <Link to="/mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
@@ -111,7 +114,7 @@ export default function Main() {
       </header>
 
       {/* 오늘의 절약미션 버튼 */}
-      <section className="px-10 pt-5 pb-3">
+      <section className="px-10 pt-8 pb-8">
         <button
           onClick={openMissionModal}
           className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition"
@@ -120,23 +123,17 @@ export default function Main() {
         </button>
       </section>
 
-      {/* 캐릭터 룸 */}
-      <section className="relative w-full">
-        <img src="/jarin/main_ room.png" alt="캐릭터 룸" className="w-full h-auto block select-none" draggable={false} />
-        <img
-          src="/jarin/main_character.png"
-          alt="자린고비 캐릭터"
-          className="absolute left-1/2 -translate-x-1/2 bottom-[6%] w-[44%] object-contain pointer-events-none select-none"
-          draggable={false}
-        />
+      {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
+      <div className="relative w-full mt-2">
+        <RoomPreview equipped={u.equipped} framed={false} />
         <Link
           to="/shop"
           aria-label="상점"
-          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white/40 shadow-soft"
+          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-bg shadow-soft"
         >
-          <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
+          <img src="/jarin/main_shop.png" alt="상점" className="w-10 h-10 object-contain" />
         </Link>
-      </section>
+      </div>
 
       <div className="mt-auto"><BottomTabBar /></div>
 
