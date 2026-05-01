@@ -7,32 +7,226 @@ export interface Mission {
   id: string;
   category: MissionCategory;
   title: string;
-  amount: number; // 원
+  amount: number; // 원 (수익형은 + 표시 의미)
   difficulty: Difficulty;
   iconKey: string; // /jarin/chall/icon/chall_list_<key>.png
+  intro: string;   // 한 줄 요약 (리스트 카드용)
+  tips: string[];  // 실천 팁 불릿
+  authMethod: string; // 인증 방법
 }
 
 export const MISSIONS: Mission[] = [
-  { id: 'm1', category: '식비', title: '편의점 안 가기',     amount: 5000,  difficulty: '쉬움',   iconKey: 'cvs' },
-  { id: 'm2', category: '식비', title: '카페 음료 참기',     amount: 5000,  difficulty: '쉬움',   iconKey: 'coffee' },
-  { id: 'm3', category: '식비', title: '배달 음식 끊기',     amount: 12000, difficulty: '보통',   iconKey: 'delivery' },
-  { id: 'm4', category: '식비', title: '집밥 직접 해먹기',   amount: 8000,  difficulty: '보통',   iconKey: 'receipe' },
-  { id: 'm5', category: '식비', title: '저녁 굶기',         amount: 10000, difficulty: '어려움', iconKey: 'dinner' },
-  { id: 'm6', category: '여가', title: '문화생활 한 번 참기', amount: 15000, difficulty: '보통',   iconKey: 'culture' },
-  { id: 'm7', category: '여가', title: '술자리 빠지기',     amount: 30000, difficulty: '어려움', iconKey: 'drink' },
-  { id: 'm8', category: '여가', title: '미용실 미루기',     amount: 20000, difficulty: '보통',   iconKey: 'hair' },
-  { id: 'm9', category: '여가', title: '도서관 이용',       amount: 5000,  difficulty: '쉬움',   iconKey: 'library' },
-  { id: 'm10', category: '충동', title: '충동 쇼핑 참기',   amount: 25000, difficulty: '어려움', iconKey: 'shopping' },
-  { id: 'm11', category: '충동', title: '폰 약정 안 바꾸기', amount: 10000, difficulty: '보통',   iconKey: 'phone' },
-  { id: 'm12', category: '충동', title: '택시 대신 대중교통', amount: 8000, difficulty: '쉬움',   iconKey: 'taxi' },
-  { id: 'm13', category: '충동', title: '기프티콘 안 사기',  amount: 5000,  difficulty: '쉬움',   iconKey: 'gifticon' },
-  { id: 'm14', category: '통장', title: '잔돈 저금하기',     amount: 3000,  difficulty: '쉬움',   iconKey: 'save' },
-  { id: 'm15', category: '통장', title: '당근 정리해서 팔기', amount: 10000, difficulty: '보통',   iconKey: 'carrot' },
-  { id: 'm16', category: '통장', title: '알바비 모으기',     amount: 50000, difficulty: '어려움', iconKey: 'alba' },
-  { id: 'm17', category: '통장', title: '무지출 데이',       amount: 15000, difficulty: '어려움', iconKey: 'zero' },
-  { id: 'm18', category: '통장', title: '공구 직접 수리',     amount: 12000, difficulty: '보통',   iconKey: 'repair' },
-  { id: 'm19', category: '통장', title: '친구에게 빌리기',   amount: 8000,  difficulty: '쉬움',   iconKey: 'friend' },
-  { id: 'm20', category: '여가', title: '레저활동 미루기',   amount: 20000, difficulty: '보통',   iconKey: 'leisure' },
+  {
+    id: 'm1', category: '식비', title: '편의점 최고의 조합', amount: 5000, difficulty: '쉬움', iconKey: 'cvs',
+    intro: '편의점에서도 영양 챙기면서 저렴하게 먹을 수 있어요.',
+    tips: [
+      '든든한 한 끼 — 삼각김밥 2개 + 컵라면/국 = 3,500원 이하',
+      '단백질 조합 — 닭가슴살 + 삶은 계란 + 두유 = 4,000원 이하',
+      'PB 상품 활용 — CU 헤이루, GS25 유어스, 세븐셀렉트는 20~30% 저렴',
+      '1+1·2+1 행사는 매주 화요일 변경, 행사 상품 위주로',
+    ],
+    authMethod: '편의점 영수증 또는 조합 사진 업로드',
+  },
+  {
+    id: 'm2', category: '식비', title: '커피 참기', amount: 4000, difficulty: '쉬움', iconKey: 'coffee',
+    intro: '매일 4,000원짜리 카페 대신 집에서 만들어 보세요.',
+    tips: [
+      '텀블러에 일회용 커피 스틱을 들고 나가기',
+      '드립백·캡슐 한 박스(약 5,000원)로 일주일치 — 하루 700원',
+      '밖에서 꼭 마셔야 한다면 편의점 아이스커피(1,800원)',
+    ],
+    authMethod: '텀블러 사진 또는 집에서 만든 커피 사진',
+  },
+  {
+    id: 'm3', category: '식비', title: '배달 금지', amount: 15000, difficulty: '어려움', iconKey: 'delivery',
+    intro: '배달앱 켜는 순간 최소 15,000원이 나가요.',
+    tips: [
+      '배달앱을 홈화면 폴더 안에 숨기기 — 충동 주문 줄이기',
+      '방문 포장으로 대체 — 배달비 4,000~6,000원 절약',
+      '주 1회 냉장고 사진 찍어두고 “이걸로 뭘 해먹지?” 먼저 생각하기',
+      '마감 할인 플랫폼 — 라스트오더, 요기요 라스트콜',
+    ],
+    authMethod: '직접 요리한 음식 사진 또는 포장 영수증 업로드',
+  },
+  {
+    id: 'm4', category: '식비', title: '싼 레시피 챌린지', amount: 30000, difficulty: '보통', iconKey: 'receipe',
+    intro: '1인분 3,000원 이하 레시피로 도전해요.',
+    tips: [
+      '계란 한 판(약 6,000원)으로 5일 반찬 해결',
+      '두부 한 모(1,500원) — 두부조림·된장찌개·순두부',
+      '냉동 야채 활용 — 신선보다 저렴하고 오래감',
+    ],
+    authMethod: '완성된 요리 사진 + 재료비 영수증 업로드',
+  },
+  {
+    id: 'm5', category: '식비', title: '저녁 줄이기', amount: 20000, difficulty: '쉬움', iconKey: 'dinner',
+    intro: '저녁만 바꿔도 일주일에 4만원이 남아요.',
+    tips: [
+      '비빔밥 데이 — 냉장고 남은 반찬 모아 비비기',
+      '마트 PB 상품 공략 — 노브랜드, 시그니처 등 30~40% 저렴',
+      '저녁 8~9시 마감 할인 — 당일 식품 30~50% 할인',
+    ],
+    authMethod: '저녁 식사 사진 또는 마트 영수증 업로드',
+  },
+  {
+    id: 'm6', category: '여가', title: '무료 문화생활 루틴', amount: 30000, difficulty: '쉬움', iconKey: 'culture',
+    intro: '매달 문화생활에 쓰던 돈, 이번 달은 0원으로.',
+    tips: [
+      '네이버·카카오 무료 웹툰·웹소설 — 기다리면 무료',
+      '유튜브로 클래식·뮤지컬 넘버·스탠드업 코미디 시청',
+      '서울문화포털(culture.seoul.go.kr)에서 주말 무료 행사 확인',
+    ],
+    authMethod: '관람 인증 사진 또는 행사 참여 캡처',
+  },
+  {
+    id: 'm7', category: '여가', title: '혼술 챌린지', amount: 20000, difficulty: '보통', iconKey: 'drink',
+    intro: '술집 한 번 4만원, 집에서는 4,000원.',
+    tips: [
+      '편의점 혼술 세팅 — 맥주 2캔 + 안주 = 5,000원 이하',
+      '약속 전 막차 시간 미리 확인 — 자연스럽게 2·3차 컷',
+      '홈파티로 전환 — 1인당 5,000~10,000원',
+      '월별 술자리 횟수·지출 기록 → 보이면 줄게 됨',
+    ],
+    authMethod: '집 혼술 사진 또는 막차 전 귀가 지하철 인증',
+  },
+  {
+    id: 'm8', category: '여가', title: '미용실 체험단', amount: 20000, difficulty: '보통', iconKey: 'hair',
+    intro: '체험단으로 무료 또는 저렴하게 시술받기.',
+    tips: [
+      '네이버 엑스퍼트·인플루언서 체험단에서 미용실 모집 글 찾기',
+      '강남·홍대 신규 오픈 미용실은 포트폴리오용 모델 모집',
+      '인스타·블로그 후기 조건이 대부분, 팔로워 적어도 성실하면 OK',
+      '카카오헤어샵·네이버 예약 신규 고객 50% 할인 노리기',
+    ],
+    authMethod: '체험단 선정 화면 또는 시술 후기 게시 캡처',
+  },
+  {
+    id: 'm9', category: '여가', title: '도서관·무료 콘텐츠', amount: 30000, difficulty: '쉬움', iconKey: 'library',
+    intro: '돈 내고 배우던 것을 무료로 대체해요.',
+    tips: [
+      '국립도서관·서울도서관 전자책 앱 — 신간 포함 수만 권 무료',
+      '구청 평생학습관 — 영어·요가·요리 강좌 1만원 이하',
+      '시립·구립 박물관 상설전 무료 (월 1회 방문 루틴)',
+    ],
+    authMethod: '도서관 대출 기록 또는 강좌 수강 인증 사진',
+  },
+  {
+    id: 'm10', category: '충동', title: '쇼핑 참기', amount: 100000, difficulty: '어려움', iconKey: 'shopping',
+    intro: '장바구니에 담아두면 살 것 같지만, 지우고 나면 꼭 필요하지 않았던 경우가 많아요.',
+    tips: [
+      '장바구니 삭제 인증 — 쿠팡·무신사·지그재그 비운 화면 캡처',
+      '48시간 룰 — 사고 싶은 게 생기면 담아두고 48시간 뒤 재확인',
+      '알림 차단 — 쇼핑앱 푸시 끄거나 홈화면 뒤 페이지로',
+      '대신할 행동 찾기 — 산책·유튜브로 욕구 전환',
+    ],
+    authMethod: '장바구니 삭제 전/후 화면 캡처 업로드',
+  },
+  {
+    id: 'm11', category: '충동', title: '통신비 절약', amount: 20000, difficulty: '보통', iconKey: 'phone',
+    intro: '통신비는 한 번만 바꿔도 매달 절약돼요.',
+    tips: [
+      '알뜰폰허브(mvno.kr)에서 데이터 사용량 기반 비교 — 월 8,000~15,000원 요금제',
+      '가족 결합 해지 검토 — 알뜰폰으로도 결합 유지 가능 여부 확인',
+      '번호 이동 이벤트 — 분기별 공시지원금/추가 할인',
+    ],
+    authMethod: '새 요금제 가입 완료 화면 캡처',
+  },
+  {
+    id: 'm12', category: '충동', title: '택시 금지 (2주)', amount: 30000, difficulty: '보통', iconKey: 'taxi',
+    intro: '심야 택시 한 번에 15,000~30,000원, 막차만 챙겨도 절약.',
+    tips: [
+      '약속 장소 기준 막차 시간을 캘린더 알람으로 등록',
+      '카풀 앱으로 비용 분담',
+      '약속 장소를 대중교통 편한 곳으로 잡기',
+      '택시 부르기 전 “이게 정말 필요한가?” 5초만 생각',
+    ],
+    authMethod: '대중교통 탑승 기록 또는 막차 귀가 인증 사진',
+  },
+  {
+    id: 'm13', category: '통장', title: '기프티콘 팔기', amount: 10000, difficulty: '쉬움', iconKey: 'gifticon',
+    intro: '유효기간 지나기 전에 현금으로 바꿔요.',
+    tips: [
+      '카카오톡 선물함의 잊고 있던 기프티콘부터 정리',
+      '니콘내콘·기프티스타에서 80~95% 시세로 현금화',
+      '부분 사용 후 잔액 판매도 가능',
+      '캐시워크·토스 행운복권 같은 앱테크 병행',
+    ],
+    authMethod: '기프티콘 판매 완료 화면 캡처',
+  },
+  {
+    id: 'm14', category: '통장', title: '갑자기 5만원 저금', amount: 50000, difficulty: '쉬움', iconKey: 'save',
+    intro: '지금 당장 5만원을 봉투에 넣어두는 챌린지.',
+    tips: [
+      '현금 바인더 만들기 — 봉투에 금액별 보관, 줄어드는 감각이 강함',
+      '월급 다음 날 자동이체로 5만원 → 저축 통장',
+      '안 쓰는 OTT·구독 하나만 끊어도 6개월에 10만원',
+    ],
+    authMethod: '현금 봉투 또는 저축 이체 완료 화면 캡처',
+  },
+  {
+    id: 'm15', category: '통장', title: '당근마켓 챌린지', amount: 50000, difficulty: '쉬움', iconKey: 'carrot',
+    intro: '안 쓰는 물건 5개만 팔아도 5만원은 쉽게 나와요.',
+    tips: [
+      '1년 넘게 안 쓴 것·후회한 것·사이즈 안 맞는 옷부터 뒤지기',
+      '밝은 곳·흰 배경 사진은 판매 속도 2배',
+      '같은 물건 시세 확인 후 살짝 낮게 부르면 당일 판매',
+      '매월 11일 나눔의 날 이벤트 활용',
+    ],
+    authMethod: '판매 완료된 거래 후기 캡처',
+  },
+  {
+    id: 'm16', category: '통장', title: '단기 알바', amount: 50000, difficulty: '어려움', iconKey: 'alba',
+    intro: '짜투리 시간 단기 알바로 추가 수입.',
+    tips: [
+      '알바몬·알바천국 당일 알바 — 행사·서빙·포장 6~8만원',
+      '크몽·숨고로 재능 판매 — 번역·디자인·과외',
+      '쿠팡이츠·배민 라이더 주말 2~3시간 = 3~5만원',
+      '마크로밀 엠브레인·오픈서베이 패널 — 설문 1건당 500~3,000P',
+    ],
+    authMethod: '급여 입금 내역 또는 플랫폼 수익 화면 캡처',
+  },
+  {
+    id: 'm17', category: '통장', title: '무지출 데이', amount: 30000, difficulty: '보통', iconKey: 'zero',
+    intro: '하루를 완전히 0원으로 보내는 챌린지.',
+    tips: [
+      '전날 밤 결정 + 식재료 미리 준비 (즉흥 어렵)',
+      '동네 공원·하천 산책 + 팟캐스트 = 2시간 거뜬',
+      '유튜브 요리 영상·도서관 전자책·밀린 드라마 = 0원',
+    ],
+    authMethod: '당일 카드·계좌 지출 내역 캡처',
+  },
+  {
+    id: 'm18', category: '통장', title: '물건 고치기', amount: 20000, difficulty: '보통', iconKey: 'repair',
+    intro: '버리고 새로 사기 전에 고치면 꽤 아껴요.',
+    tips: [
+      '유튜브 수리 영상 먼저 검색 — 이어폰 단선·지퍼·밑창 다 나와요',
+      '수선집 활용 — 옷 수선 3,000~8,000원',
+      '다이소 수리 용품 — 접착제·보수 테이프·복원제 1,000~2,000원',
+      '못 고칠 것 같으면 “부품용”으로 당근에 올려보기',
+    ],
+    authMethod: '수리 전/후 사진 업로드',
+  },
+  {
+    id: 'm19', category: '여가', title: '친구 금지', amount: 100000, difficulty: '어려움', iconKey: 'friend',
+    intro: '약속을 줄이면 교통비·식비·술값이 한꺼번에 줄어요.',
+    tips: [
+      '약속 잡기 전 이번 달 여가비 잔액부터 확인',
+      '혼자 즐기는 취미 개발 — 독서·러닝·요리',
+      '주말 계획을 무지출 데이·도서관 방문으로 미리 채우기',
+    ],
+    authMethod: '주간 지출 내역 캡처',
+  },
+  {
+    id: 'm20', category: '여가', title: '한 달 여가비 5만원 쓰기', amount: 50000, difficulty: '어려움', iconKey: 'leisure',
+    intro: '놀건 놀아야지. 근데 한 달에 딱 5만원 안에서.',
+    tips: [
+      '여가비 전용 봉투 만들기 — 봉투에서만 꺼내 쓰기',
+      '이번 달 “꼭” 하고 싶은 활동 1가지만, 나머지는 무료 대체',
+      '인터파크·티켓베이로 50% 이하 할인 티켓 노리기',
+      '통신사 여가생활 쿠폰 — 수요 적어 상대적으로 받기 쉬움',
+    ],
+    authMethod: '월말 여가 지출 내역 캡처 + 무료/할인 여가 인증 사진',
+  },
 ];
 
 export const TALK_ROOMS = [
