@@ -43,8 +43,8 @@ export default function Wardrobe() {
           <Link
             to="/main"
             aria-label="뒤로"
-            className="w-11 h-11 grid place-items-center text-[34px] leading-none text-text/80 -ml-1"
-          >‹</Link>
+            className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
           <h1 className="text-[24px] font-bold tracking-[6px] text-text">MY</h1>
           <Link to="/shop" aria-label="상점" className="justify-self-end pr-1">
             <img

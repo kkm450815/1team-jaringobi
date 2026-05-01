@@ -24,18 +24,17 @@ export default function MyPage() {
         <Link
           to="/main"
           aria-label="뒤로"
-          className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
-        >‹</Link>
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
+        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
         <div className="flex justify-center">
-          <div className="flex flex-col items-center">
-            <div className="w-[2px] h-5 bg-[#8a6b3a]/60" />
+          <Link to="/main" aria-label="홈으로">
             <img
               src="/jarin/logo_nobg.png"
               alt="자린고비"
-              className="w-[72px] h-[72px] object-contain -mt-2"
+              className="w-[72px] h-[72px] object-contain"
               draggable={false}
             />
-          </div>
+          </Link>
         </div>
         <Link
           to="/settings"

@@ -80,7 +80,7 @@ export default function Main() {
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-16 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-col items-center gap-1">
           <div className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
@@ -117,7 +117,7 @@ export default function Main() {
       <section className="px-10 pt-8 pb-8">
         <button
           onClick={openMissionModal}
-          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
+          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition"
         >
           오늘의 절약미션
         </button>
@@ -180,23 +180,18 @@ export default function Main() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 패널 헤더 */}
-            <div className="relative h-7 mb-3">
-              {missionModal === 'change' && (
+            {missionModal !== 'change' && (
+              <div className="relative h-7 mb-3">
+                <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
+                  오늘의 절약 미션
+                </p>
                 <button
-                  onClick={() => { setChangingFor(null); setMissionModal('recommend'); }}
-                  aria-label="뒤로"
-                  className="absolute left-0 top-0 text-[26px] leading-none text-text/80"
-                >‹</button>
-              )}
-              <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
-                오늘의 절약 미션
-              </p>
-              <button
-                onClick={() => { setMissionModal(null); setChangingFor(null); }}
-                aria-label="닫기"
-                className="absolute right-0 top-0 text-[20px] leading-none text-text/70 font-bold"
-              >×</button>
-            </div>
+                  onClick={() => { setMissionModal(null); setChangingFor(null); }}
+                  aria-label="닫기"
+                  className="absolute right-0 top-0 text-[20px] leading-none text-text/70 font-bold"
+                >×</button>
+              </div>
+            )}
 
             {missionModal === 'recommend' && (
               <RecommendPanel
@@ -276,7 +271,7 @@ function RecommendPanel({
         </div>
         <button
           onClick={onConfirm}
-          className="mt-3 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+          className="mt-3 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
         >
           챌린지 확정하기
         </button>
@@ -390,7 +385,7 @@ function ReviewPanel({
 
       <button
         onClick={onComplete}
-        className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3.5 text-[16px] active:scale-[.98]"
+        className="mt-4 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3.5 text-[16px] active:scale-[.98]"
       >
         챌린지 완료하기
       </button>

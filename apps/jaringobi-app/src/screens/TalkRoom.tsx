@@ -49,27 +49,24 @@ export default function TalkRoom() {
           <Link
             to="/talk"
             aria-label="뒤로"
-            className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
-          >
-            ‹
-          </Link>
+            className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
           <div className="flex justify-center">
-            <div className="flex flex-col items-center">
-              <div className="w-[2px] h-6 bg-[#8a6b3a]/60" />
+            <Link to="/main" aria-label="홈으로">
               <img
                 src="/jarin/logo_nobg.png"
                 alt={room.title}
-                className="w-[96px] h-[96px] object-contain -mt-2"
+                className="w-[96px] h-[96px] object-contain"
                 draggable={false}
               />
-            </div>
+            </Link>
           </div>
           <Link
             to="/bookmarks"
             aria-label="북마크 보관함"
             className="absolute right-4 top-10 p-1"
           >
-            <BookmarkIcon filled size={30} />
+            <BookmarkIcon filled size={34} />
           </Link>
         </header>
 

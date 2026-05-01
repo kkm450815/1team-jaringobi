@@ -44,8 +44,8 @@ export default function Camera() {
         <Link
           to="/main"
           aria-label="뒤로"
-          className="absolute left-3 top-9 w-11 h-11 grid place-items-center text-[36px] leading-none text-text/80"
-        >‹</Link>
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold"
+        ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
         <h1 className="text-center font-bold text-[18px] tracking-[3px] text-text">
           {u.day}일차 인증하기
         </h1>
