@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor,
@@ -30,6 +30,7 @@ function CoinIcon({ size = 18 }: { size?: number }) {
 
 export default function Shop() {
   const u = useUser();
+  const navigate = useNavigate();
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
   const [selected, setSelected] = useState<string | null>(null);
@@ -76,11 +77,12 @@ export default function Shop() {
       {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
       <div className="sticky top-0 z-10 bg-bg pb-3">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
-          <Link
-            to="/main"
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
             aria-label="뒤로"
             className="w-14 h-14 grid place-items-center text-[44px] leading-none text-text/80 font-bold -ml-1"
-          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
+          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></button>
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
             <span className="text-[22px] font-bold text-text">{u.coins}P</span>
