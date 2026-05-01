@@ -131,7 +131,7 @@ export default function Main() {
           aria-label="상점"
           className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white shadow-soft"
         >
-          <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
+          <img src="/jarin/main_shop.png" alt="상점" className="w-10 h-10 object-contain" />
         </Link>
       </div>
 
