@@ -93,26 +93,17 @@ export function useUser() {
   const savePhoto = useCallback((dataUrl: string) => {
     setState((s) => {
       const day = s.day;
-      const newPhotos = { ...s.photos, [day]: dataUrl };
       const reward = Math.round(s.goal / 30); // 일평균 목표
-      // 30일 끝 → 다음 회차로
-      if (day >= 30) {
-        return {
-          ...s,
-          photos: {},
-          day: 1,
-          cycle: s.cycle + 1,
-          totalSaved: s.totalSaved + reward,
-          coins: s.coins + 100,
-        };
-      }
-      return {
+      const next: UserState = {
         ...s,
-        photos: newPhotos,
-        day: day + 1,
+        photos: { ...s.photos, [day]: dataUrl },
+        day: Math.min(30, day + 1), // 30일에서 멈춤 (다음 회차는 별도 트리거)
         totalSaved: s.totalSaved + reward,
         coins: s.coins + 100,
       };
+      // 즉시 영속화: 직후 nav() 등으로 mount되는 다른 컴포넌트가 최신 상태를 읽도록
+      write(next);
+      return next;
     });
   }, []);
 
@@ -128,7 +119,9 @@ export function useUser() {
       if (s.owned.includes(src)) return s;
       if (s.coins < price) return s;
       ok = true;
-      return { ...s, coins: s.coins - price, owned: [...s.owned, src] };
+      const next = { ...s, coins: s.coins - price, owned: [...s.owned, src] };
+      write(next);
+      return next;
     });
     return ok;
   }, []);
@@ -138,12 +131,16 @@ export function useUser() {
   const toggleEquip = useCallback((src: string) => {
     setState((s) => {
       if (!s.owned.includes(src)) return s;
+      let next: UserState;
       if (s.equipped.includes(src)) {
-        return { ...s, equipped: s.equipped.filter((x) => x !== src) };
+        next = { ...s, equipped: s.equipped.filter((x) => x !== src) };
+      } else {
+        const slot = equipSlotOf(src);
+        const others = s.equipped.filter((x) => equipSlotOf(x) !== slot);
+        next = { ...s, equipped: [...others, src] };
       }
-      const slot = equipSlotOf(src);
-      const others = s.equipped.filter((x) => equipSlotOf(x) !== slot);
-      return { ...s, equipped: [...others, src] };
+      write(next);
+      return next;
     });
   }, []);
 

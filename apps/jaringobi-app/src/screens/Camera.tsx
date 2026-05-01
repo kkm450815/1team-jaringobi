@@ -24,9 +24,10 @@ export default function Camera() {
   }
 
   function submit() {
-    if (!preview) return;
+    if (!preview || busy) return;
     u.savePhoto(preview);
-    nav('/mypage');
+    // 작은 지연으로 setState 사이클 완료 보장 후 이동
+    setTimeout(() => nav('/mypage'), 30);
   }
 
   return (
@@ -79,7 +80,7 @@ export default function Camera() {
           disabled={!preview || busy}
           className="mt-3 w-full bg-accent text-white font-bold rounded-full py-3.5 text-[15px] active:scale-[.98] disabled:opacity-40"
         >
-          {busy ? '준비 중…' : '인증 완료 (+10,000원 / +100P)'}
+          {busy ? '준비 중…' : `인증 완료 (+${Math.round(u.goal / 30).toLocaleString()}원 / +100P)`}
         </button>
 
         <p className="mt-3 text-[12px] text-text/60 text-center leading-relaxed">
