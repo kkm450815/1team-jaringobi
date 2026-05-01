@@ -21,6 +21,8 @@ export interface UserState {
   owned: string[];      // 보유 중인 상점 아이템 src 목록
   equipped: string[];   // 현재 장착(즐겨찾기) src 목록 (owned의 부분집합)
   missionPicks: string[]; // 오늘의 챌린지 미션 ID 목록 (Main↔Camera 공유)
+  missionConfirmed: string[]; // 챌린지 확정 후 스냅샷 (비어있으면 미확정 상태)
+  missionSuccesses: string[]; // 확정 미션 중 성공 표시한 ID
   settings: UserSettings;
 }
 
@@ -35,6 +37,8 @@ const DEFAULT: UserState = {
   owned: ['/shop/clothes/clo_shop_01.png'],
   equipped: [],
   missionPicks: ['m2', 'm12', 'm13'],
+  missionConfirmed: [],
+  missionSuccesses: [],
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -56,6 +60,8 @@ function read(): UserState {
       owned: parsed.owned ?? DEFAULT.owned,
       equipped: parsed.equipped ?? DEFAULT.equipped,
       missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
+      missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
+      missionSuccesses: parsed.missionSuccesses ?? DEFAULT.missionSuccesses,
     };
   } catch {
     return DEFAULT;
@@ -155,7 +161,44 @@ export function useUser() {
     });
   }, []);
 
-  return { ...state, setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip, setMissionPicks };
+  // 챌린지 확정: missionPicks 스냅샷을 missionConfirmed로 복사, successes 초기화
+  const confirmMission = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, missionConfirmed: [...s.missionPicks], missionSuccesses: [] };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // review 화면에서 성공 토글
+  const toggleMissionSuccess = useCallback((id: string) => {
+    setState((s) => {
+      const has = s.missionSuccesses.includes(id);
+      const next = {
+        ...s,
+        missionSuccesses: has
+          ? s.missionSuccesses.filter((x) => x !== id)
+          : [...s.missionSuccesses, id],
+      };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // 오늘 챌린지 완료/리셋: confirmed/successes 초기화
+  const resetTodayMission = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, missionConfirmed: [], missionSuccesses: [] };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  return {
+    ...state,
+    setNickname, setSetting, savePhoto, update, reset, buy, toggleEquip,
+    setMissionPicks, confirmMission, toggleMissionSuccess, resetTodayMission,
+  };
 }
 
 // 카메라 사진을 작게 리사이즈해서 dataURL 반환 (localStorage 용량 절약)
