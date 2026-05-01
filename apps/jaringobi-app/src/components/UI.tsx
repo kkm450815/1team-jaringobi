@@ -1,5 +1,33 @@
 import { ButtonHTMLAttributes, ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+
+/* ---------------- BackButton (히스토리 뒤로가기) ---------------- */
+export function BackButton({
+  className = '',
+  fallback = '/main',
+}: {
+  className?: string;
+  fallback?: string;
+}) {
+  const nav = useNavigate();
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        // 히스토리가 없으면 fallback 경로로
+        const state = window.history.state as { idx?: number } | null;
+        if (state && (state.idx ?? 0) > 0) nav(-1);
+        else nav(fallback);
+      }}
+      aria-label="뒤로"
+      className={className || 'w-14 h-14 grid place-items-center text-text/80 -ml-2'}
+    >
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <polyline points="15 6 9 12 15 18" />
+      </svg>
+    </button>
+  );
+}
 
 /* ---------------- Button ---------------- */
 type Variant = 'primary' | 'accent' | 'ghost' | 'pink' | 'white';
@@ -97,13 +125,7 @@ export function TopBar({
   return (
     <header className="px-5 pt-10 pb-3 flex items-center justify-between">
       <div className="w-14">
-        {back && (
-          <Link
-            to={back}
-            aria-label="뒤로"
-            className="w-14 h-14 grid place-items-center text-text/80 -ml-2"
-          ><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden><polyline points="15 6 9 12 15 18" /></svg></Link>
-        )}
+        {back && <BackButton fallback={back} />}
       </div>
       <h1 className="font-bold text-[16px] flex items-center gap-2">{title}</h1>
       <div className="w-14 text-right">{right}</div>
