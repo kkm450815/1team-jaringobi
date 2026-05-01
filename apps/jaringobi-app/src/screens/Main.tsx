@@ -114,7 +114,7 @@ export default function Main() {
       </header>
 
       {/* 오늘의 절약미션 버튼 */}
-      <section className="px-10 pt-5 pb-3">
+      <section className="px-10 pt-8 pb-8">
         <button
           onClick={openMissionModal}
           className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[15px] font-bold shadow-soft active:scale-[.98] transition"
@@ -124,12 +124,12 @@ export default function Main() {
       </section>
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
-      <div className="relative w-full">
+      <div className="relative w-full mt-2">
         <RoomPreview equipped={u.equipped} framed={false} />
         <Link
           to="/shop"
           aria-label="상점"
-          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white/40 shadow-soft"
+          className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-white shadow-soft"
         >
           <img src="/jarin/main_shop.png" alt="상점" className="w-9 h-9 object-contain" />
         </Link>
