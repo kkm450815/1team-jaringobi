@@ -1,25 +1,28 @@
 import { useState } from 'react';
 import { EquipSlot, equipSlotOf, fitSrc } from '../lib/data';
 
-// 캐릭터 캔버스/렌더 기준값. 사치품·티셔츠 fit이 캐릭터와 같은 픽셀 스케일로 그려지도록 동기화.
+// 캐릭터 캔버스/렌더 기준값. 사치품·티셔츠 fit이 캐릭터와 같은 픽셀 스케일 + 같은 중심점으로 그려지도록 동기화.
 const CHAR_CANVAS_H = 458;
-const CHAR_HEIGHT_PCT = 58; // 캐릭터 표시 높이(룸 대비 %)
+const CHAR_HEIGHT_PCT = 58;          // 캐릭터 표시 높이(룸 대비 %)
+const CHAR_BOTTOM_PCT = 18;          // 캐릭터 bottom (룸 대비 %)
+const CHAR_CENTER_PCT = CHAR_BOTTOM_PCT + CHAR_HEIGHT_PCT / 2; // 캐릭터 세로 중심 = 47%
 
 /**
  * 사치품·티셔츠 같은 캐릭터-정렬 fit 이미지.
- * 자연 캔버스 높이를 읽어 캐릭터와 같은 픽셀 스케일로 렌더 (h % = naturalH/458 * 58).
- * 캔버스 높이가 458 초과면 캐릭터 위/아래로 자연스럽게 뻗어나감.
+ * 자연 캔버스 높이를 읽어 캐릭터와 같은 픽셀 스케일로 렌더하고,
+ * 캐릭터의 세로 중심에 fit 이미지의 세로 중심을 맞춤 (캔버스가 458보다 크면 위/아래 균등 확장).
  */
 function CharFitImage({ src }: { src: string }) {
   const [naturalH, setNaturalH] = useState<number | null>(null);
   const heightPct = naturalH ? (naturalH / CHAR_CANVAS_H) * CHAR_HEIGHT_PCT : CHAR_HEIGHT_PCT;
+  const bottomPct = CHAR_CENTER_PCT - heightPct / 2;
   return (
     <img
       src={src}
       alt=""
       onLoad={(e) => setNaturalH(e.currentTarget.naturalHeight)}
-      className="absolute left-1/2 bottom-[18%] -translate-x-1/2 w-auto max-w-none object-contain pointer-events-none select-none"
-      style={{ height: `${heightPct}%` }}
+      className="absolute left-1/2 -translate-x-1/2 w-auto max-w-none object-contain pointer-events-none select-none"
+      style={{ height: `${heightPct}%`, bottom: `${bottomPct}%` }}
       draggable={false}
     />
   );
