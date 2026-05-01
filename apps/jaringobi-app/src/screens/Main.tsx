@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
@@ -20,6 +20,7 @@ function iconUrl(key: string) {
 
 export default function Main() {
   const u = useUser();
+  const nav = useNavigate();
   const [hearts, setHearts] = useState(3);
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
@@ -67,6 +68,7 @@ export default function Main() {
   function completeToday() {
     u.resetTodayMission();
     setMissionModal(null);
+    nav('/camera'); // 챌린지 완료 → 카메라로 바로 이동해서 인증 사진 업로드
   }
 
   function pickMission(missionId: string) {
