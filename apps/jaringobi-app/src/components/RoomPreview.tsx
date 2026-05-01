@@ -1,4 +1,29 @@
+import { useState } from 'react';
 import { EquipSlot, equipSlotOf, fitSrc } from '../lib/data';
+
+// 캐릭터 캔버스/렌더 기준값. 사치품·티셔츠 fit이 캐릭터와 같은 픽셀 스케일로 그려지도록 동기화.
+const CHAR_CANVAS_H = 458;
+const CHAR_HEIGHT_PCT = 58; // 캐릭터 표시 높이(룸 대비 %)
+
+/**
+ * 사치품·티셔츠 같은 캐릭터-정렬 fit 이미지.
+ * 자연 캔버스 높이를 읽어 캐릭터와 같은 픽셀 스케일로 렌더 (h % = naturalH/458 * 58).
+ * 캔버스 높이가 458 초과면 캐릭터 위/아래로 자연스럽게 뻗어나감.
+ */
+function CharFitImage({ src }: { src: string }) {
+  const [naturalH, setNaturalH] = useState<number | null>(null);
+  const heightPct = naturalH ? (naturalH / CHAR_CANVAS_H) * CHAR_HEIGHT_PCT : CHAR_HEIGHT_PCT;
+  return (
+    <img
+      src={src}
+      alt=""
+      onLoad={(e) => setNaturalH(e.currentTarget.naturalHeight)}
+      className="absolute left-1/2 bottom-[18%] -translate-x-1/2 w-auto max-w-none object-contain pointer-events-none select-none"
+      style={{ height: `${heightPct}%` }}
+      draggable={false}
+    />
+  );
+}
 
 /**
  * 미리보기 룸: 캐릭터 + 장착/미리보기 fit 이미지를 슬롯별 정확한 위치/크기/z-order로 렌더.
@@ -29,11 +54,6 @@ export function RoomPreview({
   const front = pick('가구1');
   const clothes = pick('티셔츠');
   const acc = pick('사치품');
-
-  // 사치품/티셔츠는 캐릭터와 같은 좌/높이를 사용하되 w-auto로 캔버스 자연 폭 유지
-  // (캐릭터보다 넓은 캔버스(예: 도구가 옆으로 뻗는 사치품)도 그대로 렌더)
-  const charPosClass =
-    'absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none';
 
   return (
     <section
@@ -75,19 +95,15 @@ export function RoomPreview({
         />
       )}
 
-      {/* 캐릭터 + 옷 + 사치품 (모두 같은 좌표/높이, 캔버스 자연 폭) */}
+      {/* 캐릭터 + 옷 + 사치품 (모두 같은 좌표/캐릭터 픽셀 스케일) */}
       <img
         src="/jarin/main_character.png"
         alt="캐릭터"
-        className={charPosClass}
+        className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
         draggable={false}
       />
-      {clothes && (
-        <img src={fitSrc(clothes)} alt="" className={charPosClass} draggable={false} />
-      )}
-      {acc && (
-        <img src={fitSrc(acc)} alt="" className={charPosClass} draggable={false} />
-      )}
+      {clothes && <CharFitImage key={clothes} src={fitSrc(clothes)} />}
+      {acc && <CharFitImage key={acc} src={fitSrc(acc)} />}
 
       {/* 가구1 - 좌하단(방 좌측 시작점), 캐릭터보다 앞 (z-10), Y 30px 위로 */}
       {front && (
