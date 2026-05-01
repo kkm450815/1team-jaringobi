@@ -25,11 +25,11 @@ export default function Main() {
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
-  const [confirmed, setConfirmed] = useState<string[]>([]);
   const picks = u.missionPicks;
+  const confirmed = u.missionConfirmed;
+  const successes = u.missionSuccesses;
   const setPicks = (v: string[] | ((prev: string[]) => string[])) =>
     u.setMissionPicks(typeof v === 'function' ? v(u.missionPicks) : v);
-  const [successes, setSuccesses] = useState<string[]>([]);
   const [changingFor, setChangingFor] = useState<number | null>(null);
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
@@ -56,18 +56,16 @@ export default function Main() {
   }
 
   function confirmToday() {
-    setConfirmed([...picks]);
-    setSuccesses([]);
+    u.confirmMission();
     setMissionModal(null);
   }
 
   function toggleSuccess(id: string) {
-    setSuccesses((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    u.toggleMissionSuccess(id);
   }
 
   function completeToday() {
-    setConfirmed([]);
-    setSuccesses([]);
+    u.resetTodayMission();
     setMissionModal(null);
   }
 
