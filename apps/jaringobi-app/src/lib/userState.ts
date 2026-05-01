@@ -22,7 +22,7 @@ export interface UserState {
   equipped: string[];   // 현재 장착(즐겨찾기) src 목록 (owned의 부분집합)
   missionPicks: string[]; // 오늘의 챌린지 미션 ID 목록 (Main↔Camera 공유)
   missionConfirmed: string[]; // 챌린지 확정 후 스냅샷 (비어있으면 미확정 상태)
-  missionSuccesses: string[]; // 확정 미션 중 성공 표시한 ID
+  missionSuccesses: number[]; // 확정 미션 중 성공 표시한 슬롯 인덱스(중복 미션 대응)
   settings: UserSettings;
 }
 
@@ -61,7 +61,9 @@ function read(): UserState {
       equipped: parsed.equipped ?? DEFAULT.equipped,
       missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
       missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
-      missionSuccesses: parsed.missionSuccesses ?? DEFAULT.missionSuccesses,
+      missionSuccesses: (parsed.missionSuccesses ?? DEFAULT.missionSuccesses).filter(
+        (v): v is number => typeof v === 'number',
+      ),
     };
   } catch {
     return DEFAULT;
@@ -170,15 +172,15 @@ export function useUser() {
     });
   }, []);
 
-  // review 화면에서 성공 토글
-  const toggleMissionSuccess = useCallback((id: string) => {
+  // review 화면에서 성공 토글 (슬롯 인덱스 기반: 동일 미션 중복 픽 시 각 슬롯 독립)
+  const toggleMissionSuccess = useCallback((idx: number) => {
     setState((s) => {
-      const has = s.missionSuccesses.includes(id);
+      const has = s.missionSuccesses.includes(idx);
       const next = {
         ...s,
         missionSuccesses: has
-          ? s.missionSuccesses.filter((x) => x !== id)
-          : [...s.missionSuccesses, id],
+          ? s.missionSuccesses.filter((x) => x !== idx)
+          : [...s.missionSuccesses, idx],
       };
       write(next);
       return next;
