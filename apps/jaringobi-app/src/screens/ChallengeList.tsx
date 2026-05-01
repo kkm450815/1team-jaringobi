@@ -18,8 +18,10 @@ export default function ChallengeList() {
           <button
             key={c}
             onClick={() => setCat(c)}
-            className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
-              cat === c ? 'bg-accent text-white' : 'bg-white text-text/70'
+            className={`h-9 rounded-full text-[13px] font-bold flex items-center justify-center transition-colors ${
+              cat === c
+                ? 'bg-[#FFFFAD] text-[#514C44] shadow-soft'
+                : 'bg-white text-text/70'
             }`}
           >{c} 절약</button>
         ))}
@@ -30,28 +32,30 @@ export default function ChallengeList() {
           <li key={m.id}>
             <Link
               to={`/challenges/${m.id}`}
-              className="flex items-stretch bg-white rounded-2xl shadow-soft overflow-hidden active:scale-[.99] transition"
+              className="relative flex items-stretch bg-white rounded-2xl shadow-soft overflow-hidden active:scale-[.99] transition"
             >
-              <div className="w-20 grid place-items-center bg-bg shrink-0">
+              <div className="w-24 grid place-items-center bg-[#ABBCA2] shrink-0 rounded-2xl">
                 <img
                   src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
                   alt=""
-                  className="w-12 h-12 object-contain"
+                  className="w-[72px] h-[72px] object-contain"
                   onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
                 />
               </div>
-              <div className="flex-1 p-3 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="font-bold text-[15px] text-text truncate">{m.title}</p>
-                  <Tag color="pink">{m.difficulty}</Tag>
-                </div>
-                <p className="text-[12px] text-text/65 mt-1 line-clamp-2 leading-snug">
+              <div className="flex-1 p-3 pr-12 min-w-0 relative">
+                <p className="font-bold text-[20pt] text-[#514C44] truncate leading-tight">
+                  {m.title}
+                </p>
+                <p className="text-[16pt] text-[#514C44] mt-2 line-clamp-2 leading-snug">
                   {m.intro}
                 </p>
-                <p className="text-[12px] text-accent font-bold mt-1.5">
-                  +{m.amount.toLocaleString()}원 · 바로가기 →
-                </p>
               </div>
+              <span className="absolute top-3 right-3">
+                <Tag color="pink">{m.difficulty}</Tag>
+              </span>
+              <span className="absolute bottom-3 right-3 text-[#514C44] text-lg font-bold">
+                →
+              </span>
             </Link>
           </li>
         ))}
