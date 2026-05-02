@@ -33,7 +33,7 @@ export default function Main() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [hearts, setHearts] = useState(3);
+  const hearts = u.hearts;
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
@@ -47,7 +47,8 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const isConfirmed = confirmed.length > 0;
-  const dDay = 30 - confirmed.length;
+  // D-day: 30일 챌린지의 남은 일수. day=1이면 D-30, day=30이면 D-1, 회차 종료 후 day=1로 리셋되며 다시 D-30
+  const dDay = Math.max(0, 31 - u.day);
   const dailyGoal = 10_000;
   const pickedAmount = useMemo(
     () => picks.reduce((sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0), 0),
@@ -59,7 +60,7 @@ export default function Main() {
   );
 
   function deleteHeart() {
-    if (pendingHeartIdx !== null) setHearts((h) => Math.max(0, h - 1));
+    if (pendingHeartIdx !== null) u.loseHeart();
     setShowHeartModal(false);
     setPendingHeartIdx(null);
   }

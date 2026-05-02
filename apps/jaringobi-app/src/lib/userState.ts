@@ -19,6 +19,7 @@ export interface UserState {
   nickname: string;
   cycle: number;
   day: number;
+  hearts: number; // 양심 하트 (0..3) — 회차 시작 시 3 복구
   photos: Record<number, string>;
   totalSaved: number;
   goal: number;
@@ -38,10 +39,14 @@ export interface UserState {
   settings: UserSettings;
 }
 
+const MAX_HEARTS = 3;
+const CYCLE_DAYS = 30;
+
 const DEFAULT: UserState = {
   nickname: '자린이',
   cycle: 1,
   day: 1,
+  hearts: MAX_HEARTS,
   photos: {},
   totalSaved: 10_000,
   goal: 300_000,
@@ -83,6 +88,7 @@ function read(): UserState {
       ),
 
       activeTitleId: parsed.activeTitleId ?? DEFAULT.activeTitleId,
+      hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
     return DEFAULT;
@@ -128,6 +134,13 @@ export function useUser() {
     [],
   );
 
+  // 인증 사진 저장 → 보상(원/포인트) 계산해서 반환 (Camera 축하 팝업용).
+  // 보상 규칙:
+  //  · 노말(goal=300_000): 일평균 = goal/30 = 1만원 고정
+  //  · 하드(goal>=1_000_000): 사용자가 확정한 missionConfirmed 미션 합계만큼 적립 (없으면 picks 합계)
+  // 회차 종료(day===30 인증):
+  //  · cycle++, day=1, photos={}, hearts=3 복구
+  //  · cycleEnded=true 반환해 호출자가 "회차 완료" 축하 표시 가능
   const savePhoto = useCallback((dataUrl: string) => {
     const s = state;
     const isHard = s.goal >= 1_000_000;
@@ -138,26 +151,55 @@ export function useUser() {
       : Math.round(s.goal / 30);
 
     const coins = 100;
+    const isCycleEnd = s.day >= CYCLE_DAYS;
 
     setState((cur) => {
       const day = cur.day;
-
-      const next: UserState = {
-        ...cur,
-        photos: { ...cur.photos, [day]: dataUrl },
-        day: Math.min(30, day + 1),
-        totalSaved: cur.totalSaved + reward,
-        coins: cur.coins + coins,
-        missionConfirmed: [],
-        missionSuccesses: [],
-      };
-
+      const photosWithToday = { ...cur.photos, [day]: dataUrl };
+      const next: UserState = isCycleEnd
+        ? {
+            ...cur,
+            photos: {}, // 회차 종료 → 캘린더 초기화
+            day: 1,
+            cycle: cur.cycle + 1,
+            hearts: MAX_HEARTS, // 새 회차 양심 복구
+            totalSaved: cur.totalSaved + reward,
+            coins: cur.coins + coins,
+            missionConfirmed: [],
+            missionSuccesses: [],
+          }
+        : {
+            ...cur,
+            photos: photosWithToday,
+            day: day + 1,
+            totalSaved: cur.totalSaved + reward,
+            coins: cur.coins + coins,
+            missionConfirmed: [],
+            missionSuccesses: [],
+          };
       write(next);
       return next;
     });
-
-    return { reward, coins };
+    return { reward, coins, cycleEnded: isCycleEnd };
   }, [state]);
+
+  // 양심 1개 차감 (사용자가 ♥ 누르고 확인 모달에서 삭제 누른 경우)
+  const loseHeart = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, hearts: Math.max(0, s.hearts - 1) };
+      write(next);
+      return next;
+    });
+  }, []);
+
+  // 양심 전체 복구 (회차 시작/리셋 등)
+  const restoreHearts = useCallback(() => {
+    setState((s) => {
+      const next = { ...s, hearts: MAX_HEARTS };
+      write(next);
+      return next;
+    });
+  }, []);
 
   const reset = useCallback(() => {
     localStorage.removeItem(KEY);
@@ -275,6 +317,8 @@ export function useUser() {
     confirmMission,
     toggleMissionSuccess,
     resetTodayMission,
+    loseHeart,
+    restoreHearts,
   };
 }
 

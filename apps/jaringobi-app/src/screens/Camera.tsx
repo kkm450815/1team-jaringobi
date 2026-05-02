@@ -13,7 +13,7 @@ export default function Camera() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reward, setReward] = useState<{ saved: number; coins: number } | null>(null);
+  const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
   const u = useUser();
 
   // 하드 모드(goal>=100만): picks 합계, 노말: goal/30
@@ -45,7 +45,7 @@ export default function Camera() {
   function submit() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
-    setReward({ saved: r.reward, coins: r.coins });
+    setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
   }
 
   function closeRewardAndContinue() {
@@ -152,8 +152,13 @@ export default function Camera() {
               CONGRATULATIONS
             </p>
             <p className="mt-2 text-[18px] font-bold text-text">
-              오늘의 챌린지 인증 완료!
+              {reward.cycleEnded ? '🎉 30일 챌린지 완주!' : '오늘의 챌린지 인증 완료!'}
             </p>
+            {reward.cycleEnded && (
+              <p className="mt-1 text-[12px] text-text/65 leading-relaxed">
+                새 회차가 시작됩니다. 양심 ♥♥♥도 다시 채워졌어요.
+              </p>
+            )}
             <div className="mt-5 bg-white rounded-2xl py-4 px-3 shadow-soft">
               <p className="text-[12px] text-text/60">오늘 절약한 금액</p>
               <p className="mt-1 text-[26px] font-bold text-text">
