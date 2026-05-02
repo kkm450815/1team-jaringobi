@@ -80,8 +80,8 @@ export default function Shop() {
 
   return (
     <main className="min-h-full pb-10 bg-bg">
-      {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
-      <div className="sticky top-0 z-10 bg-bg pb-3">
+      {/* 헤더만 sticky (top-0) */}
+      <div className="sticky top-0 z-20 bg-bg">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
           <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" fallback="/main" />
           <div className="flex items-center gap-2">
@@ -97,14 +97,18 @@ export default function Shop() {
             />
           </Link>
         </header>
+      </div>
 
-        <RoomPreview
-          equipped={u.equipped}
-          extra={selected ? [selected] : []}
-          className="mx-5"
-        />
+      {/* 룸 미리보기 — 함께 스크롤 (원래 크기 mx-5) */}
+      <RoomPreview
+        equipped={u.equipped}
+        extra={selected ? [selected] : []}
+        className="mx-5"
+      />
 
-        <div className="px-5 mt-4 grid grid-cols-4 gap-2.5">
+      {/* 카테고리 + 서브 + CTA — 헤더 아래에 sticky (헤더 약 108px) */}
+      <div className="sticky top-[108px] z-10 bg-bg pt-4 pb-3">
+        <div className="px-5 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
             const active = c === cat;
             return (
@@ -159,7 +163,6 @@ export default function Shop() {
           </div>
         )}
 
-        {/* 미보유 아이템 미리보기 시 구매 CTA (sticky 영역 안쪽 - 항상 상단에 노출) */}
         {showBuyCta && (
           <div className="px-5 mt-3 flex items-center gap-2">
             <div className="flex-1 min-w-0 flex items-center gap-2">
