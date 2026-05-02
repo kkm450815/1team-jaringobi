@@ -54,8 +54,8 @@ export default function Main() {
     [picks],
   );
   const savedToday = useMemo(
-    () => successes.reduce((sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0), 0),
-    [successes],
+    () => successes.reduce((sum, idx) => sum + (MISSIONS.find((m) => m.id === confirmed[idx])?.amount ?? 0), 0),
+    [successes, confirmed],
   );
 
   function deleteHeart() {
@@ -73,8 +73,8 @@ export default function Main() {
     setMissionModal(null);
   }
 
-  function toggleSuccess(id: string) {
-    u.toggleMissionSuccess(id);
+  function toggleSuccess(idx: number) {
+    u.toggleMissionSuccess(idx);
   }
 
   function completeToday() {
@@ -351,8 +351,8 @@ function ReviewPanel({
   picks, successes, onToggle, savedToday, dailyGoal, onComplete,
 }: {
   picks: string[];
-  successes: string[];
-  onToggle: (id: string) => void;
+  successes: number[];
+  onToggle: (idx: number) => void;
   savedToday: number;
   dailyGoal: number;
   onComplete: () => void;
@@ -361,18 +361,18 @@ function ReviewPanel({
   return (
     <>
       <ul className="space-y-3">
-        {picks.map((id) => {
+        {picks.map((id, idx) => {
           const m = MISSIONS.find((x) => x.id === id)!;
-          const done = successes.includes(id);
+          const done = successes.includes(idx);
           return (
-            <li key={id} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
+            <li key={`${id}-${idx}`} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
               <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-[15px] font-bold text-text">{m.title}</p>
                 <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
               </div>
               <button
-                onClick={() => onToggle(id)}
+                onClick={() => onToggle(idx)}
                 aria-pressed={done}
                 className={`shrink-0 px-5 py-2 rounded-full text-[14px] font-bold transition ${
                   done ? 'bg-pink text-white' : 'bg-pink/40 text-white/90'

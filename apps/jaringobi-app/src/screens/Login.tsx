@@ -73,7 +73,7 @@ export default function Login() {
             type={showPw ? 'text' : 'password'}
             placeholder="비밀번호"
             required
-            className="w-full bg-white/70 rounded-full px-5 py-4 outline-none text-[14px] text-text placeholder:text-text/70 placeholder:font-medium pr-12 text-center"
+            className="w-full bg-white/70 rounded-full py-4 outline-none text-[14px] text-text placeholder:text-text/70 placeholder:font-medium pl-12 pr-12 text-center"
           />
           <button
             type="button"
