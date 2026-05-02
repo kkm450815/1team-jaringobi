@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { downscaleImage, useUser } from '../lib/userState';
+import { playSuccessSfx, vibrate } from '../lib/feedback';
 
 function iconUrl(key: string) {
   return `/jarin/chall/icon/chall_list_${key}.png`;
@@ -46,6 +47,8 @@ export default function Camera() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
     setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
+    if (u.settings.sound) playSuccessSfx();
+    if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
   }
 
   function closeRewardAndContinue() {

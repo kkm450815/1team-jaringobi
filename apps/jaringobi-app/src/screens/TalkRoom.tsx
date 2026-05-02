@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ME_NICK, TALK_POSTS, TALK_ROOMS, TalkPost } from '../lib/data';
+import { ME_NICK, TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
+import { useTalkPosts } from '../lib/useTalkPosts';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -26,19 +27,15 @@ function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number })
 export default function TalkRoom() {
   const { id } = useParams();
   const room = TALK_ROOMS.find((r) => r.id === id) ?? TALK_ROOMS[0];
-  const seed = useMemo(() => TALK_POSTS.filter((p) => p.roomId === room.id), [room.id]);
 
-  const [posts, setPosts] = useState<TalkPost[]>(seed);
+  const { posts, addPost } = useTalkPosts(room.id);
   const [input, setInput] = useState('');
   const { has, toggle } = useBookmarks();
 
   function send() {
     const body = input.trim();
     if (!body) return;
-    setPosts((p) => [
-      { id: crypto.randomUUID(), roomId: room.id, nick: ME_NICK, body },
-      ...p,
-    ]);
+    addPost({ id: crypto.randomUUID(), roomId: room.id, nick: ME_NICK, body });
     setInput('');
   }
 

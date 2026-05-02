@@ -1,9 +1,26 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { useUser, UserSettings } from '../lib/userState';
+import { playClickSfx, vibrate } from '../lib/feedback';
 
 const APP_VERSION = '0.1.0';
+
+// 정적 텍스트 모달 콘텐츠
+const LEGAL_DOCS: Record<string, { title: string; body: string }> = {
+  terms: {
+    title: '이용약관',
+    body: '본 서비스는 절약 챌린지 프로토타입입니다.\n· 회원가입·로그인은 데모 단계로 실제 인증을 거치지 않습니다.\n· 사용자가 입력한 데이터는 본인의 브라우저(localStorage)에만 저장됩니다.\n· 서비스 제공자는 데이터 손실에 책임을 지지 않습니다.\n\n정식 출시 시 약관이 업데이트될 예정입니다.',
+  },
+  privacy: {
+    title: '개인정보처리방침',
+    body: '· 수집 항목: 닉네임, 인증 사진, 챌린지 진행 상황\n· 저장 위치: 사용자 브라우저 localStorage (서버 전송 없음)\n· 보관 기간: 사용자가 데이터 초기화하기 전까지\n· 제3자 제공: 없음\n\n인증 사진은 카메라 입력 즉시 320px로 다운스케일되어 저장됩니다.',
+  },
+  license: {
+    title: '오픈소스 라이선스',
+    body: 'React (MIT)\nReact Router (MIT)\nVite (MIT)\nTailwind CSS (MIT)\n\nGangwonEducationModuche · Pretendard 글꼴\n각각 SIL OL 및 SIL OFL 라이선스를 따릅니다.',
+  },
+};
 
 function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
   return (
@@ -59,12 +76,26 @@ export default function Settings() {
   const [confirmReset, setConfirmReset] = useState(false);
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
+  const [legalKey, setLegalKey] = useState<keyof typeof LEGAL_DOCS | null>(null);
+
+  function commitNick() {
+    u.setNickname(nickDraft);
+    setEditingNick(false);
+  }
+
+  // 토글 변경 시 즉각 피드백 (사운드/진동) — 토글이 ON 상태로 바뀌고 사용자가 사운드 활성이면 SFX,
+  // 진동 활성이면 햅틱
+  function handleSettingChange<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
+    u.setSetting(key, value);
+    if (u.settings.sound) playClickSfx();
+    if (u.settings.vibration) vibrate(15);
+  }
 
   const settingItem = (key: keyof UserSettings, label: string, sub?: string) => (
     <Row
       label={label}
       sub={sub}
-      right={<Toggle on={u.settings[key]} onChange={(v) => u.setSetting(key, v)} />}
+      right={<Toggle on={u.settings[key]} onChange={(v) => handleSettingChange(key, v)} />}
     />
   );
 
@@ -82,15 +113,16 @@ export default function Settings() {
               autoFocus
               value={nickDraft}
               onChange={(e) => setNickDraft(e.target.value.slice(0, 10))}
+              onBlur={commitNick}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') { u.setNickname(nickDraft); setEditingNick(false); }
+                if (e.key === 'Enter') commitNick();
                 if (e.key === 'Escape') { setNickDraft(u.nickname); setEditingNick(false); }
               }}
               className="flex-1 bg-bg rounded-xl px-3 py-2 text-[15px] outline-none"
               placeholder="닉네임"
             />
             <button
-              onClick={() => { u.setNickname(nickDraft); setEditingNick(false); }}
+              onClick={commitNick}
               className="text-accent text-[14px] font-bold"
             >저장</button>
           </div>
@@ -125,9 +157,9 @@ export default function Settings() {
 
       <Section title="정보">
         <Row label="버전" right={<span className="text-[13px] text-text/60">{APP_VERSION}</span>} />
-        <Row label="이용약관" right={<span aria-hidden>›</span>} onClick={() => {}} />
-        <Row label="개인정보처리방침" right={<span aria-hidden>›</span>} onClick={() => {}} />
-        <Row label="오픈소스 라이선스" right={<span aria-hidden>›</span>} onClick={() => {}} />
+        <Row label="이용약관" right={<span aria-hidden>›</span>} onClick={() => setLegalKey('terms')} />
+        <Row label="개인정보처리방침" right={<span aria-hidden>›</span>} onClick={() => setLegalKey('privacy')} />
+        <Row label="오픈소스 라이선스" right={<span aria-hidden>›</span>} onClick={() => setLegalKey('license')} />
       </Section>
 
       <div className="mx-4 mt-6">
@@ -138,6 +170,30 @@ export default function Settings() {
           로그아웃
         </button>
       </div>
+
+      {/* 약관/개인정보/라이선스 모달 */}
+      {legalKey && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-5"
+          onClick={() => setLegalKey(null)}
+        >
+          <div
+            className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[80vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[16px] font-bold text-text text-center">
+              {LEGAL_DOCS[legalKey].title}
+            </p>
+            <div className="mt-3 overflow-y-auto text-[13px] text-text/80 leading-relaxed whitespace-pre-line">
+              {LEGAL_DOCS[legalKey].body}
+            </div>
+            <button
+              onClick={() => setLegalKey(null)}
+              className="mt-4 w-full bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
+            >닫기</button>
+          </div>
+        </div>
+      )}
 
       {/* 초기화 확인 오버레이 */}
       {confirmReset && (

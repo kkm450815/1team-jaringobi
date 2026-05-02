@@ -107,7 +107,11 @@ export default function Login() {
         </button>
       </form>
 
-      <button className="mt-5 text-center text-[13px] text-text/70">
+      <button
+        type="button"
+        onClick={() => alert('비밀번호 재설정은 곧 지원 예정입니다.')}
+        className="mt-5 text-center text-[13px] text-text/70 underline-offset-2 hover:underline"
+      >
         비밀번호를 잊으셨나요?
       </button>
 

@@ -4,6 +4,7 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
+import { playLoseSfx, vibrate } from '../lib/feedback';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -60,7 +61,11 @@ export default function Main() {
   );
 
   function deleteHeart() {
-    if (pendingHeartIdx !== null) u.loseHeart();
+    if (pendingHeartIdx !== null) {
+      u.loseHeart();
+      if (u.settings.sound) playLoseSfx();
+      if (u.settings.vibration) vibrate([15, 50, 25]);
+    }
     setShowHeartModal(false);
     setPendingHeartIdx(null);
   }
