@@ -81,8 +81,8 @@ export default function Shop() {
   return (
     <main className="min-h-full pb-10 bg-bg">
       {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
-      <div className="sticky top-0 z-10 bg-bg pb-3">
-        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-9 pb-4">
+      <div className="sticky top-0 z-10 bg-bg pb-2">
+        <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-6 pb-2">
           <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" fallback="/main" />
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
@@ -101,10 +101,10 @@ export default function Shop() {
         <RoomPreview
           equipped={u.equipped}
           extra={selected ? [selected] : []}
-          className="mx-5"
+          className="mx-auto w-[60%] max-w-[260px]"
         />
 
-        <div className="px-5 mt-4 grid grid-cols-4 gap-2.5">
+        <div className="px-5 mt-3 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
             const active = c === cat;
             return (
