@@ -35,6 +35,8 @@ export interface UserState {
 
   // 마이페이지에서 표시할 칭호 ID
   activeTitleId: string;
+  // 획득한 칭호 ID 목록 (회차 완주/카테고리 N회 등으로 자동 추가)
+  ownedTitles: string[];
 
   settings: UserSettings;
 }
@@ -57,6 +59,7 @@ const DEFAULT: UserState = {
   missionConfirmed: [],
   missionSuccesses: [],
   activeTitleId: 'h1',
+  ownedTitles: ['h1'],
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -88,6 +91,7 @@ function read(): UserState {
       ),
 
       activeTitleId: parsed.activeTitleId ?? DEFAULT.activeTitleId,
+      ownedTitles: parsed.ownedTitles ?? DEFAULT.ownedTitles,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
@@ -156,6 +160,11 @@ export function useUser() {
     setState((cur) => {
       const day = cur.day;
       const photosWithToday = { ...cur.photos, [day]: dataUrl };
+      // 회차 완주 시 칭호 자동 획득: 회차 N → h(N+1) (h2~h9 까지)
+      const cycleEndTitleId = isCycleEnd ? `h${Math.min(9, cur.cycle + 1)}` : null;
+      const ownedTitles = cycleEndTitleId && !cur.ownedTitles.includes(cycleEndTitleId)
+        ? [...cur.ownedTitles, cycleEndTitleId]
+        : cur.ownedTitles;
       const next: UserState = isCycleEnd
         ? {
             ...cur,
@@ -167,6 +176,7 @@ export function useUser() {
             coins: cur.coins + coins,
             missionConfirmed: [],
             missionSuccesses: [],
+            ownedTitles,
           }
         : {
             ...cur,

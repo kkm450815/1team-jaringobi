@@ -5,6 +5,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
 import { playLoseSfx, vibrate } from '../lib/feedback';
+import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -96,6 +97,10 @@ export default function Main() {
     setChangingFor(null);
     setMissionModal('recommend');
   }
+
+  // ESC로 모달 닫기 (양심 / 미션)
+  useEscape(showHeartModal, () => { setShowHeartModal(false); setPendingHeartIdx(null); });
+  useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
 
   return (
     <main className="flex flex-col min-h-full pb-0">
@@ -326,28 +331,35 @@ function ChangePanel({
         })}
       </div>
 
-      <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-        {list.map((m) => (
-          <li key={m.id}>
-            <button
-              onClick={() => onPick(m.id)}
-              className="w-full bg-bg rounded-2xl px-3 py-3 flex items-center gap-3 text-left active:scale-[.99]"
-            >
-              <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-bold text-text">{m.title}</p>
-                <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
-                  {m.difficulty}
-                </span>
-                <span className="text-[11px] text-text/70 font-medium">변경하기 ⟶</span>
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {list.length === 0 ? (
+        <p className="py-12 text-center text-[13px] text-text/55 leading-relaxed">
+          이 카테고리에는 아직 미션이 없어요.<br />
+          다른 카테고리를 선택해 보세요.
+        </p>
+      ) : (
+        <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+          {list.map((m) => (
+            <li key={m.id}>
+              <button
+                onClick={() => onPick(m.id)}
+                className="w-full bg-bg rounded-2xl px-3 py-3 flex items-center gap-3 text-left active:scale-[.99]"
+              >
+                <img src={iconUrl(m.iconKey)} alt={`${m.title} 아이콘`} className="w-[64px] h-[64px] object-contain shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-text">{m.title}</p>
+                  <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
+                    {m.difficulty}
+                  </span>
+                  <span className="text-[11px] text-text/70 font-medium">변경하기 ⟶</span>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

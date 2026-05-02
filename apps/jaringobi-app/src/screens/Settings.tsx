@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { useUser, UserSettings } from '../lib/userState';
 import { playClickSfx, vibrate } from '../lib/feedback';
+import { useEscape } from '../lib/useEscape';
 
 const APP_VERSION = '0.1.0';
 
@@ -98,6 +99,9 @@ export default function Settings() {
       right={<Toggle on={u.settings[key]} onChange={(v) => handleSettingChange(key, v)} />}
     />
   );
+
+  useEscape(legalKey !== null, () => setLegalKey(null));
+  useEscape(confirmReset, () => setConfirmReset(false));
 
   return (
     <main className="min-h-full pb-12">

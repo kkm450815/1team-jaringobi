@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { fitSrc, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useUser } from '../lib/userState';
+import { useEscape } from '../lib/useEscape';
 
 const MAX_NICK = 10;
 
@@ -19,6 +20,8 @@ export default function MyPage() {
 
   const activeTitle = TITLES.find((t) => t.id === u.activeTitleId) ?? TITLES[0];
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
+
+  useEscape(titleModal, () => setTitleModal(false));
 
   async function handleShare() {
     const text = `자린고비 ${u.cycle}회차 ${u.day}일차\n` +
@@ -236,10 +239,11 @@ export default function MyPage() {
             <ul className="mt-4 max-h-[60vh] overflow-y-auto space-y-2 pr-1">
               {TITLES.map((t) => {
                 const active = t.id === u.activeTitleId;
+                const got = u.ownedTitles.includes(t.id);
                 return (
                   <li key={t.id}>
                     <button
-                      disabled={!t.got}
+                      disabled={!got}
                       onClick={() => {
                         u.update({ activeTitleId: t.id });
                         setTitleModal(false);
@@ -247,12 +251,12 @@ export default function MyPage() {
                       className={`w-full flex items-center gap-2 rounded-2xl px-4 py-2.5 text-left transition ${
                         active
                           ? 'bg-accent text-[#FFFFAD] font-bold'
-                          : t.got
+                          : got
                             ? 'bg-white text-text active:scale-[.98]'
                             : 'bg-text/10 text-text/35 cursor-not-allowed'
                       }`}
                     >
-                      <span aria-hidden>{t.got ? '🏅' : '🔒'}</span>
+                      <span aria-hidden>{got ? '🏅' : '🔒'}</span>
                       <span className="flex-1">{t.name}</span>
                       {active && <span className="text-[12px] font-bold">사용 중</span>}
                     </button>

@@ -8,6 +8,7 @@ import {
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
+import { useEscape } from '../lib/useEscape';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 const CHUNK = 30;
@@ -74,6 +75,8 @@ export default function Shop() {
       scroller?.removeEventListener('scroll', check);
     };
   }, [items.length]);
+
+  useEscape(confirmBuy, () => setConfirmBuy(false));
 
   return (
     <main className="min-h-full pb-10 bg-bg">
