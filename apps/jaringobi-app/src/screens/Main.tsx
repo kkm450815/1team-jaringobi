@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
@@ -21,6 +21,18 @@ function iconUrl(key: string) {
 export default function Main() {
   const u = useUser();
   const nav = useNavigate();
+  const location = useLocation();
+
+  // 카메라 인증 완료 후 자동으로 새 미션 추천 패널 열기
+  useEffect(() => {
+    const state = location.state as { autoMissionModal?: boolean } | null;
+    if (state?.autoMissionModal) {
+      setMissionModal('recommend');
+      // 한 번만 트리거되도록 history state 정리
+      window.history.replaceState({}, document.title);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [hearts, setHearts] = useState(3);
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
@@ -66,9 +78,10 @@ export default function Main() {
   }
 
   function completeToday() {
-    u.resetTodayMission();
+    // savePhoto에서 자동 리셋되므로 여기서는 reset 호출 안 함
+    // 미션 진행 상태(missionConfirmed/Successes)는 카메라 인증 후 해제
     setMissionModal(null);
-    nav('/camera'); // 챌린지 완료 → 카메라로 바로 이동해서 인증 사진 업로드
+    nav('/camera');
   }
 
   function pickMission(missionId: string) {
@@ -96,7 +109,7 @@ export default function Main() {
               </button>
             ))}
           </div>
-          <p className="text-[14px] text-text font-bold">D-{dDay}</p>
+          <p className="text-[18px] text-text font-bold">D-{dDay}</p>
         </div>
 
         <p
@@ -174,7 +187,7 @@ export default function Main() {
       {/* 오늘의 절약 미션 모달 */}
       {missionModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/45 flex items-start justify-center px-4 pt-16 pb-4 overflow-y-auto"
+          className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-4 py-6 overflow-y-auto"
           onClick={() => { setMissionModal(null); setChangingFor(null); }}
         >
           <div

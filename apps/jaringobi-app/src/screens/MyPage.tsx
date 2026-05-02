@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fitSrc } from '../lib/data';
+import { fitSrc, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useUser } from '../lib/userState';
 
@@ -10,12 +10,14 @@ export default function MyPage() {
   const u = useUser();
   const [editing, setEditing] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
+  const [titleModal, setTitleModal] = useState(false);
 
   function commitNick() {
     u.setNickname(nickDraft);
     setEditing(false);
   }
 
+  const activeTitle = TITLES.find((t) => t.id === u.activeTitleId) ?? TITLES[0];
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
 
   return (
@@ -149,9 +151,13 @@ export default function MyPage() {
 
         {/* 하단 라벨들 */}
         <div className="mt-3 flex items-center justify-between">
-          <span className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5">
-            <span aria-hidden>🏅</span> 편의점 미식가
-          </span>
+          <button
+            onClick={() => setTitleModal(true)}
+            className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5 active:scale-[.98]"
+            aria-label="칭호 변경"
+          >
+            <span aria-hidden>🏅</span> {activeTitle.name}
+          </button>
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
         </div>
 
@@ -183,6 +189,57 @@ export default function MyPage() {
           </ul>
         </div>
       </section>
+
+      {/* 칭호 변경 모달 */}
+      {titleModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={() => setTitleModal(false)}
+        >
+          <div
+            className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-center font-bold text-[16px] text-text">칭호 선택</p>
+            <p className="text-center text-[12px] text-text/55 mt-1">
+              획득한 칭호 중 하나를 골라 프로필에 표시
+            </p>
+            <ul className="mt-4 max-h-[60vh] overflow-y-auto space-y-2 pr-1">
+              {TITLES.map((t) => {
+                const active = t.id === u.activeTitleId;
+                return (
+                  <li key={t.id}>
+                    <button
+                      disabled={!t.got}
+                      onClick={() => {
+                        u.update({ activeTitleId: t.id });
+                        setTitleModal(false);
+                      }}
+                      className={`w-full flex items-center gap-2 rounded-2xl px-4 py-2.5 text-left transition ${
+                        active
+                          ? 'bg-accent text-[#FFFFAD] font-bold'
+                          : t.got
+                            ? 'bg-white text-text active:scale-[.98]'
+                            : 'bg-text/10 text-text/35 cursor-not-allowed'
+                      }`}
+                    >
+                      <span aria-hidden>{t.got ? '🏅' : '🔒'}</span>
+                      <span className="flex-1">{t.name}</span>
+                      {active && <span className="text-[12px] font-bold">사용 중</span>}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <button
+              onClick={() => setTitleModal(false)}
+              className="mt-4 w-full bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
