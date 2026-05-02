@@ -4,6 +4,8 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
+import { playLoseSfx, vibrate } from '../lib/feedback';
+import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
   식비: '식비절약',
@@ -33,7 +35,7 @@ export default function Main() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [hearts, setHearts] = useState(3);
+  const hearts = u.hearts;
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
@@ -47,7 +49,8 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const isConfirmed = confirmed.length > 0;
-  const dDay = 30 - confirmed.length;
+  // D-day: 30일 챌린지의 남은 일수. day=1이면 D-30, day=30이면 D-1, 회차 종료 후 day=1로 리셋되며 다시 D-30
+  const dDay = Math.max(0, 31 - u.day);
   const dailyGoal = 10_000;
   const pickedAmount = useMemo(
     () => picks.reduce((sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0), 0),
@@ -59,7 +62,11 @@ export default function Main() {
   );
 
   function deleteHeart() {
-    if (pendingHeartIdx !== null) setHearts((h) => Math.max(0, h - 1));
+    if (pendingHeartIdx !== null) {
+      u.loseHeart();
+      if (u.settings.sound) playLoseSfx();
+      if (u.settings.vibration) vibrate([15, 50, 25]);
+    }
     setShowHeartModal(false);
     setPendingHeartIdx(null);
   }
@@ -91,10 +98,14 @@ export default function Main() {
     setMissionModal('recommend');
   }
 
+  // ESC로 모달 닫기 (양심 / 미션)
+  useEscape(showHeartModal, () => { setShowHeartModal(false); setPendingHeartIdx(null); });
+  useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
+
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="relative px-5 pt-16 flex items-center justify-between gap-3">
+      <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
         <div className="flex flex-col items-center gap-1">
           <div className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -114,7 +125,7 @@ export default function Main() {
 
         <p
           aria-label="누적 저축액"
-          style={{ top: 'calc(64px + (100% - 64px) / 2)' }}
+          style={{ top: 'calc(36px + (100% - 36px) / 2)' }}
           className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
         >
           {u.totalSaved.toLocaleString()}
@@ -320,28 +331,35 @@ function ChangePanel({
         })}
       </div>
 
-      <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-        {list.map((m) => (
-          <li key={m.id}>
-            <button
-              onClick={() => onPick(m.id)}
-              className="w-full bg-bg rounded-2xl px-3 py-3 flex items-center gap-3 text-left active:scale-[.99]"
-            >
-              <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
-              <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-bold text-text">{m.title}</p>
-                <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
-              </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
-                <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
-                  {m.difficulty}
-                </span>
-                <span className="text-[11px] text-text/70 font-medium">변경하기 ⟶</span>
-              </div>
-            </button>
-          </li>
-        ))}
-      </ul>
+      {list.length === 0 ? (
+        <p className="py-12 text-center text-[13px] text-text/55 leading-relaxed">
+          이 카테고리에는 아직 미션이 없어요.<br />
+          다른 카테고리를 선택해 보세요.
+        </p>
+      ) : (
+        <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+          {list.map((m) => (
+            <li key={m.id}>
+              <button
+                onClick={() => onPick(m.id)}
+                className="w-full bg-bg rounded-2xl px-3 py-3 flex items-center gap-3 text-left active:scale-[.99]"
+              >
+                <img src={iconUrl(m.iconKey)} alt={`${m.title} 아이콘`} className="w-[64px] h-[64px] object-contain shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-[15px] font-bold text-text">{m.title}</p>
+                  <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
+                </div>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
+                    {m.difficulty}
+                  </span>
+                  <span className="text-[11px] text-text/70 font-medium">변경하기 ⟶</span>
+                </div>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </>
   );
 }

@@ -1,7 +1,8 @@
 import { Link } from 'react-router-dom';
-import { TALK_POSTS, TALK_ROOMS } from '../lib/data';
+import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
+import { useTalkPosts } from '../lib/useTalkPosts';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -22,7 +23,8 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
 
 export default function Bookmarks() {
   const { has, toggle } = useBookmarks();
-  const items = TALK_POSTS.filter((p) => has(p.id));
+  const { posts } = useTalkPosts();
+  const items = posts.filter((p) => has(p.id));
 
   return (
     <main className="min-h-full pb-10">

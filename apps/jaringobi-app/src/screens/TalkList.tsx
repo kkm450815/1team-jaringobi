@@ -24,13 +24,14 @@ export default function TalkList() {
           <li key={r.id}>
             <Link
               to={`/talk/${r.id}`}
+              aria-label={`${r.title} 수다방 입장`}
               className="relative block rounded-[22px] px-4 py-3 shadow-soft active:scale-[.99] transition"
               style={{ background: r.bg }}
             >
               <div className="flex items-center gap-3">
                 <img
                   src={r.icon}
-                  alt=""
+                  alt={`${r.title} 아이콘`}
                   className="w-[88px] h-[88px] ml-3 object-contain shrink-0 scale-[1.4]"
                   draggable={false}
                 />

@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { downscaleImage, useUser } from '../lib/userState';
+import { playSuccessSfx, vibrate } from '../lib/feedback';
+import { useEscape } from '../lib/useEscape';
 
 function iconUrl(key: string) {
   return `/jarin/chall/icon/chall_list_${key}.png`;
@@ -10,10 +12,12 @@ function iconUrl(key: string) {
 
 export default function Camera() {
   const nav = useNavigate();
-  const fileRef = useRef<HTMLInputElement>(null);
+  const galleryRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reward, setReward] = useState<{ saved: number; coins: number } | null>(null);
+  const [pickError, setPickError] = useState<string | null>(null);
+  const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
   const u = useUser();
 
   // 하드 모드(goal>=100만): picks 합계, 노말: goal/30
@@ -32,20 +36,26 @@ export default function Camera() {
     const f = e.target.files?.[0];
     if (!f) return;
     setBusy(true);
+    setPickError(null);
     try {
       const dataUrl = await downscaleImage(f, 320);
       setPreview(dataUrl);
-    } catch {
-      // ignore for demo
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : '이미지를 처리하지 못했어요';
+      setPickError(`사진 불러오기 실패: ${msg}`);
     } finally {
       setBusy(false);
     }
+    // 같은 파일 재선택 가능하도록 input value 비우기
+    e.target.value = '';
   }
 
   function submit() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
-    setReward({ saved: r.reward, coins: r.coins });
+    setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
+    if (u.settings.sound) playSuccessSfx();
+    if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
   }
 
   function closeRewardAndContinue() {
@@ -53,6 +63,8 @@ export default function Camera() {
     // 메인으로 돌아가서 자동으로 새 미션 추천 패널 열기
     nav('/main', { state: { autoMissionModal: true } });
   }
+
+  useEscape(reward !== null, closeRewardAndContinue);
 
   return (
     <main className="min-h-full pb-10">
@@ -73,10 +85,18 @@ export default function Camera() {
                 오늘의 챌린지
               </p>
               {todayMissions.length === 0 ? (
-                <p className="mt-8 text-center text-text/55 text-[13px] leading-relaxed">
-                  아직 선택한 미션이 없어요.<br />
-                  메인의 ‘오늘의 절약미션’에서 골라주세요.
-                </p>
+                <div className="mt-8 text-center text-text/55 text-[13px] leading-relaxed">
+                  <p>
+                    아직 선택한 미션이 없어요.<br />
+                    메인의 ‘오늘의 절약미션’에서 골라주세요.
+                  </p>
+                  <Link
+                    to="/main"
+                    className="mt-4 inline-block bg-accent text-white text-[14px] font-bold rounded-full px-5 py-2"
+                  >
+                    메인으로
+                  </Link>
+                </div>
               ) : (
                 <ul className="mt-3 space-y-3">
                   {todayMissions.map((m) => (
@@ -105,8 +125,17 @@ export default function Camera() {
           )}
         </div>
 
+        {/* 갤러리: 단순 파일 선택 (capture 미지정 → 모바일에서 갤러리 우선) */}
         <input
-          ref={fileRef}
+          ref={galleryRef}
+          type="file"
+          accept="image/*"
+          onChange={onPick}
+          className="hidden"
+        />
+        {/* 카메라: capture="environment" → 모바일에서 후면 카메라 직접 실행 */}
+        <input
+          ref={cameraRef}
           type="file"
           accept="image/*"
           capture="environment"
@@ -116,14 +145,20 @@ export default function Camera() {
 
         <div className="mt-4 grid grid-cols-2 gap-2">
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => galleryRef.current?.click()}
             className="bg-white text-text border border-text/15 rounded-2xl py-3 font-bold active:scale-[.98]"
           >갤러리에서</button>
           <button
-            onClick={() => fileRef.current?.click()}
+            onClick={() => cameraRef.current?.click()}
             className="bg-primary text-text rounded-2xl py-3 font-bold active:scale-[.98]"
           >카메라로</button>
         </div>
+
+        {pickError && (
+          <p className="mt-2 text-[12px] text-pink text-center" role="alert">
+            {pickError}
+          </p>
+        )}
 
         <button
           onClick={submit}
@@ -152,8 +187,13 @@ export default function Camera() {
               CONGRATULATIONS
             </p>
             <p className="mt-2 text-[18px] font-bold text-text">
-              오늘의 챌린지 인증 완료!
+              {reward.cycleEnded ? '🎉 30일 챌린지 완주!' : '오늘의 챌린지 인증 완료!'}
             </p>
+            {reward.cycleEnded && (
+              <p className="mt-1 text-[12px] text-text/65 leading-relaxed">
+                새 회차가 시작됩니다. 양심 ♥♥♥도 다시 채워졌어요.
+              </p>
+            )}
             <div className="mt-5 bg-white rounded-2xl py-4 px-3 shadow-soft">
               <p className="text-[12px] text-text/60">오늘 절약한 금액</p>
               <p className="mt-1 text-[26px] font-bold text-text">
