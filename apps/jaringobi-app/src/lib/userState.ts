@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { equipSlotOf } from './data';
+import { equipSlotOf, MISSIONS } from './data';
+
+// 미션 ID → 보상 금액 룩업 (savePhoto 보상 계산용)
+const MISSION_AMOUNTS: Record<string, number> = Object.fromEntries(
+  MISSIONS.map((m) => [m.id, m.amount]),
+);
 
 const KEY = 'jaringobi.user.v1';
 
@@ -23,6 +28,7 @@ export interface UserState {
   missionPicks: string[]; // 오늘의 챌린지 미션 ID 목록 (Main↔Camera 공유)
   missionConfirmed: string[]; // 챌린지 확정 후 스냅샷 (비어있으면 미확정 상태)
   missionSuccesses: string[]; // 확정 미션 중 성공 표시한 ID
+  activeTitleId: string;  // 마이페이지에서 표시할 칭호 ID
   settings: UserSettings;
 }
 
@@ -39,6 +45,7 @@ const DEFAULT: UserState = {
   missionPicks: ['m2', 'm12', 'm13'],
   missionConfirmed: [],
   missionSuccesses: [],
+  activeTitleId: 'h1',
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -62,6 +69,7 @@ function read(): UserState {
       missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
       missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
       missionSuccesses: parsed.missionSuccesses ?? DEFAULT.missionSuccesses,
+      activeTitleId: parsed.activeTitleId ?? DEFAULT.activeTitleId,
     };
   } catch {
     return DEFAULT;
@@ -88,7 +96,11 @@ export function useUser() {
   }, []);
 
   const update = useCallback((patch: Partial<UserState>) => {
-    setState((s) => ({ ...s, ...patch }));
+    setState((s) => {
+      const next = { ...s, ...patch };
+      write(next);
+      return next;
+    });
   }, []);
 
   const setNickname = useCallback((nickname: string) => {
@@ -99,22 +111,37 @@ export function useUser() {
     setState((s) => ({ ...s, settings: { ...s.settings, [key]: value } }));
   }, []);
 
+  // 인증 사진 저장 → 보상(원/포인트) 계산해서 반환 (Camera 축하 팝업용).
+  // 보상 규칙:
+  //  · 노말(goal=300_000): 일평균 = goal/30 = 1만원 고정
+  //  · 하드(goal>=1_000_000): 사용자가 확정한 missionConfirmed 미션 합계만큼 적립 (없으면 picks 합계)
   const savePhoto = useCallback((dataUrl: string) => {
-    setState((s) => {
-      const day = s.day;
-      const reward = Math.round(s.goal / 30); // 일평균 목표
+    // 보상은 현재 state로 동기 계산 (return 즉시 정확한 값을 호출자에게 전달)
+    const s = state;
+    const isHard = s.goal >= 1_000_000;
+    const ids = s.missionConfirmed.length > 0 ? s.missionConfirmed : s.missionPicks;
+    const reward = isHard
+      ? ids.reduce((sum, id) => sum + (MISSION_AMOUNTS[id] ?? 0), 0)
+      : Math.round(s.goal / 30);
+    const coins = 100;
+
+    setState((cur) => {
+      const day = cur.day;
       const next: UserState = {
-        ...s,
-        photos: { ...s.photos, [day]: dataUrl },
-        day: Math.min(30, day + 1), // 30일에서 멈춤 (다음 회차는 별도 트리거)
-        totalSaved: s.totalSaved + reward,
-        coins: s.coins + 100,
+        ...cur,
+        photos: { ...cur.photos, [day]: dataUrl },
+        day: Math.min(30, day + 1),
+        totalSaved: cur.totalSaved + reward,
+        coins: cur.coins + coins,
+        // 인증 완료 시 오늘의 미션 확정/성공 상태 자동 리셋 → 메인 미션 버튼 다시 누르면 추천 패널
+        missionConfirmed: [],
+        missionSuccesses: [],
       };
-      // 즉시 영속화: 직후 nav() 등으로 mount되는 다른 컴포넌트가 최신 상태를 읽도록
       write(next);
       return next;
     });
-  }, []);
+    return { reward, coins };
+  }, [state]);
 
   const reset = useCallback(() => {
     localStorage.removeItem(KEY);

@@ -13,7 +13,16 @@ export default function Camera() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [reward, setReward] = useState<{ saved: number; coins: number } | null>(null);
   const u = useUser();
+
+  // 하드 모드(goal>=100만): picks 합계, 노말: goal/30
+  const expectedReward = u.goal >= 1_000_000
+    ? u.missionPicks.reduce(
+        (sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0),
+        0,
+      )
+    : Math.round(u.goal / 30);
 
   const todayMissions = u.missionPicks
     .map((id) => MISSIONS.find((m) => m.id === id))
@@ -35,8 +44,14 @@ export default function Camera() {
 
   function submit() {
     if (!preview || busy) return;
-    u.savePhoto(preview);
-    setTimeout(() => nav('/mypage'), 30);
+    const r = u.savePhoto(preview);
+    setReward({ saved: r.reward, coins: r.coins });
+  }
+
+  function closeRewardAndContinue() {
+    setReward(null);
+    // 메인으로 돌아가서 자동으로 새 미션 추천 패널 열기
+    nav('/main', { state: { autoMissionModal: true } });
   }
 
   return (
@@ -115,13 +130,50 @@ export default function Camera() {
           disabled={!preview || busy}
           className="mt-3 w-full bg-accent text-white font-bold rounded-full py-3.5 text-[15px] active:scale-[.98] disabled:opacity-40"
         >
-          {busy ? '준비 중…' : `인증 완료 (+${Math.round(u.goal / 30).toLocaleString()}원 / +100P)`}
+          {busy ? '준비 중…' : `인증 완료 (+${expectedReward.toLocaleString()}원 / +100P)`}
         </button>
 
         <p className="mt-3 text-[12px] text-text/60 text-center leading-relaxed">
           저장한 사진은 마이페이지의 RECORD에서 일자별로 확인할 수 있어요.
         </p>
       </section>
+
+      {/* 인증 성공 축하 팝업 */}
+      {reward && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={closeRewardAndContinue}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[14px] font-bold text-accent tracking-[2px]">
+              CONGRATULATIONS
+            </p>
+            <p className="mt-2 text-[18px] font-bold text-text">
+              오늘의 챌린지 인증 완료!
+            </p>
+            <div className="mt-5 bg-white rounded-2xl py-4 px-3 shadow-soft">
+              <p className="text-[12px] text-text/60">오늘 절약한 금액</p>
+              <p className="mt-1 text-[26px] font-bold text-text">
+                +{reward.saved.toLocaleString()}원
+              </p>
+              <div className="mt-2 h-px bg-text/10" />
+              <p className="mt-2 text-[12px] text-text/60">적립 포인트</p>
+              <p className="mt-1 text-[18px] font-bold text-accent">
+                +{reward.coins}P
+              </p>
+            </div>
+            <button
+              onClick={closeRewardAndContinue}
+              className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

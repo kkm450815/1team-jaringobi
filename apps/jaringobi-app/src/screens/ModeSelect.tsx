@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useUser } from '../lib/userState';
 
 function ModeCard({
   variant, image, alt, amount, onClick,
@@ -39,6 +40,13 @@ function ModeCard({
 
 export default function ModeSelect() {
   const nav = useNavigate();
+  const u = useUser();
+
+  function start(goal: number) {
+    u.update({ goal });
+    nav('/main');
+  }
+
   return (
     <main className="px-6 pt-10 pb-10">
       <div className="flex justify-center">
@@ -56,14 +64,14 @@ export default function ModeSelect() {
           image="/jarin/mode_normal.png"
           alt="노말 모드"
           amount="30만원"
-          onClick={() => nav('/main')}
+          onClick={() => start(300_000)}
         />
         <ModeCard
           variant="hard"
           image="/jarin/mode_hard.png"
           alt="하드 모드"
           amount="100만원"
-          onClick={() => nav('/main')}
+          onClick={() => start(1_000_000)}
         />
       </div>
     </main>
