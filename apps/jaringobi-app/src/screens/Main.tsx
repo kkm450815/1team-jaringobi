@@ -105,7 +105,7 @@ export default function Main() {
   return (
     <main className="flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
-      <header className="relative px-5 pt-16 flex items-center justify-between gap-3">
+      <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
         <div className="flex flex-col items-center gap-1">
           <div className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -125,7 +125,7 @@ export default function Main() {
 
         <p
           aria-label="누적 저축액"
-          style={{ top: 'calc(64px + (100% - 64px) / 2)' }}
+          style={{ top: 'calc(36px + (100% - 36px) / 2)' }}
           className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
         >
           {u.totalSaved.toLocaleString()}
