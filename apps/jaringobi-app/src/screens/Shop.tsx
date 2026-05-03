@@ -247,12 +247,21 @@ export default function Shop() {
           >
             <p className="text-[16px] font-bold text-text">이 아이템을 구매하시겠어요?</p>
             <div className="mt-3 flex items-center justify-center gap-2">
-              <CoinIcon size={20} />
-              <span className="text-[18px] font-bold text-text">{selectedPrice.toLocaleString()}P</span>
+              <CoinIcon size={22} />
+              <span className="text-[20px] font-bold text-text">−{selectedPrice.toLocaleString()}P</span>
             </div>
-            <p className="text-[12px] text-text/55 mt-1">
-              현재 보유: {u.coins.toLocaleString()}P → 구매 후 {(u.coins - selectedPrice).toLocaleString()}P
-            </p>
+            <div className="mt-4 bg-white rounded-2xl px-4 py-3 shadow-soft">
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-text/55">현재 보유</span>
+                <span className="font-bold text-text text-[15px]">{u.coins.toLocaleString()}P</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[13px]">
+                <span className="text-text/55">구매 후 잔액</span>
+                <span className="font-bold text-accent text-[15px]">
+                  {(u.coins - selectedPrice).toLocaleString()}P
+                </span>
+              </div>
+            </div>
             <div className="mt-5 flex gap-2">
               <button
                 onClick={() => setConfirmBuy(false)}

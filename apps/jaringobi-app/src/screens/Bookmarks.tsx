@@ -51,7 +51,8 @@ export default function Bookmarks() {
                     {room && (
                       <Link
                         to={`/talk/${room.id}`}
-                        className="text-[11px] text-accent font-bold"
+                        className="text-[11px] font-bold text-text/80 px-2 py-0.5 rounded-full"
+                        style={{ background: room.bg }}
                       >
                         #{room.title}
                       </Link>

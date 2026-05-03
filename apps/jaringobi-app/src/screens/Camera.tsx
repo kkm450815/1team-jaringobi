@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
 import { BackButton } from '../components/UI';
@@ -31,6 +31,14 @@ export default function Camera() {
   const todayMissions = u.missionPicks
     .map((id) => MISSIONS.find((m) => m.id === id))
     .filter((m): m is (typeof MISSIONS)[number] => !!m);
+
+  // 미션이 한 개도 선택되지 않은 채 카메라 진입(예: 탭바 직접 클릭)하면 메인으로 자동 복귀.
+  // 메인의 빈 상태 안내가 더 적절하기 때문. 이미 사진 미리보기 중이면 유지.
+  useEffect(() => {
+    if (u.missionPicks.length === 0 && !preview) {
+      nav('/main', { replace: true });
+    }
+  }, [u.missionPicks.length, preview, nav]);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -165,7 +173,7 @@ export default function Camera() {
           disabled={!preview || busy}
           className="mt-3 w-full bg-accent text-white font-bold rounded-full py-3.5 text-[15px] active:scale-[.98] disabled:opacity-40"
         >
-          {busy ? '준비 중…' : `인증 완료 (+${expectedReward.toLocaleString()}원 / +100P)`}
+          {busy ? '준비 중…' : `절약 인증하고 +${expectedReward.toLocaleString()}원 받기`}
         </button>
 
         <p className="mt-3 text-[12px] text-text/60 text-center leading-relaxed">
