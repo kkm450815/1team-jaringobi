@@ -75,11 +75,20 @@ export default function Settings() {
   const u = useUser();
   const nav = useNavigate();
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetAck, setResetAck] = useState(false);
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
+  const [nickError, setNickError] = useState<string | null>(null);
   const [legalKey, setLegalKey] = useState<keyof typeof LEGAL_DOCS | null>(null);
 
   function commitNick() {
+    if (!nickDraft.trim()) {
+      setNickError('닉네임은 비울 수 없어요');
+      setNickDraft(u.nickname);
+      setEditingNick(false);
+      setTimeout(() => setNickError(null), 2500);
+      return;
+    }
     u.setNickname(nickDraft);
     setEditingNick(false);
   }
@@ -133,7 +142,7 @@ export default function Settings() {
         ) : (
           <Row
             label="닉네임"
-            sub={u.nickname}
+            sub={nickError ? `⚠ ${nickError}` : u.nickname}
             right={<span aria-hidden>›</span>}
             onClick={() => { setNickDraft(u.nickname); setEditingNick(true); }}
           />
@@ -203,27 +212,47 @@ export default function Settings() {
       {confirmReset && (
         <div
           className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-7"
-          onClick={() => setConfirmReset(false)}
+          onClick={() => { setConfirmReset(false); setResetAck(false); }}
         >
           <div
-            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl"
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl border-2 border-pink/30"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[16px] font-bold text-text">정말 모든 데이터를 초기화할까요?</p>
-            <p className="text-[12px] text-text/60 mt-1">이 작업은 되돌릴 수 없어요.</p>
+            <p className="text-[18px] font-bold text-pink">⚠️ 모든 데이터 영구 삭제</p>
+            <p className="text-[13px] text-text/80 mt-2 leading-relaxed">
+              닉네임, 인증 사진, 챌린지 진행, 북마크, 보유 아이템이<br />
+              <span className="font-bold text-pink">모두 사라지며 복구할 수 없어요.</span>
+            </p>
+            <label className="mt-4 flex items-center justify-center gap-2 text-[13px] text-text/80 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={resetAck}
+                onChange={(e) => setResetAck(e.target.checked)}
+                className="w-4 h-4 accent-pink"
+              />
+              <span>위 내용을 이해했고 정말 초기화합니다</span>
+            </label>
             <div className="mt-5 flex gap-2">
               <button
-                onClick={() => setConfirmReset(false)}
+                onClick={() => { setConfirmReset(false); setResetAck(false); }}
                 className="flex-1 bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
               >취소</button>
               <button
                 onClick={() => {
+                  if (!resetAck) return;
                   u.reset();
                   localStorage.removeItem('jaringobi.bookmarks.v1');
+                  localStorage.removeItem('jaringobi.posts.v1');
                   setConfirmReset(false);
+                  setResetAck(false);
                   nav('/main');
                 }}
-                className="flex-1 bg-pink text-white font-bold rounded-2xl py-3 active:scale-[.98]"
+                disabled={!resetAck}
+                className={`flex-1 font-bold rounded-2xl py-3 transition ${
+                  resetAck
+                    ? 'bg-pink text-white active:scale-[.98]'
+                    : 'bg-text/20 text-text/40 cursor-not-allowed'
+                }`}
               >초기화</button>
             </div>
           </div>

@@ -11,9 +11,17 @@ export default function MyPage() {
   const u = useUser();
   const [editing, setEditing] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
+  const [nickError, setNickError] = useState<string | null>(null);
   const [titleModal, setTitleModal] = useState(false);
 
   function commitNick() {
+    if (!nickDraft.trim()) {
+      setNickError('닉네임은 비울 수 없어요');
+      setNickDraft(u.nickname);
+      setEditing(false);
+      setTimeout(() => setNickError(null), 2500);
+      return;
+    }
     u.setNickname(nickDraft);
     setEditing(false);
   }
@@ -146,6 +154,11 @@ export default function MyPage() {
                 >
                   {u.nickname}
                 </button>
+              )}
+              {nickError && (
+                <p className="mt-1 text-[11px] text-pink font-bold" role="alert">
+                  ⚠ {nickError}
+                </p>
               )}
             </div>
             <p className="mt-3 text-[15px] font-bold text-text">

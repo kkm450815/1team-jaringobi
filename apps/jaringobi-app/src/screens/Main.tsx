@@ -143,9 +143,13 @@ export default function Main() {
       <section className="px-10 pt-8 pb-8">
         <button
           onClick={openMissionModal}
-          className="w-full bg-primary text-text rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition"
+          className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
+            isConfirmed
+              ? 'bg-accent text-[#FFFFAD] ring-2 ring-accent/40'
+              : 'bg-primary text-text'
+          }`}
         >
-          오늘의 절약미션
+          {isConfirmed ? '✓ 오늘의 절약미션 (진행 중)' : '오늘의 절약미션'}
         </button>
       </section>
 
@@ -171,15 +175,31 @@ export default function Main() {
         >
           <div className="w-full max-w-[340px] text-center" onClick={(e) => e.stopPropagation()}>
             <p className="font-bold text-[20px] text-text">당신의 양심 지키시겠습니까?</p>
-            <div className="mt-7 flex justify-center items-center gap-5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <svg key={i} viewBox="0 0 32 30" className="w-[72px] h-[68px]" aria-hidden>
-                  <path
-                    d="M16 27.5 C 6 21 1.5 14.5 1.5 9 C 1.5 4.6 5 1.5 9 1.5 C 12 1.5 14.5 3.2 16 5.6 C 17.5 3.2 20 1.5 23 1.5 C 27 1.5 30.5 4.6 30.5 9 C 30.5 14.5 26 21 16 27.5 Z"
-                    fill="#F49496"
-                  />
-                </svg>
-              ))}
+            <p className="mt-2 text-[13px] text-text/65">
+              삭제하면 ♥ {Math.max(0, hearts - 1)}개만 남아요
+            </p>
+            <div className="mt-5 flex justify-center items-center gap-5">
+              {Array.from({ length: 3 }).map((_, i) => {
+                const isAlive = i < hearts;
+                const isDeleting = pendingHeartIdx !== null && i === pendingHeartIdx;
+                const fillColor = isDeleting ? '#C0BDB7' : isAlive ? '#F49496' : '#E5E1D9';
+                return (
+                  <div key={i} className="relative">
+                    <svg viewBox="0 0 32 30" className="w-[72px] h-[68px]" aria-hidden>
+                      <path
+                        d="M16 27.5 C 6 21 1.5 14.5 1.5 9 C 1.5 4.6 5 1.5 9 1.5 C 12 1.5 14.5 3.2 16 5.6 C 17.5 3.2 20 1.5 23 1.5 C 27 1.5 30.5 4.6 30.5 9 C 30.5 14.5 26 21 16 27.5 Z"
+                        fill={fillColor}
+                      />
+                    </svg>
+                    {isDeleting && (
+                      <span
+                        className="absolute inset-0 grid place-items-center text-[40px] font-black text-white"
+                        aria-label="삭제 표시"
+                      >×</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="mt-8 flex gap-3 justify-center">
               <button
@@ -376,12 +396,34 @@ function ReviewPanel({
   onComplete: () => void;
 }) {
   const ratio = Math.min(1, savedToday / dailyGoal);
+  // F42: 성공 토글 후 3초 동안만 "취소" 링크 노출. 그 외엔 버튼 클릭 무시(실수 방지).
+  const [recentToggleIdx, setRecentToggleIdx] = useState<number | null>(null);
+  useEffect(() => {
+    if (recentToggleIdx === null) return;
+    const t = setTimeout(() => setRecentToggleIdx(null), 3000);
+    return () => clearTimeout(t);
+  }, [recentToggleIdx]);
+
+  function handleSuccessClick(idx: number, done: boolean) {
+    if (done) {
+      // 이미 성공 처리된 항목은 3초 안에만 취소 가능 (실수 방지)
+      if (recentToggleIdx === idx) {
+        onToggle(idx);
+        setRecentToggleIdx(null);
+      }
+      return;
+    }
+    onToggle(idx);
+    setRecentToggleIdx(idx);
+  }
+
   return (
     <>
       <ul className="space-y-3">
         {picks.map((id, idx) => {
           const m = MISSIONS.find((x) => x.id === id)!;
           const done = successes.includes(idx);
+          const showUndo = done && recentToggleIdx === idx;
           return (
             <li key={`${id}-${idx}`} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
               <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
@@ -389,15 +431,25 @@ function ReviewPanel({
                 <p className="text-[15px] font-bold text-text">{m.title}</p>
                 <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
               </div>
-              <button
-                onClick={() => onToggle(idx)}
-                aria-pressed={done}
-                className={`shrink-0 px-5 py-2 rounded-full text-[14px] font-bold transition ${
-                  done ? 'bg-pink text-white' : 'bg-pink/40 text-white/90'
-                }`}
-              >
-                성공
-              </button>
+              <div className="shrink-0 flex flex-col items-end gap-1">
+                <button
+                  onClick={() => handleSuccessClick(idx, done)}
+                  aria-pressed={done}
+                  className={`px-5 py-2 rounded-full text-[14px] font-bold transition ${
+                    done ? 'bg-pink text-white' : 'bg-pink/40 text-white/90'
+                  }`}
+                >
+                  {done ? '✓ 성공' : '성공'}
+                </button>
+                {showUndo && (
+                  <button
+                    onClick={() => handleSuccessClick(idx, done)}
+                    className="text-[11px] text-text/60 underline"
+                  >
+                    취소
+                  </button>
+                )}
+              </div>
             </li>
           );
         })}
@@ -418,9 +470,14 @@ function ReviewPanel({
 
       <button
         onClick={onComplete}
-        className="mt-4 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3.5 text-[16px] active:scale-[.98]"
+        disabled={successes.length === 0}
+        className={`mt-4 w-full font-bold rounded-full py-3.5 text-[16px] transition ${
+          successes.length === 0
+            ? 'bg-text/20 text-text/50 cursor-not-allowed'
+            : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
+        }`}
       >
-        챌린지 완료하기
+        {successes.length === 0 ? '성공한 미션을 1개 이상 체크해주세요' : '챌린지 완료하기'}
       </button>
     </>
   );
