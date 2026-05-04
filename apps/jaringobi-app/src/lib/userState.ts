@@ -13,6 +13,8 @@ export interface UserSettings {
   notifyHeart: boolean;
   sound: boolean;
   vibration: boolean;
+  /** BGM 볼륨 0~100 (사운드 ON 일 때만 반영) */
+  bgmVolume: number;
 }
 
 export interface UserState {
@@ -72,6 +74,7 @@ const DEFAULT: UserState = {
     notifyHeart: true,
     sound: true,
     vibration: false,
+    bgmVolume: 60,
   },
 };
 

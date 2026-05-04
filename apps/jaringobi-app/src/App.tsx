@@ -1,5 +1,8 @@
+import { useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
+import { getBgm } from './lib/bgm';
+import { useUser } from './lib/userState';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
 import ModeSelect from './screens/ModeSelect';
@@ -19,9 +22,39 @@ import ScreenIndex from './screens/ScreenIndex';
 import Bookmarks from './screens/Bookmarks';
 import Settings from './screens/Settings';
 
+// 전역 BGM 컨트롤러 — 사용자 sound 토글 + bgmVolume 변화에 반응.
+// 첫 사용자 인터랙션 후 자동 시작 (브라우저 autoplay 정책).
+function BgmController() {
+  const u = useUser();
+  useEffect(() => {
+    const bgm = getBgm();
+    bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
+    function tryStart() {
+      if (u.settings.sound) {
+        bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
+        bgm.start();
+      }
+      window.removeEventListener('pointerdown', tryStart);
+    }
+    if (u.settings.sound) {
+      bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
+      // 이미 한 번이라도 사용자 클릭이 있었으면 시도, 아니면 첫 클릭 대기
+      bgm.start();
+      window.addEventListener('pointerdown', tryStart, { once: true });
+    } else {
+      bgm.stop();
+    }
+    return () => {
+      window.removeEventListener('pointerdown', tryStart);
+    };
+  }, [u.settings.sound, u.settings.bgmVolume]);
+  return null;
+}
+
 export default function App() {
   return (
     <PhoneFrame>
+      <BgmController />
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/login" element={<Login />} />

@@ -33,7 +33,8 @@ class Bgm {
   private timerId: ReturnType<typeof setInterval> | null = null;
   private step = 0;
   private playing = false;
-  private targetVolume = 0.045;
+  // 0~100 사용자 볼륨을 audio gain (0~0.30) 으로 매핑
+  private targetVolume = 0.18;
 
   isPlaying() { return this.playing; }
 
@@ -70,8 +71,10 @@ class Bgm {
     }
   }
 
-  setVolume(v: number) {
-    this.targetVolume = Math.max(0, Math.min(0.2, v));
+  /** 0~100 슬라이더 값을 받아 audio gain 으로 매핑 (0 → 무음, 100 → 0.30) */
+  setVolumePercent(percent: number) {
+    const clamped = Math.max(0, Math.min(100, percent));
+    this.targetVolume = (clamped / 100) * 0.30;
     const ctx = getCtx();
     if (ctx && this.master && this.playing) {
       this.master.gain.cancelScheduledValues(ctx.currentTime);
