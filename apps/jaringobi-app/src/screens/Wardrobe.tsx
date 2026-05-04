@@ -31,14 +31,17 @@ export default function Wardrobe() {
   const [accSub, setAccSub] = useState<AccSub>('모자');
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
+  const equippedSet = useMemo(() => new Set(u.equipped), [u.equipped]);
   const items = useMemo(() => {
     let pool: string[];
     if (cat === '전체') pool = [...SHOP_GROUPS.사치품, ...SHOP_GROUPS.티셔츠, ...SHOP_GROUPS.리모델링];
     else if (cat === '리모델링') pool = REMODEL_FILES[remodelSub];
     else if (cat === '사치품') pool = ACC_FILES_BY_SUB[accSub];
     else pool = SHOP_GROUPS[cat];
-    return pool.filter((src) => ownedSet.has(src));
-  }, [cat, remodelSub, accSub, ownedSet]);
+    const owned = pool.filter((src) => ownedSet.has(src));
+    // 즐겨찾기(별표 = 착용 중) 항목을 앞으로 정렬. 동률 내에서는 원래 순서 유지(stable sort)
+    return owned.slice().sort((a, b) => Number(equippedSet.has(b)) - Number(equippedSet.has(a)));
+  }, [cat, remodelSub, accSub, ownedSet, equippedSet]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
