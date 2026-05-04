@@ -216,11 +216,15 @@ export default function MyPage() {
         <div className="mt-3 flex items-center justify-between">
           <button
             onClick={() => setTitleModal(true)}
-            className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5 active:scale-[.98]"
+            className="bg-primary/70 rounded-full pl-1 pr-3 py-0.5 text-[12px] font-bold text-text inline-flex items-center gap-1.5 active:scale-[.98]"
             aria-label="칭호 변경"
           >
-            <span aria-hidden>{u.ownedTitles.includes(u.activeTitleId) ? '🏅' : '🔒'}</span>
-            {u.ownedTitles.includes(u.activeTitleId) ? activeTitle.name : '칭호 미획득'}
+            {u.ownedTitles.includes(u.activeTitleId) ? (
+              <TitleIcon src={activeTitle.img} size={22} alt={activeTitle.name} />
+            ) : (
+              <span aria-hidden className="w-[22px] h-[22px] grid place-items-center text-[14px]">🔒</span>
+            )}
+            <span>{u.ownedTitles.includes(u.activeTitleId) ? activeTitle.name : '칭호 미획득'}</span>
           </button>
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
         </div>
