@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { EquipSlot, equipSlotOf, fitSrc } from '../lib/data';
 
 // 캐릭터 캔버스/렌더 기준값. 사치품·티셔츠 fit이 캐릭터와 같은 픽셀 스케일 + 같은 중심점으로 그려지도록 동기화.
@@ -47,7 +47,7 @@ export function RoomPreview({
   framed?: boolean;
   characterSrc?: string;
   characterClassName?: string;
-  onCharacterClick?: () => void;
+  onCharacterClick?: (e: React.MouseEvent<HTMLImageElement>) => void;
 }) {
   // 슬롯별로 최우선 표시 src 결정 (extra 우선)
   const all = [...equipped, ...extra];
