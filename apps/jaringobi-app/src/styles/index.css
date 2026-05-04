@@ -66,3 +66,21 @@ button {
 a.tap-pill {
   line-height: 1 !important;
 }
+
+/* 캐릭터 펀치 효과 — 흔들림 + 팡 버스트 */
+@keyframes hit-shake {
+  0%   { transform: translate(0, 0) rotate(0deg); }
+  20%  { transform: translate(-3px, 1px) rotate(-2deg); }
+  40%  { transform: translate(3px, -1px) rotate(2deg); }
+  60%  { transform: translate(-2px, 1px) rotate(-1deg); }
+  80%  { transform: translate(2px, 0) rotate(1deg); }
+  100% { transform: translate(0, 0) rotate(0deg); }
+}
+@keyframes hit-pop {
+  0%   { transform: scale(0.4) rotate(-15deg); opacity: 0; }
+  30%  { transform: scale(1.15) rotate(-8deg); opacity: 1; }
+  60%  { transform: scale(1)    rotate(-5deg); opacity: 1; }
+  100% { transform: scale(1.05) rotate(-5deg); opacity: 0; }
+}
+.animate-hit-shake { animation: hit-shake 350ms ease-in-out; }
+.animate-hit-pop   { animation: hit-pop   400ms ease-out forwards; }
