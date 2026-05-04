@@ -11,10 +11,15 @@ const KEY = 'jaringobi.user.v1';
 export interface UserSettings {
   notifyChallenge: boolean;
   notifyHeart: boolean;
+  /** 마스터 사운드 토글 — OFF 면 BGM·SFX 모두 무음 */
   sound: boolean;
   vibration: boolean;
-  /** BGM 볼륨 0~100 (사운드 ON 일 때만 반영) */
+  /** BGM 볼륨 0~100 */
   bgmVolume: number;
+  /** SFX 토글 — sound 가 ON 이라도 SFX 만 따로 끌 수 있음 */
+  sfxEnabled: boolean;
+  /** SFX 볼륨 0~100 */
+  sfxVolume: number;
 }
 
 export interface UserState {
@@ -75,6 +80,8 @@ const DEFAULT: UserState = {
     sound: true,
     vibration: false,
     bgmVolume: 60,
+    sfxEnabled: true,
+    sfxVolume: 80,
   },
 };
 

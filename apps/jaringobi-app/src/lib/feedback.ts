@@ -19,15 +19,32 @@ function getCtx(): AudioContext | null {
   }
 }
 
+// 효과음 마스터 볼륨 (0~100). Settings의 sfxVolume 슬라이더로 제어.
+// 기본 100 — 코드 작성된 gain 값 그대로 사용
+let sfxVolumePercent = 100;
+let sfxEnabled = true;
+export function setSfxVolume(percent: number) {
+  sfxVolumePercent = Math.max(0, Math.min(100, percent));
+}
+export function setSfxEnabled(enabled: boolean) {
+  sfxEnabled = enabled;
+}
+function scaleGain(gain: number) {
+  if (!sfxEnabled) return 0;
+  return gain * (sfxVolumePercent / 100);
+}
+
 function beep(freq: number, durationMs: number, gain = 0.05) {
   const ctx = getCtx();
   if (!ctx) return;
+  const finalGain = scaleGain(gain);
+  if (finalGain <= 0) return;
   try {
     const osc = ctx.createOscillator();
     const g = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.value = freq;
-    g.gain.setValueAtTime(gain, ctx.currentTime);
+    g.gain.setValueAtTime(finalGain, ctx.currentTime);
     g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + durationMs / 1000);
     osc.connect(g).connect(ctx.destination);
     osc.start();
@@ -45,6 +62,8 @@ export function playClickSfx() {
 function clink(durationMs: number, gain: number) {
   const ctx = getCtx();
   if (!ctx) return;
+  const finalGain = scaleGain(gain);
+  if (finalGain <= 0) return;
   try {
     const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * (durationMs / 1000)), ctx.sampleRate);
     const data = buf.getChannelData(0);
@@ -57,7 +76,7 @@ function clink(durationMs: number, gain: number) {
     filter.Q.value = 6;
     const g = ctx.createGain();
     const t = ctx.currentTime;
-    g.gain.setValueAtTime(gain, t);
+    g.gain.setValueAtTime(finalGain, t);
     g.gain.exponentialRampToValueAtTime(0.001, t + durationMs / 1000);
     src.connect(filter).connect(g).connect(ctx.destination);
     src.start(t);

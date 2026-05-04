@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
 import { getBgm } from './lib/bgm';
+import { setSfxEnabled, setSfxVolume } from './lib/feedback';
 import { useUser } from './lib/userState';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
@@ -46,10 +47,16 @@ function BgmController() {
     };
   }, [u.settings.sound]);
 
-  // 볼륨만 변경 — 끊김 없이 페이드
+  // BGM 볼륨만 변경 — 끊김 없이 페이드
   useEffect(() => {
     getBgm().setVolumePercent(u.settings.bgmVolume ?? 60);
   }, [u.settings.bgmVolume]);
+
+  // SFX — sound 마스터 + sfxEnabled + sfxVolume 합쳐서 적용
+  useEffect(() => {
+    setSfxEnabled(u.settings.sound && (u.settings.sfxEnabled ?? true));
+    setSfxVolume(u.settings.sfxVolume ?? 80);
+  }, [u.settings.sound, u.settings.sfxEnabled, u.settings.sfxVolume]);
 
   return null;
 }

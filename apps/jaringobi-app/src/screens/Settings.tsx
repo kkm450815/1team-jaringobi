@@ -161,7 +161,7 @@ export default function Settings() {
       </Section>
 
       <Section title="피드백">
-        {settingItem('sound', '사운드')}
+        {settingItem('sound', '사운드', '전체 사운드 마스터 — OFF 면 BGM·효과음 모두 무음')}
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 w-[90px] shrink-0">
             <p className="text-[15px] font-bold text-text">BGM 볼륨</p>
@@ -176,6 +176,24 @@ export default function Settings() {
             value={u.settings.bgmVolume ?? 60}
             onChange={(e) => u.setSetting('bgmVolume', Number(e.target.value))}
             aria-label="BGM 볼륨"
+            className="flex-1 accent-accent disabled:opacity-40"
+          />
+        </div>
+        {settingItem('sfxEnabled', '효과음', '클릭·구매·인증 등 짧은 효과음')}
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 w-[90px] shrink-0">
+            <p className="text-[15px] font-bold text-text">효과음 볼륨</p>
+            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.sfxVolume ?? 80}%</p>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            disabled={!u.settings.sound || !(u.settings.sfxEnabled ?? true)}
+            value={u.settings.sfxVolume ?? 80}
+            onChange={(e) => u.setSetting('sfxVolume', Number(e.target.value))}
+            aria-label="효과음 볼륨"
             className="flex-1 accent-accent disabled:opacity-40"
           />
         </div>
