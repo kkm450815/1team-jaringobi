@@ -41,14 +41,16 @@ export default function Main() {
 
   // 캐릭터 클릭 시 잠깐 찡그린 표정 + 클릭한 위치에 팡 버스트 표시 (350ms)
   const roomRef = useRef<HTMLDivElement>(null);
-  const [hit, setHit] = useState<{ x: number; y: number; tick: number } | null>(null);
+  const HIT_COLORS = ['#FFE34D', '#F49496', '#7BC256', '#7AC8E8', '#C49AE8', '#FFA94D', '#F47CC8'];
+  const [hit, setHit] = useState<{ x: number; y: number; tick: number; color: string } | null>(null);
   function hitCharacter(e: React.MouseEvent) {
     const root = roomRef.current;
     if (!root) return;
     const rect = root.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    setHit({ x, y, tick: (hit?.tick ?? 0) + 1 });
+    const color = HIT_COLORS[Math.floor(Math.random() * HIT_COLORS.length)];
+    setHit({ x, y, tick: (hit?.tick ?? 0) + 1, color });
     if (u.settings.sound) playLoseSfx();
     if (u.settings.vibration) vibrate(20);
   }
@@ -211,7 +213,7 @@ export default function Main() {
             <svg width="56" height="56" viewBox="0 0 120 120">
               <polygon
                 points="60,4 70,30 96,18 84,44 116,52 88,64 108,90 78,82 84,114 60,92 36,114 42,82 12,90 32,64 4,52 36,44 24,18 50,30"
-                fill="#FFE34D"
+                fill={hit.color}
                 stroke="#3D3833"
                 strokeWidth="3"
                 strokeLinejoin="round"
