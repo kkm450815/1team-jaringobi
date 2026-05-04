@@ -63,8 +63,8 @@ const DEFAULT: UserState = {
   missionPicks: ['m2', 'm12', 'm13'],
   missionConfirmed: [],
   missionSuccesses: [],
-  activeTitleId: 'h1',
-  ownedTitles: [],
+  activeTitleId: 'h0',
+  ownedTitles: ['h0'],
   missionWinDays: {},
   totalSaveCount: 0,
   settings: {
@@ -97,8 +97,13 @@ function read(): UserState {
         (v): v is number => typeof v === 'number',
       ),
 
-      activeTitleId: parsed.activeTitleId ?? DEFAULT.activeTitleId,
-      ownedTitles: parsed.ownedTitles ?? DEFAULT.ownedTitles,
+      // 초보 절약가(h0)는 모든 사용자가 기본 보유 — 마이그레이션
+      ownedTitles: Array.from(new Set([...(parsed.ownedTitles ?? []), 'h0'])),
+      // 활성 칭호가 보유하지 않은 칭호면 h0로 폴백
+      activeTitleId: (parsed.activeTitleId
+        && Array.from(new Set([...(parsed.ownedTitles ?? []), 'h0'])).includes(parsed.activeTitleId))
+        ? parsed.activeTitleId
+        : 'h0',
       missionWinDays: parsed.missionWinDays ?? DEFAULT.missionWinDays,
       totalSaveCount: typeof parsed.totalSaveCount === 'number'
         ? parsed.totalSaveCount

@@ -293,6 +293,13 @@ export interface Title {
 
 export const TITLES: Title[] = [
   {
+    id: 'h0', name: '초보 절약가', difficulty: '쉬움',
+    tagline: '절약의 첫 발을 내딛다',
+    tip: '하루에 한 가지씩만 줄여봐도 한 달이 다르게 느껴져요',
+    iconKey: 'sprout',
+    reqs: [],
+  },
+  {
     id: 'h1', name: '홈 바리스타', difficulty: '쉬움',
     tagline: '오늘도 커피 값을 아꼈다',
     tip: '텀블러를 들고 다니면 더 쉽게 성공할 수 있어요',
