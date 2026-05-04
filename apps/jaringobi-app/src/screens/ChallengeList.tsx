@@ -1,5 +1,6 @@
 import { Link, useSearchParams } from 'react-router-dom';
 import { BackButton } from '../components/UI';
+import { Highlight } from '../components/Highlight';
 import { MISSIONS, MissionCategory } from '../lib/data';
 
 const CATS: MissionCategory[] = ['식비', '여가', '충동', '통장'];
@@ -105,7 +106,7 @@ export default function ChallengeList() {
                   </span>
                 </div>
                 <p className="text-[13px] text-text/75 leading-relaxed mt-1 line-clamp-2 break-keep pr-10">
-                  {m.intro}
+                  <Highlight text={m.intro} />
                 </p>
               </div>
               <span className="absolute right-3 bottom-2 text-text/70" aria-hidden>
