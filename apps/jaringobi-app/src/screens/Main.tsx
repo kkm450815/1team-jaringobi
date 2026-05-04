@@ -195,8 +195,8 @@ export default function Main() {
           onClick={() => { setShowHeartModal(false); setPendingHeartIdx(null); }}
         >
           <div className="w-full max-w-[340px] text-center" onClick={(e) => e.stopPropagation()}>
-            <p className="font-bold text-[20px] text-text">당신의 양심 지키시겠습니까?</p>
-            <p className="mt-2 text-[13px] text-text/65">
+            <p className="font-bold text-[20px] text-white">당신의 양심 지키시겠습니까?</p>
+            <p className="mt-2 text-[13px] text-white/75">
               삭제하면 ♥ {Math.max(0, hearts - 1)}개만 남아요
             </p>
             <div className="mt-5 flex justify-center items-center gap-5">

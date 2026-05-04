@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 /* ---------------- BackButton (히스토리 뒤로가기) ---------------- */
 export function BackButton({
@@ -10,13 +10,15 @@ export function BackButton({
   fallback?: string;
 }) {
   const nav = useNavigate();
+  const loc = useLocation();
+  // react-router v6: 초기 진입(직접 URL/새로고침)이면 key === 'default'.
+  // 그 외에는 nav 거친 상태이므로 history 뒤로가기 가능.
+  const hasHistory = loc.key !== 'default';
   return (
     <button
       type="button"
       onClick={() => {
-        // 히스토리가 없으면 fallback 경로로
-        const state = window.history.state as { idx?: number } | null;
-        if (state && (state.idx ?? 0) > 0) nav(-1);
+        if (hasHistory) nav(-1);
         else nav(fallback);
       }}
       aria-label="뒤로"
