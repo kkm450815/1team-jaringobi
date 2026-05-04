@@ -56,12 +56,12 @@ body {
 /* 버튼/Pill 안 텍스트 수직 중앙 정렬
    GangwonEducationModuche 같은 한국어 손글씨 폰트는 baseline이 시각 중앙보다
    위에 있어 padding-y가 같아도 글씨가 위로 떠 보임.
-   inline-flex + items-center 로 강제 중앙, line-height 1.15로 폰트박스 압축. */
-@layer base {
-  button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    line-height: 1.15;
-  }
+   - inline-flex + items-center 로 line-box 강제 중앙
+   - line-height: 1 로 line-box 자체를 글씨 크기로 압축 → 수직 정렬 정확
+   - !important 로 Tailwind text-* 유틸의 line-height 오버라이드 */
+button {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  line-height: 1 !important;
 }
