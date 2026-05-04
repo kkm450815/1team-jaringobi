@@ -3,15 +3,19 @@
 
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { ME_NICK, TITLES } from '../lib/data';
+import { fitSrc, ME_NICK, TITLES } from '../lib/data';
 import { profilesRepo, PublicProfile } from '../lib/profilesRepo';
 import { BackButton } from '../components/UI';
+import { RoomPreview } from '../components/RoomPreview';
 import { TitleIcon } from '../components/TitleIcon';
+import { useEscape } from '../lib/useEscape';
 
 export default function Profile() {
   const { nick: rawNick } = useParams();
   const nick = decodeURIComponent(rawNick ?? '');
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
+  const [roomOpen, setRoomOpen] = useState(false);
+  useEscape(roomOpen, () => setRoomOpen(false));
 
   useEffect(() => {
     let cancelled = false;
@@ -42,6 +46,9 @@ export default function Profile() {
 
   const activeTitle = TITLES.find((t) => t.id === profile.activeTitleId) ?? TITLES[0];
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
+  const equippedAcc = profile.equipped.filter(
+    (s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'),
+  );
 
   return (
     <main className="min-h-full pb-10">
@@ -67,14 +74,30 @@ export default function Profile() {
         </div>
 
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-3">
-          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative">
+          <button
+            onClick={() => setRoomOpen(true)}
+            aria-label={`${profile.nickname} 방 보기`}
+            className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
+          >
             <img
               src="/jarin/main_character.png"
               alt={`${profile.nickname} 캐릭터`}
-              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
+              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
               draggable={false}
             />
-          </div>
+            {equippedAcc.map((s) => (
+              <img
+                key={s}
+                src={fitSrc(s)}
+                alt=""
+                className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
+                draggable={false}
+              />
+            ))}
+            <span className="absolute right-1.5 bottom-1.5 bg-text/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              방 보기
+            </span>
+          </button>
           <div>
             <p className="text-[14px] font-bold text-text">
               30일 챌린지 {profile.day}일차
@@ -110,6 +133,33 @@ export default function Profile() {
           </ul>
         </div>
       </section>
+
+      {/* 캐릭터 방 모달 */}
+      {roomOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 grid place-items-center px-5"
+          onClick={() => setRoomOpen(false)}
+        >
+          <div
+            className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <p className="text-center font-bold text-[16px] text-text">
+                {profile.nickname} 의 방
+              </p>
+              <button
+                onClick={() => setRoomOpen(false)}
+                aria-label="닫기"
+                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[24px] leading-none text-text/70 font-bold"
+              >×</button>
+            </div>
+            <div className="mt-4">
+              <RoomPreview equipped={profile.equipped} className="mx-auto w-full" />
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

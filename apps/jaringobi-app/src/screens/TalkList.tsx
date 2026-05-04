@@ -17,6 +17,19 @@ export default function TalkList() {
             />
           </Link>
         </div>
+        <Link
+          to="/honor"
+          aria-label="명예의 전당"
+          className="absolute right-4 top-11 w-10 h-10 grid place-items-center rounded-full bg-white shadow-soft active:scale-[.95] transition"
+        >
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="#F4C430" stroke="#3D3833" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
+            <path d="M6 4h12v3a5 5 0 0 1-5 5h-2a5 5 0 0 1-5-5z" />
+            <path d="M3 5h3v3a3 3 0 0 0 3 3" fill="none" />
+            <path d="M21 5h-3v3a3 3 0 0 1-3 3" fill="none" />
+            <path d="M9 16h6v3H9z" />
+            <path d="M7 19h10v2H7z" />
+          </svg>
+        </Link>
       </header>
 
       <ul className="px-5 pb-4 space-y-3">
