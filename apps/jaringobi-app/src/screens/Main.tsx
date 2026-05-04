@@ -5,7 +5,8 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
-import { playLoseSfx, vibrate } from '../lib/feedback';
+import { playHitSfx, playLoseSfx, vibrate } from '../lib/feedback';
+import { getBgm } from '../lib/bgm';
 import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
@@ -40,6 +41,28 @@ export default function Main() {
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
+  // BGM — 사용자가 사운드 ON 이면, 메인 진입 후 첫 클릭 시점부터 재생.
+  // (브라우저 autoplay 제한 때문에 이벤트 핸들러 내에서 시작해야 함)
+  // 메인 이탈 / 사운드 OFF 토글 시 정지
+  const [bgmMuted, setBgmMuted] = useState(false);
+  useEffect(() => {
+    const bgm = getBgm();
+    function tryStart() {
+      if (u.settings.sound && !bgmMuted) bgm.start();
+      window.removeEventListener('pointerdown', tryStart);
+    }
+    if (u.settings.sound && !bgmMuted) {
+      // 첫 사용자 인터랙션을 기다림
+      window.addEventListener('pointerdown', tryStart, { once: true });
+    } else {
+      bgm.stop();
+    }
+    return () => {
+      window.removeEventListener('pointerdown', tryStart);
+      bgm.stop();
+    };
+  }, [u.settings.sound, bgmMuted]);
+
   // 캐릭터 클릭 시 잠깐 찡그린 표정 + 클릭한 위치에 팡 버스트 표시 (350ms)
   // 누적 hitCount >= 20 이면 평상시 표정이 cry_cha(떨떠름)로 바뀜
   const roomRef = useRef<HTMLDivElement>(null);
@@ -55,8 +78,8 @@ export default function Main() {
     const color = HIT_COLORS[Math.floor(Math.random() * HIT_COLORS.length)];
     setHit({ x, y, tick: (hit?.tick ?? 0) + 1, color });
     setHitCount((c) => c + 1);
-    if (u.settings.sound) playLoseSfx();
-    if (u.settings.vibration) vibrate(20);
+    if (u.settings.sound) playHitSfx();
+    if (u.settings.vibration) vibrate(30);
   }
   useEffect(() => {
     if (!hit) return;
@@ -157,7 +180,7 @@ export default function Main() {
   useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
 
   return (
-    <main className="flex flex-col min-h-full pb-0">
+    <main className="relative flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
         <div className="flex flex-col items-center gap-1">
@@ -192,6 +215,29 @@ export default function Main() {
           <span className="text-[11px] font-bold text-text">MY</span>
         </Link>
       </header>
+
+      {/* BGM 음소거 토글 — 페이지 우상단 작은 버튼 */}
+      <button
+        type="button"
+        onClick={() => setBgmMuted((m) => !m)}
+        aria-label={bgmMuted ? 'BGM 켜기' : 'BGM 끄기'}
+        className="absolute top-2 right-2 z-30 w-7 h-7 grid place-items-center text-text/60"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+          <path d="M11 5 L6 9 H3 V15 H6 L11 19 Z" fill="currentColor" />
+          {bgmMuted ? (
+            <>
+              <line x1="16" y1="9" x2="22" y2="15" />
+              <line x1="22" y1="9" x2="16" y2="15" />
+            </>
+          ) : (
+            <>
+              <path d="M16 8 a6 6 0 0 1 0 8" />
+              <path d="M19 5 a10 10 0 0 1 0 14" />
+            </>
+          )}
+        </svg>
+      </button>
 
       {/* 오늘의 절약미션 버튼 */}
       <section className="px-10 pt-8 pb-8">
@@ -274,12 +320,6 @@ export default function Main() {
                         fill={fillColor}
                       />
                     </svg>
-                    {isDeleting && (
-                      <span
-                        className="absolute inset-0 grid place-items-center text-[40px] font-black text-white"
-                        aria-label="삭제 표시"
-                      >×</span>
-                    )}
                   </div>
                 );
               })}

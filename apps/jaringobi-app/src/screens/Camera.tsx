@@ -64,8 +64,8 @@ export default function Camera() {
 
   function closeRewardAndContinue() {
     setReward(null);
-    // 인증 완료 후 마이페이지로 이동 (RECORD에 추가된 사진 즉시 확인 가능)
-    nav('/mypage');
+    // /camera 를 history에서 교체 → 마이페이지에서 뒤로가기 시 메인으로 복귀
+    nav('/mypage', { replace: true });
   }
 
   useEscape(reward !== null, closeRewardAndContinue);
