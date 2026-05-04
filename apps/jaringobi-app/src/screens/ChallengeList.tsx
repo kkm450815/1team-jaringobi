@@ -90,7 +90,7 @@ export default function ChallengeList() {
               key={c}
               onClick={() => setCat(c)}
               className={`flex items-center justify-center text-center py-2 rounded-full text-[13px] font-bold transition-colors ${
-                active ? 'bg-accent text-[#FFFFAD]' : 'bg-primary/40 text-text/70'
+                active ? 'bg-accent text-accent-soft' : 'bg-primary/40 text-text/70'
               }`}
             >
               {CAT_LABEL[c]}

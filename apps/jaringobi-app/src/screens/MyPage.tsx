@@ -512,7 +512,7 @@ function TitleDetail({
             className={`rounded-full py-3 text-[14px] font-bold transition ${
               active
                 ? 'bg-accent/40 text-text/60'
-                : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
+                : 'bg-accent text-accent-soft active:scale-[.98]'
             }`}
           >
             {active ? '사용 중' : '칭호 획득'}
@@ -527,7 +527,7 @@ function TitleDetail({
         )}
         <button
           onClick={owned && !active ? onChangeToThis : onBackToGrid}
-          className="rounded-full py-3 text-[14px] font-bold bg-accent text-[#FFFFAD] active:scale-[.98]"
+          className="rounded-full py-3 text-[14px] font-bold bg-accent text-accent-soft active:scale-[.98]"
         >
           칭호 변경
         </button>

@@ -174,7 +174,7 @@ export default function Settings() {
         <Row
           label="모든 데이터 초기화"
           sub="닉네임, 사진, 북마크가 사라져요"
-          right={<span className="text-pink text-[13px] font-bold">초기화</span>}
+          right={<span className="text-danger text-[13px] font-bold">초기화</span>}
           onClick={() => setConfirmReset(true)}
         />
       </Section>
@@ -226,20 +226,20 @@ export default function Settings() {
           onClick={() => { setConfirmReset(false); setResetAck(false); }}
         >
           <div
-            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl border-2 border-pink/30"
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl border-2 border-danger/30"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[18px] font-bold text-pink">⚠️ 모든 데이터 영구 삭제</p>
+            <p className="text-[18px] font-bold text-danger">⚠️ 모든 데이터 영구 삭제</p>
             <p className="text-[13px] text-text/80 mt-2 leading-relaxed">
               닉네임, 인증 사진, 챌린지 진행, 북마크, 보유 아이템이<br />
-              <span className="font-bold text-pink">모두 사라지며 복구할 수 없어요.</span>
+              <span className="font-bold text-danger">모두 사라지며 복구할 수 없어요.</span>
             </p>
             <label className="mt-4 flex items-center justify-center gap-2 text-[13px] text-text/80 cursor-pointer">
               <input
                 type="checkbox"
                 checked={resetAck}
                 onChange={(e) => setResetAck(e.target.checked)}
-                className="w-4 h-4 accent-pink"
+                className="w-4 h-4 accent-danger"
               />
               <span>위 내용을 이해했고 정말 초기화합니다</span>
             </label>
@@ -261,8 +261,8 @@ export default function Settings() {
                 disabled={!resetAck}
                 className={`flex-1 font-bold rounded-2xl py-3 transition ${
                   resetAck
-                    ? 'bg-pink text-white active:scale-[.98]'
-                    : 'bg-text/20 text-text/40 cursor-not-allowed'
+                    ? 'bg-danger text-white active:scale-[.98]'
+                    : 'bg-text/15 text-text/40 cursor-not-allowed'
                 }`}
               >초기화</button>
             </div>

@@ -12,8 +12,8 @@ function ModeCard({
 }) {
   const isHard = variant === 'hard';
   const bg = isHard ? 'bg-accent' : 'bg-primary';
-  const labelColor = isHard ? 'text-[#FFFFAD]' : 'text-text/70';
-  const textColor = isHard ? 'text-[#FFFFAD]' : 'text-text/85';
+  const labelColor = isHard ? 'text-accent-soft' : 'text-text/70';
+  const textColor = isHard ? 'text-accent-soft' : 'text-text/85';
   const label = isHard ? 'HARD MODE' : 'NORMAL MODE';
 
   return (

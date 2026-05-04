@@ -199,7 +199,7 @@ export default function Main() {
           onClick={openMissionModal}
           className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
             isConfirmed
-              ? 'bg-accent text-[#FFFFAD] ring-2 ring-accent/40'
+              ? 'bg-accent text-accent-soft ring-2 ring-accent/40'
               : 'bg-primary text-text'
           }`}
         >
@@ -446,7 +446,7 @@ function RecommendPanel({
         </div>
         <button
           onClick={onConfirm}
-          className="mt-3 w-full bg-accent text-[#FFFFAD] font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+          className="mt-3 w-full bg-accent text-accent-soft font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
         >
           챌린지 확정하기
         </button>
@@ -615,8 +615,8 @@ function ReviewPanel({
         disabled={successes.length === 0}
         className={`mt-4 w-full font-bold rounded-full py-3.5 text-[16px] transition ${
           successes.length === 0
-            ? 'bg-text/20 text-text/50 cursor-not-allowed'
-            : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
+            ? 'bg-text/15 text-text/40 cursor-not-allowed'
+            : 'bg-accent text-accent-soft active:scale-[.98]'
         }`}
       >
         {successes.length === 0 ? '성공한 미션을 1개 이상 체크해주세요' : '챌린지 완료하기'}
