@@ -319,9 +319,7 @@ function TitleGrid({
             <li key={t.id} className="flex flex-col items-center">
               <button
                 onClick={() => onPick(t.id)}
-                className={`relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition ${
-                  owned ? 'text-text' : 'text-text/35'
-                }`}
+                className="relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition"
                 aria-label={`${t.name} ${owned ? '획득' : '미획득'}`}
               >
                 {active && (
@@ -329,7 +327,7 @@ function TitleGrid({
                     사용 중
                   </span>
                 )}
-                <TitleIcon iconKey={t.iconKey} size={48} />
+                <TitleIcon iconKey={t.iconKey} size={50} locked={!owned} />
                 {!owned && (
                   <span className="absolute right-1.5 bottom-1.5 text-text/55" aria-hidden>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -365,7 +363,10 @@ function TitleDetail({
   const prog = getTitleProgress(title, ctx);
   const totalCur = prog.entries.reduce((s, e) => s + e.cur, 0);
   const totalMax = prog.entries.reduce((s, e) => s + e.max, 0);
-  const ratio = totalMax > 0 ? Math.min(1, totalCur / totalMax) : 0;
+  // reqs가 비어있는 기본 칭호(초보 절약가 등)는 항상 100%
+  const ratio = prog.entries.length === 0
+    ? 1
+    : totalMax > 0 ? Math.min(1, totalCur / totalMax) : 0;
 
   return (
     <div
@@ -385,8 +386,8 @@ function TitleDetail({
 
       {/* 아이콘 + 이름 + 진행도 */}
       <div className="mt-3 flex items-center gap-3">
-        <div className={`w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0 ${owned ? 'text-text' : 'text-text/40'}`}>
-          <TitleIcon iconKey={title.iconKey} size={42} />
+        <div className="w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0">
+          <TitleIcon iconKey={title.iconKey} size={44} locked={!owned} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[16px] font-bold text-text">{title.name}</p>
@@ -409,14 +410,18 @@ function TitleDetail({
       {/* 노트 카드 — 획득 방법 + tip */}
       <div className="mt-4 bg-grid-paper rounded-2xl px-4 py-4 shadow-soft">
         <p className="text-[13px] font-bold text-text">획득 방법</p>
-        <ul className="mt-1.5 space-y-1">
-          {prog.entries.map((e, i) => (
-            <li key={i} className="text-[12px] text-text/80 leading-relaxed flex items-start gap-1.5">
-              <span className={`shrink-0 ${e.met ? 'text-accent' : 'text-text/40'}`}>{e.met ? '✓' : '·'}</span>
-              <span>{e.label} <span className="text-text/55">({e.cur}/{e.max})</span></span>
-            </li>
-          ))}
-        </ul>
+        {prog.entries.length === 0 ? (
+          <p className="mt-1.5 text-[12px] text-text/80 leading-relaxed">기본 보유 칭호</p>
+        ) : (
+          <ul className="mt-1.5 space-y-1">
+            {prog.entries.map((e, i) => (
+              <li key={i} className="text-[12px] text-text/80 leading-relaxed flex items-start gap-1.5">
+                <span className={`shrink-0 ${e.met ? 'text-accent' : 'text-text/40'}`}>{e.met ? '✓' : '·'}</span>
+                <span>{e.label} <span className="text-text/55">({e.cur}/{e.max})</span></span>
+              </li>
+            ))}
+          </ul>
+        )}
         <p className="mt-3 text-[13px] font-bold text-text">tip!</p>
         <p className="mt-1 text-[12px] text-text/80 leading-relaxed">{title.tip}</p>
       </div>
