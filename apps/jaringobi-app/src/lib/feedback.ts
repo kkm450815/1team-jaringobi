@@ -41,11 +41,43 @@ export function playClickSfx() {
   beep(880, 40, 0.10);
 }
 
-/** 상점 구매 — 동전 떨어지는 듯한 ka-ching */
+/** 메탈릭 짧은 임팩트 — 동전 부딪히는 sharp transient */
+function clink(durationMs: number, gain: number) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  try {
+    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * (durationMs / 1000)), ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = 4500;
+    filter.Q.value = 6;
+    const g = ctx.createGain();
+    const t = ctx.currentTime;
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + durationMs / 1000);
+    src.connect(filter).connect(g).connect(ctx.destination);
+    src.start(t);
+    src.stop(t + durationMs / 1000);
+  } catch {
+    // ignore
+  }
+}
+
+/** 상점 구매 — 코인 짤랑 + ka-ching */
 export function playPurchaseSfx() {
-  beep(1175, 70, 0.18);                     // D6
-  setTimeout(() => beep(1568, 90, 0.20), 80); // G6 — 상승 톤
-  setTimeout(() => beep(2093, 140, 0.14), 180); // C7 — 마무리 반짝
+  // 짤랑 — 동전이 부딪히는 메탈릭 임팩트 + 살짝 다른 고음 벨 3개
+  clink(60, 0.22);
+  beep(2400, 120, 0.16);
+  setTimeout(() => beep(2900, 110, 0.14), 60);
+  setTimeout(() => beep(2200, 130, 0.12), 130);
+  setTimeout(() => clink(40, 0.14), 90);
+  // ka-ching 마무리 상승 톤
+  setTimeout(() => beep(1568, 100, 0.18), 230); // G6
+  setTimeout(() => beep(2093, 140, 0.16), 320); // C7
 }
 
 export function playSuccessSfx() {
