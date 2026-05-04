@@ -37,6 +37,8 @@ function scaleGain(gain: number) {
 function beep(freq: number, durationMs: number, gain = 0.05) {
   const ctx = getCtx();
   if (!ctx) return;
+  // 사용자 인터랙션 직후 호출인 경우 context 가 suspended 상태일 수 있음 — resume
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   const finalGain = scaleGain(gain);
   if (finalGain <= 0) return;
   try {
@@ -62,6 +64,7 @@ export function playClickSfx() {
 function clink(durationMs: number, gain: number) {
   const ctx = getCtx();
   if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume().catch(() => {});
   const finalGain = scaleGain(gain);
   if (finalGain <= 0) return;
   try {
@@ -71,9 +74,10 @@ function clink(durationMs: number, gain: number) {
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const filter = ctx.createBiquadFilter();
+    // 더 넓은 대역(Q 낮춤) + 중심 주파수 낮춰 출력 보장
     filter.type = 'bandpass';
-    filter.frequency.value = 4500;
-    filter.Q.value = 6;
+    filter.frequency.value = 3000;
+    filter.Q.value = 2;
     const g = ctx.createGain();
     const t = ctx.currentTime;
     g.gain.setValueAtTime(finalGain, t);
@@ -88,15 +92,15 @@ function clink(durationMs: number, gain: number) {
 
 /** 상점 구매 — 코인 짤랑 + ka-ching */
 export function playPurchaseSfx() {
-  // 짤랑 — 동전이 부딪히는 메탈릭 임팩트 + 살짝 다른 고음 벨 3개
-  clink(60, 0.22);
-  beep(2400, 120, 0.16);
-  setTimeout(() => beep(2900, 110, 0.14), 60);
-  setTimeout(() => beep(2200, 130, 0.12), 130);
-  setTimeout(() => clink(40, 0.14), 90);
+  // 짤랑 — 동전이 부딪히는 메탈릭 임팩트 + 살짝 다른 고음 벨 3개 (gain 상향)
+  clink(80, 0.45);
+  beep(2400, 140, 0.28);
+  setTimeout(() => beep(2900, 130, 0.24), 60);
+  setTimeout(() => beep(2200, 150, 0.22), 130);
+  setTimeout(() => clink(50, 0.30), 90);
   // ka-ching 마무리 상승 톤
-  setTimeout(() => beep(1568, 100, 0.18), 230); // G6
-  setTimeout(() => beep(2093, 140, 0.16), 320); // C7
+  setTimeout(() => beep(1568, 120, 0.30), 230); // G6
+  setTimeout(() => beep(2093, 160, 0.26), 320); // C7
 }
 
 export function playSuccessSfx() {
