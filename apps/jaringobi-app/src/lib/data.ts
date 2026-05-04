@@ -217,6 +217,17 @@ export const MISSIONS: Mission[] = [
     authMethod: '주간 지출 내역 캡처',
   },
   {
+    id: 'm21', category: '여가', title: '지자체 체육시설 이용', amount: 50000, difficulty: '쉬움', iconKey: 'gym',
+    intro: '구립 체육관·강좌·공원 시설로 헬스장 비용 줄이기.',
+    tips: [
+      '구립 체육관 등록 — 헬스장 월 1~3만원, 시설은 사설과 큰 차이 없음',
+      '수영·요가·필라테스 강좌 — 사설 학원의 1/3 가격, 개강 전날 밤 미리 접수',
+      '공원 야외 운동기구 활용 — 철봉·평행봉·레그프레스 + 트랙 유산소',
+      '유튜브 홈트로 0원 운동 루틴',
+    ],
+    authMethod: '구립 체육센터 등록증 또는 운동 인증 사진 업로드',
+  },
+  {
     id: 'm20', category: '여가', title: '한 달 여가비 5만원 쓰기', amount: 50000, difficulty: '어려움', iconKey: 'leisure',
     intro: '놀건 놀아야지. 근데 한 달에 딱 5만원 안에서.',
     tips: [
@@ -259,17 +270,172 @@ export const TALK_POSTS: TalkPost[] = [
   { id: 'p10', roomId: 't4', nick: '자린이 33호',  body: '도서관에서 책 + 노트북 = 하루 0원 코스' },
 ];
 
-export const TITLES = [
-  { id: 'h1', name: '홈 바리스타', got: true,  active: true  },
-  { id: 'h2', name: '배달 킬러',   got: true,  active: false },
-  { id: 'h3', name: '통장 지킴이', got: true,  active: false },
-  { id: 'h4', name: '충동 차단',   got: true,  active: false },
-  { id: 'h5', name: '편의점 단절', got: false, active: false },
-  { id: 'h6', name: '카페 절제',   got: false, active: false },
-  { id: 'h7', name: '무지출왕',   got: false, active: false },
-  { id: 'h8', name: '미니멀리스트', got: false, active: false },
-  { id: 'h9', name: '재테크 입문', got: false, active: false },
+// 칭호/업적 시스템 — title.md 기반
+// 누적형, 같은 날 같은 미션은 1회만 인정 (savePhoto 시점에 (cycle,day) 키로 중복 제거)
+
+export type TitleDifficulty = '쉬움' | '보통' | '어려움';
+
+// 칭호 획득 조건. 모든 reqs를 만족해야 칭호 획득.
+export type TitleReq =
+  | { type: 'mission'; missionId: string; count: number }
+  | { type: 'totalSaveCount'; count: number }
+  | { type: 'cycleComplete' };
+
+export interface Title {
+  id: string;
+  name: string;
+  difficulty: TitleDifficulty;
+  tagline: string;       // 한 줄 설명
+  tip: string;           // 하단 tip!
+  iconKey: string;       // /jarin/chall/icon/chall_list_<key>.png 재사용
+  reqs: TitleReq[];
+}
+
+export const TITLES: Title[] = [
+  {
+    id: 'h1', name: '홈 바리스타', difficulty: '쉬움',
+    tagline: '오늘도 커피 값을 아꼈다',
+    tip: '텀블러를 들고 다니면 더 쉽게 성공할 수 있어요',
+    iconKey: 'coffee',
+    reqs: [{ type: 'mission', missionId: 'm2', count: 5 }],
+  },
+  {
+    id: 'h2', name: '편의점 미식가', difficulty: '쉬움',
+    tagline: '배달 대신 편의점 각',
+    tip: '배달 앱을 열기 전에 편의점을 떠올려보세요',
+    iconKey: 'cvs',
+    reqs: [{ type: 'mission', missionId: 'm1', count: 5 }],
+  },
+  {
+    id: 'h3', name: '방구석 선비', difficulty: '보통',
+    tagline: '오늘은 집이 최고다',
+    tip: '미리 약속을 줄여두면 자연스럽게 지출도 줄일 수 있어요',
+    iconKey: 'friend',
+    reqs: [{ type: 'mission', missionId: 'm19', count: 10 }],
+  },
+  {
+    id: 'h4', name: '동네 몸짱', difficulty: '보통',
+    tagline: '오늘도 땀값 세이브',
+    tip: '가까운 공공시설을 미리 알아두면 부담 없이 운동할 수 있어요',
+    iconKey: 'gym',
+    reqs: [{ type: 'mission', missionId: 'm21', count: 10 }],
+  },
+  {
+    id: 'h5', name: '문화 한량', difficulty: '보통',
+    tagline: '돈 없이도 잘 놀았다',
+    tip: '무료 전시나 행사를 미리 찾아두면 더 자주 즐길 수 있어요',
+    iconKey: 'culture',
+    reqs: [{ type: 'mission', missionId: 'm6', count: 10 }],
+  },
+  {
+    id: 'h6', name: '연금술사', difficulty: '어려움',
+    tagline: '오늘도 하나 살렸다',
+    tip: '안 쓰는 물건을 정리해보면 생각보다 쉽게 현금으로 바꿀 수 있어요',
+    iconKey: 'repair',
+    reqs: [
+      { type: 'mission', missionId: 'm18', count: 10 },
+      { type: 'mission', missionId: 'm13', count: 5 },
+    ],
+  },
+  {
+    id: 'h7', name: '현금술사', difficulty: '어려움',
+    tagline: '수입 한 스푼 추가',
+    tip: '작은 수입이라도 꾸준히 만들면 점점 차이가 커져요',
+    iconKey: 'save',
+    reqs: [
+      { type: 'mission', missionId: 'm14', count: 5 },
+      { type: 'mission', missionId: 'm16', count: 5 },
+    ],
+  },
+  {
+    id: 'h8', name: '디지털 폐지왕', difficulty: '어려움',
+    tagline: '티끌 모아 디지털 부자',
+    tip: '매일 조금씩 참여하면 부담 없이 포인트를 모을 수 있어요',
+    iconKey: 'phone',
+    reqs: [{ type: 'mission', missionId: 'm11', count: 15 }],
+  },
+  {
+    id: 'h9', name: '배달 킬러', difficulty: '쉬움',
+    tagline: '배달 끊으면 돈이 쌓인다',
+    tip: '배달 앱 대신 다른 선택지를 먼저 떠올리면 도움이 돼요',
+    iconKey: 'delivery',
+    reqs: [{ type: 'mission', missionId: 'm3', count: 5 }],
+  },
+  {
+    id: 'h10', name: '인내의 화신', difficulty: '어려움',
+    tagline: '참을 수 있는 자가 이긴다',
+    tip: '잠깐만 참아도 대부분의 소비 욕구는 금방 사라져요',
+    iconKey: 'shopping',
+    reqs: [
+      { type: 'mission', missionId: 'm10', count: 10 },
+      { type: 'mission', missionId: 'm12', count: 10 },
+      { type: 'mission', missionId: 'm5', count: 10 },
+    ],
+  },
+  {
+    id: 'h11', name: '자린고비', difficulty: '어려움',
+    tagline: '진짜 절약의 끝판왕',
+    tip: '하루 한 번 무지출을 목표로 하면 점점 익숙해질 수 있어요',
+    iconKey: 'zero',
+    reqs: [
+      { type: 'totalSaveCount', count: 30 },
+      { type: 'mission', missionId: 'm17', count: 10 },
+      { type: 'cycleComplete' },
+    ],
+  },
 ];
+
+export interface TitleProgress {
+  cur: number;
+  max: number;
+  met: boolean;
+  label: string;     // "커피 참기 5회" 등 사람이 읽는 라벨
+}
+
+// 사용자 상태 기반으로 한 칭호의 각 req에 대한 진행도 계산
+export function getTitleProgress(
+  title: Title,
+  ctx: {
+    missionWinDays: Record<string, string[]>;
+    totalSaveCount: number;
+    cycle: number;
+  },
+): { entries: TitleProgress[]; achieved: boolean; ratio: number } {
+  const entries: TitleProgress[] = title.reqs.map((req) => {
+    if (req.type === 'mission') {
+      const m = MISSIONS.find((x) => x.id === req.missionId);
+      const cur = Math.min(ctx.missionWinDays[req.missionId]?.length ?? 0, req.count);
+      return {
+        cur,
+        max: req.count,
+        met: cur >= req.count,
+        label: `${m?.title ?? req.missionId} ${req.count}회 성공`,
+      };
+    }
+    if (req.type === 'totalSaveCount') {
+      const cur = Math.min(ctx.totalSaveCount, req.count);
+      return {
+        cur,
+        max: req.count,
+        met: cur >= req.count,
+        label: `총 절약 ${req.count}회 이상`,
+      };
+    }
+    // cycleComplete
+    const done = ctx.cycle > 1 ? 1 : 0;
+    return {
+      cur: done,
+      max: 1,
+      met: done >= 1,
+      label: '챌린지 1회 완주',
+    };
+  });
+  const achieved = entries.every((e) => e.met);
+  const totalCur = entries.reduce((s, e) => s + e.cur, 0);
+  const totalMax = entries.reduce((s, e) => s + e.max, 0);
+  const ratio = totalMax > 0 ? totalCur / totalMax : 0;
+  return { entries, achieved, ratio };
+}
 
 export type ShopCategory = '전체' | '사치품' | '티셔츠' | '리모델링';
 
