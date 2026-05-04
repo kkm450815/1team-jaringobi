@@ -276,7 +276,8 @@ export interface Title {
   difficulty: TitleDifficulty;
   tagline: string;       // 한 줄 설명
   tip: string;           // 하단 tip!
-  iconKey: string;       // /jarin/chall/icon/chall_list_<key>.png 재사용
+  iconKey: string;       // 레거시 SVG fallback용
+  img: string;           // 칭호 메인 이미지 경로 (/title/title_NN.png)
   reqs: TitleReq[];
 }
 
@@ -286,6 +287,7 @@ export const TITLES: Title[] = [
     tagline: '절약의 첫 발을 내딛다',
     tip: '하루에 한 가지씩만 줄여봐도 한 달이 다르게 느껴져요',
     iconKey: 'sprout',
+    img: '/title/title_00.png',
     reqs: [],
   },
   {
@@ -293,6 +295,7 @@ export const TITLES: Title[] = [
     tagline: '오늘도 커피 값을 아꼈다',
     tip: '텀블러를 들고 다니면 더 쉽게 성공할 수 있어요',
     iconKey: 'coffee',
+    img: '/title/title_01.png',
     reqs: [{ type: 'mission', missionId: 'm2', count: 5 }],
   },
   {
@@ -300,6 +303,7 @@ export const TITLES: Title[] = [
     tagline: '배달 대신 편의점 각',
     tip: '배달 앱을 열기 전에 편의점을 떠올려보세요',
     iconKey: 'cvs',
+    img: '/title/title_02.png',
     reqs: [{ type: 'mission', missionId: 'm1', count: 5 }],
   },
   {
@@ -307,6 +311,7 @@ export const TITLES: Title[] = [
     tagline: '오늘은 집이 최고다',
     tip: '미리 약속을 줄여두면 자연스럽게 지출도 줄일 수 있어요',
     iconKey: 'friend',
+    img: '/title/title_03.png',
     reqs: [{ type: 'mission', missionId: 'm19', count: 10 }],
   },
   {
@@ -314,6 +319,7 @@ export const TITLES: Title[] = [
     tagline: '돈 없이도 잘 놀았다',
     tip: '무료 전시나 행사를 미리 찾아두면 더 자주 즐길 수 있어요',
     iconKey: 'culture',
+    img: '/title/title_04.png',
     reqs: [{ type: 'mission', missionId: 'm6', count: 10 }],
   },
   {
@@ -321,6 +327,7 @@ export const TITLES: Title[] = [
     tagline: '오늘도 하나 살렸다',
     tip: '안 쓰는 물건을 정리해보면 생각보다 쉽게 현금으로 바꿀 수 있어요',
     iconKey: 'repair',
+    img: '/title/title_05.png',
     reqs: [
       { type: 'mission', missionId: 'm18', count: 10 },
       { type: 'mission', missionId: 'm13', count: 5 },
@@ -331,6 +338,7 @@ export const TITLES: Title[] = [
     tagline: '수입 한 스푼 추가',
     tip: '작은 수입이라도 꾸준히 만들면 점점 차이가 커져요',
     iconKey: 'save',
+    img: '/title/title_06.png',
     reqs: [
       { type: 'mission', missionId: 'm14', count: 5 },
       { type: 'mission', missionId: 'm16', count: 5 },
@@ -341,6 +349,7 @@ export const TITLES: Title[] = [
     tagline: '티끌 모아 디지털 부자',
     tip: '매일 조금씩 참여하면 부담 없이 포인트를 모을 수 있어요',
     iconKey: 'phone',
+    img: '/title/title_07.png',
     reqs: [{ type: 'mission', missionId: 'm11', count: 15 }],
   },
   {
@@ -348,6 +357,7 @@ export const TITLES: Title[] = [
     tagline: '배달 끊으면 돈이 쌓인다',
     tip: '배달 앱 대신 다른 선택지를 먼저 떠올리면 도움이 돼요',
     iconKey: 'delivery',
+    img: '/title/title_08.png',
     reqs: [{ type: 'mission', missionId: 'm3', count: 5 }],
   },
   {
@@ -355,6 +365,7 @@ export const TITLES: Title[] = [
     tagline: '참을 수 있는 자가 이긴다',
     tip: '잠깐만 참아도 대부분의 소비 욕구는 금방 사라져요',
     iconKey: 'shopping',
+    img: '/title/title_09.png',
     reqs: [
       { type: 'mission', missionId: 'm10', count: 10 },
       { type: 'mission', missionId: 'm12', count: 10 },
@@ -366,6 +377,7 @@ export const TITLES: Title[] = [
     tagline: '진짜 절약의 끝판왕',
     tip: '하루 한 번 무지출을 목표로 하면 점점 익숙해질 수 있어요',
     iconKey: 'zero',
+    img: '/title/title_10.png',
     reqs: [
       { type: 'totalSaveCount', count: 30 },
       { type: 'mission', missionId: 'm17', count: 10 },

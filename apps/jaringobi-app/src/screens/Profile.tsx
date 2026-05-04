@@ -87,9 +87,7 @@ export default function Profile() {
               <span className="text-text/60"> / {profile.goal.toLocaleString()}</span>
             </p>
             <div className="mt-2 flex items-center gap-2">
-              <div className="w-9 h-9 grid place-items-center rounded-xl bg-white shadow-soft">
-                <TitleIcon iconKey={activeTitle.iconKey} size={26} />
-              </div>
+              <TitleIcon src={activeTitle.img} size={32} alt={activeTitle.name} />
               <span className="text-[13px] font-bold text-text">{activeTitle.name}</span>
             </div>
           </div>

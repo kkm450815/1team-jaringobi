@@ -39,6 +39,27 @@ export default function Main() {
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
+  // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
+  const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
+  useEffect(() => {
+    if (u.hearts === 0 && !zeroPenalty) {
+      const lost = Math.floor(u.coins * 0.5);
+      const remain = u.coins - lost;
+      setZeroPenalty({ lost, remain });
+      u.update({ coins: remain });
+      if (u.settings.sound) playLoseSfx();
+      if (u.settings.vibration) vibrate([20, 60, 20, 60, 60]);
+    }
+  // hearts/coins 변경 시에만 트리거 (반복 트리거 방지 위해 zeroPenalty 의존성 포함)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [u.hearts]);
+
+  function closeZeroPenalty() {
+    setZeroPenalty(null);
+    u.restoreHearts(); // 양심 3개 복구
+  }
+  useEscape(zeroPenalty !== null, closeZeroPenalty);
+
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
   const picks = u.missionPicks;
   const confirmed = u.missionConfirmed;
@@ -265,6 +286,42 @@ export default function Main() {
                 onComplete={completeToday}
               />
             )}
+          </div>
+        </div>
+      )}
+
+      {/* 양심 0개 도달 — 코인 50% 차감 + 안내 팝업 */}
+      {zeroPenalty && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={closeZeroPenalty}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl border-2 border-pink/30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[18px] font-bold text-pink">💔 양심을 모두 잃었어요</p>
+            <p className="mt-3 text-[14px] text-text/85 leading-relaxed">
+              돈 모으기 힘들죠?<br />
+              다시 화이팅!
+            </p>
+            <div className="mt-4 bg-white rounded-2xl px-4 py-3 shadow-soft">
+              <div className="flex items-center justify-between text-[13px]">
+                <span className="text-text/55">차감된 코인</span>
+                <span className="font-bold text-pink text-[15px]">−{zeroPenalty.lost.toLocaleString()}P</span>
+              </div>
+              <div className="mt-1 flex items-center justify-between text-[13px]">
+                <span className="text-text/55">남은 코인</span>
+                <span className="font-bold text-text text-[15px]">{zeroPenalty.remain.toLocaleString()}P</span>
+              </div>
+            </div>
+            <p className="mt-3 text-[12px] text-text/65">양심 ♥♥♥ 이 다시 채워졌어요</p>
+            <button
+              onClick={closeZeroPenalty}
+              className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+            >
+              다시 시작하기
+            </button>
           </div>
         </div>
       )}

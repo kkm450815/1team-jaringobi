@@ -14,6 +14,24 @@ function isCategory(v: string | null): v is MissionCategory {
   return v === '식비' || v === '여가' || v === '충동' || v === '통장';
 }
 
+// 아이콘별 표시 사이즈 — 각 PNG가 내부 콘텐츠 크기·여백이 달라서 시각 사이즈 균일화 위해
+// 빈 공간이 많은 아이콘은 더 크게(120 등), 꽉 찬 아이콘은 작게(80~88)로 매핑.
+const ICON_SCALE: Record<string, string> = {
+  cvs: 'w-[120px] h-[120px]',
+  phone: 'w-[110px] h-[110px]',
+  gifticon: 'w-[108px] h-[108px]',
+  save: 'w-[100px] h-[100px]',
+  leisure: 'w-[100px] h-[100px]',
+  library: 'w-[96px] h-[96px]',
+  shopping: 'w-[96px] h-[96px]',
+  hair: 'w-[96px] h-[96px]',
+  taxi: 'w-[96px] h-[96px]',
+  dinner: 'w-[96px] h-[96px]',
+  culture: 'w-[96px] h-[96px]',
+  // default: 'w-[88px] h-[88px]' — coffee, friend, carrot, repair, alba, zero,
+  // delivery, drink, receipe 등 이미 꽉 찬 아이콘들
+};
+
 export default function ChallengeList() {
   // 카테고리를 URL 쿼리에 보존 → 상세 뒤로가기 시 같은 카테고리로 복귀
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,7 +86,7 @@ export default function ChallengeList() {
                 <img
                   src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
                   alt=""
-                  className="w-[72px] h-[72px] object-contain"
+                  className={`object-contain ${ICON_SCALE[m.iconKey] ?? 'w-[88px] h-[88px]'}`}
                   onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
                 />
               </div>
