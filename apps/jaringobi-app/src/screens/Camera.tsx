@@ -32,13 +32,9 @@ export default function Camera() {
     .map((id) => MISSIONS.find((m) => m.id === id))
     .filter((m): m is (typeof MISSIONS)[number] => !!m);
 
-  // 오늘의 챌린지를 아직 확정하지 않은 채 카메라 진입(예: 탭바 직접 클릭)하면 메인으로 자동 복귀.
-  // 메인에서 미션 선택 → 확정을 거치고 와야 함. 이미 사진 미리보기 중이면 유지.
-  useEffect(() => {
-    if (u.missionConfirmed.length === 0 && !preview) {
-      nav('/main', { replace: true });
-    }
-  }, [u.missionConfirmed.length, preview, nav]);
+  // 오늘의 챌린지를 아직 확정하지 않은 채 카메라 진입(예: 탭바 직접 클릭) → 알림 모달 노출
+  const needConfirm = u.missionConfirmed.length === 0 && !preview;
+  useEscape(needConfirm, () => nav('/main', { replace: true }));
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -218,6 +214,31 @@ export default function Camera() {
               className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
             >
               확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 미션 확정 안 한 상태로 카메라 진입 시 안내 모달 */}
+      {needConfirm && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={() => nav('/main', { replace: true })}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[18px] font-bold text-text">잠깐!</p>
+            <p className="mt-3 text-[14px] text-text/80 leading-relaxed">
+              오늘의 챌린지를 먼저 확정한 뒤<br />
+              인증해주세요.
+            </p>
+            <button
+              onClick={() => nav('/main', { replace: true })}
+              className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+            >
+              메인으로 가기
             </button>
           </div>
         </div>

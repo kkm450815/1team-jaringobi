@@ -360,6 +360,7 @@ function TitleDetail({
   onBackToGrid: () => void;
   onClose: () => void;
 }) {
+  const [lockAlert, setLockAlert] = useState(false);
   const prog = getTitleProgress(title, ctx);
   const totalCur = prog.entries.reduce((s, e) => s + e.cur, 0);
   const totalMax = prog.entries.reduce((s, e) => s + e.max, 0);
@@ -442,8 +443,8 @@ function TitleDetail({
           </button>
         ) : (
           <button
-            disabled
-            className="rounded-full py-3 text-[14px] font-bold bg-text/15 text-text/45 cursor-not-allowed"
+            onClick={() => setLockAlert(true)}
+            className="rounded-full py-3 text-[14px] font-bold bg-text/15 text-text/55 active:scale-[.98]"
           >
             칭호 미획득
           </button>
@@ -455,6 +456,31 @@ function TitleDetail({
           칭호 변경
         </button>
       </div>
+
+      {/* 잠긴 칭호 클릭 시 안내 */}
+      {lockAlert && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/45 grid place-items-center px-7"
+          onClick={() => setLockAlert(false)}
+        >
+          <div
+            className="w-full max-w-[300px] bg-bg rounded-3xl p-5 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[16px] font-bold text-text">아직 획득하지 못한 칭호입니다</p>
+            <p className="mt-2 text-[12px] text-text/65 leading-relaxed">
+              아래 획득 방법을 모두 만족하면<br />
+              자동으로 칭호를 받을 수 있어요.
+            </p>
+            <button
+              onClick={() => setLockAlert(false)}
+              className="mt-4 w-full bg-accent text-white font-bold rounded-2xl py-3 text-[14px] active:scale-[.98]"
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

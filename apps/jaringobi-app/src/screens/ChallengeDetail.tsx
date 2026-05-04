@@ -1,5 +1,5 @@
-import { useParams } from 'react-router-dom';
-import { TopBar, Tag } from '../components/UI';
+import { Link, useParams } from 'react-router-dom';
+import { BackButton, Tag } from '../components/UI';
 import { MISSIONS } from '../lib/data';
 
 export default function ChallengeDetail() {
@@ -8,7 +8,19 @@ export default function ChallengeDetail() {
 
   return (
     <main className="min-h-full pb-12 bg-grid-paper">
-      <TopBar back="/challenges" title="" />
+      <header className="relative pt-10 pb-4">
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/challenges" />
+        <div className="flex justify-center">
+          <Link to="/main" aria-label="홈으로">
+            <img
+              src="/jarin/logo_nobg.png"
+              alt="자린고비"
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
+          </Link>
+        </div>
+      </header>
 
       <section className="mx-5">
         <Tag color="accent">{m.category} 절약</Tag>

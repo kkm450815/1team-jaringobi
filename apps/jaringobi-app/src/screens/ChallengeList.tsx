@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { TopBar } from '../components/UI';
+import { BackButton } from '../components/UI';
 import { MISSIONS, MissionCategory } from '../lib/data';
 
 const CATS: MissionCategory[] = ['식비', '여가', '충동', '통장'];
@@ -17,7 +17,19 @@ export default function ChallengeList() {
 
   return (
     <main className="min-h-full pb-12">
-      <TopBar back="/main" title="" />
+      <header className="relative pt-10 pb-4">
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/main" />
+        <div className="flex justify-center">
+          <Link to="/main" aria-label="홈으로">
+            <img
+              src="/jarin/logo_nobg.png"
+              alt="자린고비"
+              className="w-[96px] h-[96px] object-contain"
+              draggable={false}
+            />
+          </Link>
+        </div>
+      </header>
 
       {/* 카테고리 필터 */}
       <div className="px-5 grid grid-cols-4 gap-2">
