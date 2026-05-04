@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
@@ -16,7 +16,8 @@ export default function MyPage() {
   const [nickError, setNickError] = useState<string | null>(null);
   const [titleModal, setTitleModal] = useState(false);
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
-  const roomRef = useRef<HTMLDivElement>(null);
+  const [roomOpen, setRoomOpen] = useState(false);
+  useEscape(roomOpen, () => setRoomOpen(false));
 
   function commitNick() {
     if (!nickDraft.trim()) {
@@ -130,7 +131,7 @@ export default function MyPage() {
         {/* 프로필 영역 */}
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-1">
           <button
-            onClick={() => roomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            onClick={() => setRoomOpen(true)}
             aria-label="내 방 보기"
             className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
           >
@@ -238,12 +239,6 @@ export default function MyPage() {
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
         </div>
 
-        {/* ROOM — 본인 방 (옷장에서 장착한 그대로) */}
-        <div ref={roomRef} className="mt-5">
-          <h3 className="font-bold tracking-[3px] text-[15px] text-text">ROOM</h3>
-          <RoomPreview equipped={u.equipped} className="mt-2 mx-auto w-full" />
-        </div>
-
         {/* RECORD */}
         <div className="mt-5">
           <h3 className="font-bold tracking-[3px] text-[15px] text-text">RECORD</h3>
@@ -304,6 +299,31 @@ export default function MyPage() {
               onClose={closeTitleModal}
             />
           )}
+        </div>
+      )}
+
+      {/* 내 방 모달 */}
+      {roomOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 grid place-items-center px-5"
+          onClick={() => setRoomOpen(false)}
+        >
+          <div
+            className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <p className="text-center font-bold text-[16px] text-text">{u.nickname} 의 방</p>
+              <button
+                onClick={() => setRoomOpen(false)}
+                aria-label="닫기"
+                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[24px] leading-none text-text/70 font-bold"
+              >×</button>
+            </div>
+            <div className="mt-4">
+              <RoomPreview equipped={u.equipped} className="mx-auto w-full" />
+            </div>
+          </div>
         </div>
       )}
     </main>
