@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
+import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
@@ -70,26 +71,27 @@ export default function Main() {
     return () => clearTimeout(t);
   }, [isCrying]);
 
-  // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
+  // 양심 0개 도달 → 안내 팝업 노출 (차감/복구 예정값만 미리 보여줌).
+  // '다시 시작하기' 클릭 시점에 실제 코인 차감 + 양심 복구가 일어남 (인과 명시).
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
   useEffect(() => {
     if (u.hearts === 0 && !zeroPenalty) {
       const lost = Math.floor(u.coins * 0.5);
       const remain = u.coins - lost;
       setZeroPenalty({ lost, remain });
-      u.update({ coins: remain });
       if (u.settings.sound) playLoseSfx();
       if (u.settings.vibration) vibrate([20, 60, 20, 60, 60]);
     }
-  // hearts/coins 변경 시에만 트리거 (반복 트리거 방지 위해 zeroPenalty 의존성 포함)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [u.hearts]);
 
-  function closeZeroPenalty() {
+  function applyZeroPenalty() {
+    if (!zeroPenalty) return;
+    u.update({ coins: zeroPenalty.remain });
+    u.restoreHearts();
     setZeroPenalty(null);
-    u.restoreHearts(); // 양심 3개 복구
   }
-  useEscape(zeroPenalty !== null, closeZeroPenalty);
+  useEscape(zeroPenalty !== null, applyZeroPenalty);
 
   const [missionModal, setMissionModal] = useState<MissionModal>(null);
   const picks = u.missionPicks;
@@ -307,18 +309,27 @@ export default function Main() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* 패널 헤더 */}
-            {missionModal !== 'change' && (
-              <div className="relative h-7 mb-3">
-                <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
-                  오늘의 절약 미션
-                </p>
+            <div className="relative h-7 mb-3">
+              {missionModal === 'change' && (
                 <button
-                  onClick={() => { setMissionModal(null); setChangingFor(null); }}
-                  aria-label="닫기"
-                  className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[28px] leading-none text-text/70 font-bold"
-                >×</button>
-              </div>
-            )}
+                  type="button"
+                  onClick={() => { setChangingFor(null); setMissionModal('recommend'); }}
+                  aria-label="추천으로 돌아가기"
+                  className="absolute left-0 top-0 w-9 h-9 grid place-items-center text-text/70"
+                >
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                    <polyline points="15 6 9 12 15 18" />
+                  </svg>
+                </button>
+              )}
+              <p className="text-center font-bold text-[18px] tracking-[2px] text-text">
+                {missionModal === 'change' ? '미션 변경' : '오늘의 절약 미션'}
+              </p>
+              <CloseButton
+                onClick={() => { setMissionModal(null); setChangingFor(null); }}
+                className="absolute right-0 top-0"
+              />
+            </div>
 
             {missionModal === 'recommend' && (
               <RecommendPanel
@@ -333,6 +344,7 @@ export default function Main() {
                 filter={filter}
                 onFilter={setFilter}
                 onPick={pickMission}
+                onCancel={() => { setChangingFor(null); setMissionModal('recommend'); }}
               />
             )}
 
@@ -350,11 +362,11 @@ export default function Main() {
         </div>
       )}
 
-      {/* 양심 0개 도달 — 코인 50% 차감 + 안내 팝업 */}
+      {/* 양심 0개 도달 — 안내 팝업 (확인 클릭 시 실제 차감 + 양심 복구) */}
       {zeroPenalty && (
         <div
           className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
-          onClick={closeZeroPenalty}
+          onClick={applyZeroPenalty}
         >
           <div
             className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl border-2 border-pink/30"
@@ -363,21 +375,21 @@ export default function Main() {
             <p className="text-[18px] font-bold text-pink">💔 양심을 모두 잃었어요</p>
             <p className="mt-3 text-[14px] text-text/85 leading-relaxed">
               돈 모으기 힘들죠?<br />
-              다시 화이팅!
+              아래 코인을 돌려놓고 다시 시작해요.
             </p>
             <div className="mt-4 bg-white rounded-2xl px-4 py-3 shadow-soft">
               <div className="flex items-center justify-between text-[13px]">
-                <span className="text-text/55">차감된 코인</span>
+                <span className="text-text/55">차감 예정 코인</span>
                 <span className="font-bold text-pink text-[15px]">−{zeroPenalty.lost.toLocaleString()}P</span>
               </div>
               <div className="mt-1 flex items-center justify-between text-[13px]">
-                <span className="text-text/55">남은 코인</span>
+                <span className="text-text/55">남을 코인</span>
                 <span className="font-bold text-text text-[15px]">{zeroPenalty.remain.toLocaleString()}P</span>
               </div>
             </div>
-            <p className="mt-3 text-[12px] text-text/65">양심 ♥♥♥ 이 다시 채워졌어요</p>
+            <p className="mt-3 text-[12px] text-text/65">확인하면 양심 ♥♥♥ 이 다시 채워져요</p>
             <button
-              onClick={closeZeroPenalty}
+              onClick={applyZeroPenalty}
               className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
             >
               다시 시작하기
@@ -445,8 +457,13 @@ function RecommendPanel({
 
 /* ---------- 변경 패널 ---------- */
 function ChangePanel({
-  filter, onFilter, onPick,
-}: { filter: MissionCategory; onFilter: (c: MissionCategory) => void; onPick: (id: string) => void }) {
+  filter, onFilter, onPick, onCancel,
+}: {
+  filter: MissionCategory;
+  onFilter: (c: MissionCategory) => void;
+  onPick: (id: string) => void;
+  onCancel: () => void;
+}) {
   const categories: MissionCategory[] = ['식비', '여가', '충동', '통장'];
   const list = MISSIONS.filter((m) => m.category === filter);
   return (
@@ -497,6 +514,14 @@ function ChangePanel({
           ))}
         </ul>
       )}
+
+      <button
+        type="button"
+        onClick={onCancel}
+        className="mt-3 w-full bg-primary/70 text-text font-bold rounded-full py-2.5 text-[13px] active:scale-[.98]"
+      >
+        변경 안 하고 돌아가기
+      </button>
     </>
   );
 }

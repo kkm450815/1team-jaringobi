@@ -1,6 +1,9 @@
+import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { MISSIONS, MissionCategory } from '../lib/data';
+
+const LAST_CAT_KEY = 'jaringobi.lastCat';
 
 // **키워드** 마커를 단순 텍스트로 변환 — 리스트 카드에서는 형광펜 미적용
 function stripMarks(text: string) {
@@ -38,11 +41,23 @@ const ICON_SCALE: Record<string, string> = {
 };
 
 export default function ChallengeList() {
-  // 카테고리를 URL 쿼리에 보존 → 상세 뒤로가기 시 같은 카테고리로 복귀
+  // 카테고리를 URL 쿼리 + localStorage 양쪽에 보존 → 상세 뒤로가기, 직접 진입 모두 대응
   const [searchParams, setSearchParams] = useSearchParams();
   const rawCat = searchParams.get('cat');
-  const cat: MissionCategory = isCategory(rawCat) ? rawCat : '식비';
-  const setCat = (c: MissionCategory) => setSearchParams({ cat: c }, { replace: true });
+  const stored = typeof window !== 'undefined' ? localStorage.getItem(LAST_CAT_KEY) : null;
+  const cat: MissionCategory = isCategory(rawCat)
+    ? rawCat
+    : isCategory(stored) ? stored : '식비';
+  const setCat = (c: MissionCategory) => {
+    setSearchParams({ cat: c }, { replace: true });
+    localStorage.setItem(LAST_CAT_KEY, c);
+  };
+  useEffect(() => {
+    if (!rawCat && stored && isCategory(stored)) {
+      setSearchParams({ cat: stored }, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // 난이도 쉬움 → 보통 → 어려움 순으로 정렬
   const DIFF_ORDER: Record<string, number> = { '쉬움': 0, '보통': 1, '어려움': 2 };
   const items = MISSIONS

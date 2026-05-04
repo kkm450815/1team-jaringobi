@@ -2,7 +2,7 @@
 // 본인이면 마이페이지로 redirect. 캐릭터 박스 클릭 시에만 방(RoomPreview)이 모달로 노출.
 
 import { useEffect, useState } from 'react';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
 import { fitSrc, TITLES } from '../lib/data';
 import { profilesRepo, PublicProfile } from '../lib/profilesRepo';
 import { BackButton } from '../components/UI';
@@ -15,6 +15,9 @@ export default function Profile() {
   const { nick: rawNick } = useParams();
   const nick = decodeURIComponent(rawNick ?? '');
   const u = useUser();
+  const loc = useLocation();
+  const fromState = (loc.state as { from?: string } | null)?.from;
+  const backFallback = fromState ?? '/talk';
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [roomOpen, setRoomOpen] = useState(false);
   useEscape(roomOpen, () => setRoomOpen(false));
@@ -33,15 +36,38 @@ export default function Profile() {
 
   if (profile === undefined) {
     return (
-      <main className="min-h-full grid place-items-center text-text/55 text-[13px]">
-        불러오는 중…
+      <main className="min-h-full">
+        <header className="relative pt-10 pb-3">
+          <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback={backFallback} />
+          <div className="flex justify-center">
+            <img src="/jarin/logo_nobg.png" alt="자린고비" className="w-[72px] h-[72px] object-contain" draggable={false} />
+          </div>
+        </header>
+        <p className="mt-12 text-center text-text/55 text-[13px]">불러오는 중…</p>
       </main>
     );
   }
   if (profile === null) {
     return (
-      <main className="min-h-full grid place-items-center text-text/55 text-[13px]">
-        존재하지 않는 사용자
+      <main className="min-h-full">
+        <header className="relative pt-10 pb-3">
+          <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback={backFallback} />
+          <div className="flex justify-center">
+            <img src="/jarin/logo_nobg.png" alt="자린고비" className="w-[72px] h-[72px] object-contain" draggable={false} />
+          </div>
+        </header>
+        <div className="mt-16 px-7 text-center">
+          <p className="text-[15px] font-bold text-text">존재하지 않는 사용자</p>
+          <p className="mt-2 text-[12px] text-text/55 leading-relaxed">
+            잘못된 링크로 접근했거나 삭제된 사용자예요.
+          </p>
+          <Link
+            to="/talk"
+            className="mt-5 inline-block bg-accent text-white text-[14px] font-bold rounded-full px-5 py-2.5"
+          >
+            수다방으로 돌아가기
+          </Link>
+        </div>
       </main>
     );
   }
@@ -55,7 +81,7 @@ export default function Profile() {
   return (
     <main className="min-h-full pb-10">
       <header className="relative pt-10 pb-3">
-        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/talk" />
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback={backFallback} />
         <div className="flex justify-center">
           <Link to="/main" aria-label="홈으로">
             <img

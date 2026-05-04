@@ -469,6 +469,11 @@ function TitleDetail({
         )}
         <p className="mt-3 text-[13px] font-bold text-text">tip!</p>
         <p className="mt-1 text-[12px] text-text/80 leading-relaxed">{title.tip}</p>
+        {!owned && prog.entries.length > 0 && (
+          <p className="mt-3 text-[11px] text-text/55 leading-relaxed text-center">
+            ※ 모든 조건을 만족하면 자동으로 획득됩니다.
+          </p>
+        )}
       </div>
 
       {/* 하단 버튼 — 둘 다 '이 칭호로 변경' 액션. 좌(획득): 모달 닫기, 우(변경): 그리드로 */}
