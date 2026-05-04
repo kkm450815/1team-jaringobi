@@ -323,17 +323,17 @@ function TitleGrid({
             <li key={t.id} className="flex flex-col items-center">
               <button
                 onClick={() => onPick(t.id)}
-                className="relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition"
+                className="relative w-[78px] h-[78px] grid place-items-center rounded-full active:scale-[.98] transition"
                 aria-label={`${t.name} ${owned ? '획득' : '미획득'}`}
               >
                 {active && (
-                  <span className="absolute -top-1.5 -left-1.5 bg-pink text-white text-[10px] font-bold rounded-full px-2 py-0.5 shadow">
+                  <span className="absolute -top-1 -left-1 z-10 bg-pink text-white text-[10px] font-bold rounded-full px-2 py-0.5 shadow">
                     사용 중
                   </span>
                 )}
-                <TitleIcon iconKey={t.iconKey} size={50} locked={!owned} />
+                <TitleIcon src={t.img} size={78} locked={!owned} alt={t.name} />
                 {!owned && (
-                  <span className="absolute right-1.5 bottom-1.5 text-text/55" aria-hidden>
+                  <span className="absolute right-0 bottom-0 z-10 bg-white rounded-full p-1 text-text/70 shadow" aria-hidden>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                       <rect x="4" y="11" width="16" height="10" rx="2" />
                       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
@@ -392,8 +392,8 @@ function TitleDetail({
 
       {/* 아이콘 + 이름 + 진행도 */}
       <div className="mt-3 flex items-center gap-3">
-        <div className="w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0">
-          <TitleIcon iconKey={title.iconKey} size={44} locked={!owned} />
+        <div className="w-[64px] h-[64px] grid place-items-center shrink-0">
+          <TitleIcon src={title.img} size={64} locked={!owned} alt={title.name} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[16px] font-bold text-text">{title.name}</p>
