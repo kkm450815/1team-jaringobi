@@ -1,18 +1,13 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ACC_FILES_BY_SUB, ACC_SUBS, AccSub,
-  equipSlotOf,
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_GROUPS, ShopCategory,
 } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
-
-const DEFAULT_CHAR = '/jarin/main_character.png';
-const CHAR_IN = '/jarin/in_cha.png';      // 옷·악세 착용 시 만족 표정
-const CHAR_OUT = '/jarin/clo_out_cha.png'; // 티셔츠 벗을 때 부끄러운 표정
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 
@@ -37,23 +32,6 @@ export default function Wardrobe() {
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
   const equippedSet = useMemo(() => new Set(u.equipped), [u.equipped]);
-
-  // 토글 시점의 슬롯/이전 상태에 따라 캐릭터 표정을 잠깐 바꿈
-  const [charSrc, setCharSrc] = useState(DEFAULT_CHAR);
-  function handleToggle(src: string) {
-    const slot = equipSlotOf(src);
-    const wasEquipped = u.equipped.includes(src);
-    u.toggleEquip(src);
-    const isShirt = slot === '티셔츠';
-    const isAcc = slot === '모자' || slot === '안경' || slot === '소지품';
-    if (isShirt && wasEquipped) setCharSrc(CHAR_OUT);
-    else if ((isShirt || isAcc) && !wasEquipped) setCharSrc(CHAR_IN);
-  }
-  useEffect(() => {
-    if (charSrc === DEFAULT_CHAR) return;
-    const t = setTimeout(() => setCharSrc(DEFAULT_CHAR), 600);
-    return () => clearTimeout(t);
-  }, [charSrc]);
   const items = useMemo(() => {
     let pool: string[];
     if (cat === '전체') pool = [...SHOP_GROUPS.사치품, ...SHOP_GROUPS.티셔츠, ...SHOP_GROUPS.리모델링];
@@ -81,7 +59,7 @@ export default function Wardrobe() {
           </Link>
         </header>
 
-        <RoomPreview equipped={u.equipped} characterSrc={charSrc} className="mx-auto w-[60%] max-w-[260px]" />
+        <RoomPreview equipped={u.equipped} className="mx-auto w-[60%] max-w-[260px]" />
 
         <div className="px-5 mt-3 grid grid-cols-4 gap-2.5">
           {CATS.map((c) => {
@@ -156,7 +134,7 @@ export default function Wardrobe() {
             return (
               <button
                 key={src}
-                onClick={() => handleToggle(src)}
+                onClick={() => u.toggleEquip(src)}
                 className="relative rounded-xl overflow-hidden bg-primary/35"
               >
                 <span className="absolute top-1.5 left-1.5">
