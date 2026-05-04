@@ -43,17 +43,23 @@ export default function TalkRoom() {
     <main className="min-h-full pb-10">
       {/* 상단 고정 영역: 헤더 + 입력 + 구분선 */}
       <div className="sticky top-0 z-10 bg-bg">
-        <header className="relative pt-10 pb-4">
+        <header className="relative pt-10 pb-3">
           <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/talk" />
-          <div className="flex justify-center">
+          <div className="flex flex-col items-center gap-2">
             <Link to="/main" aria-label="홈으로">
               <img
                 src="/jarin/logo_nobg.png"
                 alt={room.title}
-                className="w-[96px] h-[96px] object-contain"
+                className="w-[72px] h-[72px] object-contain"
                 draggable={false}
               />
             </Link>
+            <span
+              className="px-3 py-1 rounded-full text-[14px] font-bold text-text"
+              style={{ background: room.bg }}
+            >
+              # {room.title}
+            </span>
           </div>
           <Link
             to="/bookmarks"

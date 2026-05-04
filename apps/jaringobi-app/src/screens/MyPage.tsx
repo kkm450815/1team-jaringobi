@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fitSrc, TITLES } from '../lib/data';
+import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
+
+function challIconUrl(key: string) {
+  return `/jarin/chall/icon/chall_list_${key}.png`;
+}
 
 const MAX_NICK = 10;
 
@@ -13,6 +17,7 @@ export default function MyPage() {
   const [nickDraft, setNickDraft] = useState(u.nickname);
   const [nickError, setNickError] = useState<string | null>(null);
   const [titleModal, setTitleModal] = useState(false);
+  const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
 
   function commitNick() {
     if (!nickDraft.trim()) {
@@ -29,7 +34,23 @@ export default function MyPage() {
   const activeTitle = TITLES.find((t) => t.id === u.activeTitleId) ?? TITLES[0];
   const days = Array.from({ length: 30 }, (_, i) => i + 1);
 
-  useEscape(titleModal, () => setTitleModal(false));
+  function closeTitleModal() {
+    setTitleModal(false);
+    setDetailTitleId(null);
+  }
+  useEscape(titleModal, () => {
+    if (detailTitleId !== null) setDetailTitleId(null);
+    else closeTitleModal();
+  });
+
+  const titleCtx = {
+    missionWinDays: u.missionWinDays,
+    totalSaveCount: u.totalSaveCount,
+    cycle: u.cycle,
+  };
+  const detailTitle = detailTitleId
+    ? TITLES.find((t) => t.id === detailTitleId) ?? null
+    : null;
 
   async function handleShare() {
     const text = `자린고비 ${u.cycle}회차 ${u.day}일차\n` +
@@ -201,7 +222,8 @@ export default function MyPage() {
             className="bg-primary/70 rounded-full px-3 py-1 text-[12px] font-bold text-text inline-flex items-center gap-1.5 active:scale-[.98]"
             aria-label="칭호 변경"
           >
-            <span aria-hidden>🏅</span> {activeTitle.name}
+            <span aria-hidden>{u.ownedTitles.includes(u.activeTitleId) ? '🏅' : '🔒'}</span>
+            {u.ownedTitles.includes(u.activeTitleId) ? activeTitle.name : '칭호 미획득'}
           </button>
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
         </div>
@@ -235,57 +257,210 @@ export default function MyPage() {
         </div>
       </section>
 
-      {/* 칭호 변경 모달 */}
+      {/* 칭호 모달 — 그리드 / 상세 두 화면 */}
       {titleModal && (
         <div
-          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
-          onClick={() => setTitleModal(false)}
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-5"
+          onClick={closeTitleModal}
         >
-          <div
-            className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p className="text-center font-bold text-[16px] text-text">칭호 선택</p>
-            <p className="text-center text-[12px] text-text/55 mt-1">
-              획득한 칭호 중 하나를 골라 프로필에 표시
-            </p>
-            <ul className="mt-4 max-h-[60vh] overflow-y-auto space-y-2 pr-1">
-              {TITLES.map((t) => {
-                const active = t.id === u.activeTitleId;
-                const got = u.ownedTitles.includes(t.id);
-                return (
-                  <li key={t.id}>
-                    <button
-                      disabled={!got}
-                      onClick={() => {
-                        u.update({ activeTitleId: t.id });
-                        setTitleModal(false);
-                      }}
-                      className={`w-full flex items-center gap-2 rounded-2xl px-4 py-2.5 text-left transition ${
-                        active
-                          ? 'bg-accent text-[#FFFFAD] font-bold'
-                          : got
-                            ? 'bg-white text-text active:scale-[.98]'
-                            : 'bg-text/10 text-text/35 cursor-not-allowed'
-                      }`}
-                    >
-                      <span aria-hidden>{got ? '🏅' : '🔒'}</span>
-                      <span className="flex-1">{t.name}</span>
-                      {active && <span className="text-[12px] font-bold">사용 중</span>}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-            <button
-              onClick={() => setTitleModal(false)}
-              className="mt-4 w-full bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
-            >
-              닫기
-            </button>
-          </div>
+          {detailTitle ? (
+            <TitleDetail
+              title={detailTitle}
+              owned={u.ownedTitles.includes(detailTitle.id)}
+              active={u.activeTitleId === detailTitle.id}
+              ctx={titleCtx}
+              onActivate={() => {
+                u.update({ activeTitleId: detailTitle.id });
+                setDetailTitleId(null);
+              }}
+              onBackToGrid={() => setDetailTitleId(null)}
+              onClose={closeTitleModal}
+            />
+          ) : (
+            <TitleGrid
+              activeTitleId={u.activeTitleId}
+              ownedIds={u.ownedTitles}
+              onPick={(id) => setDetailTitleId(id)}
+              onClose={closeTitleModal}
+            />
+          )}
         </div>
       )}
     </main>
+  );
+}
+
+/* ---------- 획득 칭호 그리드 ---------- */
+function TitleGrid({
+  activeTitleId, ownedIds, onPick, onClose,
+}: {
+  activeTitleId: string;
+  ownedIds: string[];
+  onPick: (id: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="relative">
+        <p className="text-center font-bold text-[16px] text-text">획득 칭호</p>
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+        >
+          ×
+        </button>
+      </div>
+      <ul className="mt-4 grid grid-cols-3 gap-x-2 gap-y-4">
+        {TITLES.map((t) => {
+          const owned = ownedIds.includes(t.id);
+          const active = t.id === activeTitleId;
+          return (
+            <li key={t.id} className="flex flex-col items-center">
+              <button
+                onClick={() => onPick(t.id)}
+                className="relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition"
+                aria-label={`${t.name} ${owned ? '획득' : '미획득'}`}
+              >
+                {active && (
+                  <span className="absolute -top-1.5 -left-1.5 bg-pink text-white text-[10px] font-bold rounded-full px-2 py-0.5 shadow">
+                    사용 중
+                  </span>
+                )}
+                <img
+                  src={challIconUrl(t.iconKey)}
+                  alt=""
+                  className={`w-[58px] h-[58px] object-contain transition ${owned ? '' : 'grayscale opacity-40'}`}
+                  onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                />
+                {!owned && (
+                  <span className="absolute right-1.5 bottom-1.5 text-text/55" aria-hidden>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="4" y="11" width="16" height="10" rx="2" />
+                      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+                    </svg>
+                  </span>
+                )}
+              </button>
+              <span className={`mt-1.5 text-[12px] font-bold text-center ${owned ? 'text-text' : 'text-text/45'}`}>
+                {t.name}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+/* ---------- 칭호 상세 ---------- */
+function TitleDetail({
+  title, owned, active, ctx, onActivate, onBackToGrid, onClose,
+}: {
+  title: Title;
+  owned: boolean;
+  active: boolean;
+  ctx: { missionWinDays: Record<string, string[]>; totalSaveCount: number; cycle: number };
+  onActivate: () => void;
+  onBackToGrid: () => void;
+  onClose: () => void;
+}) {
+  const prog = getTitleProgress(title, ctx);
+  const totalCur = prog.entries.reduce((s, e) => s + e.cur, 0);
+  const totalMax = prog.entries.reduce((s, e) => s + e.max, 0);
+  const ratio = totalMax > 0 ? Math.min(1, totalCur / totalMax) : 0;
+
+  return (
+    <div
+      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div className="relative">
+        <p className="text-center font-bold text-[16px] text-text">칭호</p>
+        <button
+          onClick={onClose}
+          aria-label="닫기"
+          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+        >
+          ×
+        </button>
+      </div>
+
+      {/* 아이콘 + 이름 + 진행도 */}
+      <div className="mt-3 flex items-center gap-3">
+        <div className="w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0">
+          <img
+            src={challIconUrl(title.iconKey)}
+            alt=""
+            className={`w-[48px] h-[48px] object-contain ${owned ? '' : 'grayscale opacity-40'}`}
+            onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="text-[16px] font-bold text-text">{title.name}</p>
+          <div className="mt-1.5 flex items-center gap-2">
+            <span className="text-[11px] font-bold text-text/55 shrink-0">진행도</span>
+            <div className="flex-1 h-3 bg-white rounded-full overflow-hidden">
+              <div
+                className="h-full bg-accent rounded-full transition-[width]"
+                style={{ width: `${ratio * 100}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-bold text-text/70 shrink-0">{totalCur} / {totalMax}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 한 줄 설명 */}
+      <p className="mt-4 text-center text-[14px] font-bold text-text">{title.tagline}</p>
+
+      {/* 노트 카드 — 획득 방법 + tip */}
+      <div className="mt-4 bg-grid-paper rounded-2xl px-4 py-4 shadow-soft">
+        <p className="text-[13px] font-bold text-text">획득 방법</p>
+        <ul className="mt-1.5 space-y-1">
+          {prog.entries.map((e, i) => (
+            <li key={i} className="text-[12px] text-text/80 leading-relaxed flex items-start gap-1.5">
+              <span className={`shrink-0 ${e.met ? 'text-accent' : 'text-text/40'}`}>{e.met ? '✓' : '·'}</span>
+              <span>{e.label} <span className="text-text/55">({e.cur}/{e.max})</span></span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-[13px] font-bold text-text">tip!</p>
+        <p className="mt-1 text-[12px] text-text/80 leading-relaxed">{title.tip}</p>
+      </div>
+
+      {/* 하단 버튼 */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {owned ? (
+          <button
+            onClick={onActivate}
+            disabled={active}
+            className={`rounded-full py-3 text-[14px] font-bold transition ${
+              active
+                ? 'bg-accent/40 text-text/60 cursor-not-allowed'
+                : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
+            }`}
+          >
+            {active ? '사용 중' : '칭호 획득'}
+          </button>
+        ) : (
+          <button
+            disabled
+            className="rounded-full py-3 text-[14px] font-bold bg-text/15 text-text/45 cursor-not-allowed"
+          >
+            칭호 미획득
+          </button>
+        )}
+        <button
+          onClick={onBackToGrid}
+          className="rounded-full py-3 text-[14px] font-bold bg-accent text-[#FFFFAD] active:scale-[.98]"
+        >
+          칭호 변경
+        </button>
+      </div>
+    </div>
   );
 }

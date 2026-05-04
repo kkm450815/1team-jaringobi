@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { equipSlotOf, MISSIONS } from './data';
+import { equipSlotOf, getTitleProgress, MISSIONS, TITLES } from './data';
 
 // 미션 ID → 보상 금액 룩업 (savePhoto 보상 계산용)
 const MISSION_AMOUNTS: Record<string, number> = Object.fromEntries(
@@ -38,6 +38,11 @@ export interface UserState {
   // 획득한 칭호 ID 목록 (회차 완주/카테고리 N회 등으로 자동 추가)
   ownedTitles: string[];
 
+  // 칭호 진행도 — 미션 ID별 성공한 (cycle,day) 키 목록 (같은 날 같은 미션 1회만 인정)
+  missionWinDays: Record<string, string[]>;
+  // savePhoto 누적 횟수 (자린고비 칭호 등의 totalSaveCount 조건)
+  totalSaveCount: number;
+
   settings: UserSettings;
 }
 
@@ -59,7 +64,9 @@ const DEFAULT: UserState = {
   missionConfirmed: [],
   missionSuccesses: [],
   activeTitleId: 'h1',
-  ownedTitles: ['h1'],
+  ownedTitles: [],
+  missionWinDays: {},
+  totalSaveCount: 0,
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -92,6 +99,10 @@ function read(): UserState {
 
       activeTitleId: parsed.activeTitleId ?? DEFAULT.activeTitleId,
       ownedTitles: parsed.ownedTitles ?? DEFAULT.ownedTitles,
+      missionWinDays: parsed.missionWinDays ?? DEFAULT.missionWinDays,
+      totalSaveCount: typeof parsed.totalSaveCount === 'number'
+        ? parsed.totalSaveCount
+        : DEFAULT.totalSaveCount,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
@@ -160,32 +171,59 @@ export function useUser() {
     setState((cur) => {
       const day = cur.day;
       const photosWithToday = { ...cur.photos, [day]: dataUrl };
-      // 회차 완주 시 칭호 자동 획득: 회차 N → h(N+1) (h2~h9 까지)
-      const cycleEndTitleId = isCycleEnd ? `h${Math.min(9, cur.cycle + 1)}` : null;
-      const ownedTitles = cycleEndTitleId && !cur.ownedTitles.includes(cycleEndTitleId)
-        ? [...cur.ownedTitles, cycleEndTitleId]
+
+      // 오늘 성공으로 체크된 미션 ID — (cycle,day) 키로 missionWinDays 갱신
+      // 같은 날 같은 미션은 1회만 인정 (이미 키 존재하면 무시)
+      const dayKey = `${cur.cycle}-${cur.day}`;
+      const wonIds = cur.missionSuccesses
+        .map((idx) => cur.missionConfirmed[idx])
+        .filter((id): id is string => !!id);
+      const nextWinDays: Record<string, string[]> = { ...cur.missionWinDays };
+      for (const id of wonIds) {
+        const days = nextWinDays[id] ?? [];
+        if (!days.includes(dayKey)) nextWinDays[id] = [...days, dayKey];
+      }
+
+      const nextCycle = isCycleEnd ? cur.cycle + 1 : cur.cycle;
+      const nextTotalSaveCount = cur.totalSaveCount + 1;
+
+      // 칭호 자동 획득: 모든 reqs 충족하는 칭호를 ownedTitles에 추가
+      const titleCtx = {
+        missionWinDays: nextWinDays,
+        totalSaveCount: nextTotalSaveCount,
+        cycle: nextCycle,
+      };
+      const newlyEarned = TITLES
+        .filter((t) => !cur.ownedTitles.includes(t.id))
+        .filter((t) => getTitleProgress(t, titleCtx).achieved)
+        .map((t) => t.id);
+      const ownedTitles = newlyEarned.length > 0
+        ? [...cur.ownedTitles, ...newlyEarned]
         : cur.ownedTitles;
+
+      const base = {
+        totalSaved: cur.totalSaved + reward,
+        coins: cur.coins + coins,
+        missionConfirmed: [],
+        missionSuccesses: [],
+        missionWinDays: nextWinDays,
+        totalSaveCount: nextTotalSaveCount,
+        ownedTitles,
+      };
       const next: UserState = isCycleEnd
         ? {
             ...cur,
-            photos: {}, // 회차 종료 → 캘린더 초기화
+            ...base,
+            photos: {},        // 회차 종료 → 캘린더 초기화
             day: 1,
-            cycle: cur.cycle + 1,
+            cycle: nextCycle,
             hearts: MAX_HEARTS, // 새 회차 양심 복구
-            totalSaved: cur.totalSaved + reward,
-            coins: cur.coins + coins,
-            missionConfirmed: [],
-            missionSuccesses: [],
-            ownedTitles,
           }
         : {
             ...cur,
+            ...base,
             photos: photosWithToday,
             day: day + 1,
-            totalSaved: cur.totalSaved + reward,
-            coins: cur.coins + coins,
-            missionConfirmed: [],
-            missionSuccesses: [],
           };
       write(next);
       return next;
