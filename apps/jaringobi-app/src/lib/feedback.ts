@@ -61,6 +61,9 @@ export function playClickSfx() {
 }
 
 /** 메탈릭 짧은 임팩트 — 동전 부딪히는 sharp transient */
+/** 메탈릭 ring — 고음 사인 두 개를 합성한 짧은 동전 부딪힘 톤
+ * (필터드 노이즈는 일부 환경에서 거의 안 들려서 oscillator 합성으로 변경)
+ */
 function clink(durationMs: number, gain: number) {
   const ctx = getCtx();
   if (!ctx) return;
@@ -68,23 +71,22 @@ function clink(durationMs: number, gain: number) {
   const finalGain = scaleGain(gain);
   if (finalGain <= 0) return;
   try {
-    const buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * (durationMs / 1000)), ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1);
-    const src = ctx.createBufferSource();
-    src.buffer = buf;
-    const filter = ctx.createBiquadFilter();
-    // 더 넓은 대역(Q 낮춤) + 중심 주파수 낮춰 출력 보장
-    filter.type = 'bandpass';
-    filter.frequency.value = 3000;
-    filter.Q.value = 2;
-    const g = ctx.createGain();
     const t = ctx.currentTime;
-    g.gain.setValueAtTime(finalGain, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + durationMs / 1000);
-    src.connect(filter).connect(g).connect(ctx.destination);
-    src.start(t);
-    src.stop(t + durationMs / 1000);
+    const dur = durationMs / 1000;
+    // 두 개의 고음 사인 (랜덤 디튠으로 매번 음정 살짝 다름 → 짤랑 느낌)
+    const freqs = [3520, 5200];
+    for (const f of freqs) {
+      const osc = ctx.createOscillator();
+      const g = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = f + (Math.random() - 0.5) * 200;
+      g.gain.setValueAtTime(0, t);
+      g.gain.linearRampToValueAtTime(finalGain, t + 0.003); // 빠른 attack
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);   // 짧은 decay
+      osc.connect(g).connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + dur + 0.02);
+    }
   } catch {
     // ignore
   }
