@@ -62,6 +62,13 @@ export default function Main() {
     const t = setTimeout(() => setHit(null), 350);
     return () => clearTimeout(t);
   }, [hit?.tick]);
+  // 떨떠름 표정(cry_cha)은 누적 20회 도달 후 5초만 유지 → hitCount 0으로 리셋
+  const isCrying = hitCount >= 20;
+  useEffect(() => {
+    if (!isCrying) return;
+    const t = setTimeout(() => setHitCount(0), 5000);
+    return () => clearTimeout(t);
+  }, [isCrying]);
 
   // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
@@ -308,7 +315,7 @@ export default function Main() {
                 <button
                   onClick={() => { setMissionModal(null); setChangingFor(null); }}
                   aria-label="닫기"
-                  className="absolute right-0 top-0 text-[20px] leading-none text-text/70 font-bold"
+                  className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[28px] leading-none text-text/70 font-bold"
                 >×</button>
               </div>
             )}
@@ -398,13 +405,13 @@ function RecommendPanel({
                 <p className="text-[15px] font-bold text-text">{m.title}</p>
                 <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
               </div>
-              <div className="flex flex-col items-end gap-2 shrink-0">
+              <div className="flex flex-col items-end gap-4 shrink-0">
                 <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
                   {m.difficulty}
                 </span>
                 <button
                   onClick={() => onChange(idx)}
-                  className="text-[11px] text-text/70 font-medium"
+                  className="text-[14px] text-text/80 font-bold"
                 >변경하기 ⟶</button>
               </div>
             </li>
@@ -479,11 +486,11 @@ function ChangePanel({
                   <p className="text-[15px] font-bold text-text">{m.title}</p>
                   <p className="text-[15px] font-bold text-text/80 mt-1">+{m.amount.toLocaleString()}</p>
                 </div>
-                <div className="flex flex-col items-end gap-2 shrink-0">
+                <div className="flex flex-col items-end gap-4 shrink-0">
                   <span className="bg-pink text-white text-[11px] font-bold px-3 py-0.5 rounded-full">
                     {m.difficulty}
                   </span>
-                  <span className="text-[11px] text-text/70 font-medium">변경하기 ⟶</span>
+                  <span className="text-[14px] text-text/80 font-bold">변경하기 ⟶</span>
                 </div>
               </button>
             </li>

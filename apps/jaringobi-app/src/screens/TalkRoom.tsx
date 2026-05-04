@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { ME_NICK, TALK_ROOMS } from '../lib/data';
+import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
+import { useUser } from '../lib/userState';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -31,11 +32,12 @@ export default function TalkRoom() {
   const { posts, addPost } = useTalkPosts(room.id);
   const [input, setInput] = useState('');
   const { has, toggle } = useBookmarks();
+  const u = useUser();
 
   function send() {
     const body = input.trim();
     if (!body) return;
-    addPost({ id: crypto.randomUUID(), roomId: room.id, nick: ME_NICK, body });
+    addPost({ id: crypto.randomUUID(), roomId: room.id, nick: u.nickname, body });
     setInput('');
   }
 
@@ -75,7 +77,7 @@ export default function TalkRoom() {
           <div className="flex items-start gap-3">
             <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
             <div className="flex-1">
-              <p className="text-[15px] font-bold text-text">{ME_NICK}</p>
+              <p className="text-[15px] font-bold text-text">{u.nickname}</p>
               <textarea
                 rows={1}
                 value={input}

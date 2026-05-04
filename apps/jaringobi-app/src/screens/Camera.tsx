@@ -64,8 +64,8 @@ export default function Camera() {
 
   function closeRewardAndContinue() {
     setReward(null);
-    // 메인으로 돌아가서 자동으로 새 미션 추천 패널 열기
-    nav('/main', { state: { autoMissionModal: true } });
+    // 인증 완료 후 마이페이지로 이동 (RECORD에 추가된 사진 즉시 확인 가능)
+    nav('/mypage');
   }
 
   useEscape(reward !== null, closeRewardAndContinue);
