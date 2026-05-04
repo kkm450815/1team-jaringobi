@@ -102,7 +102,11 @@ export default function Settings() {
     if (u.settings.vibration) vibrate(15);
   }
 
-  const settingItem = (key: keyof UserSettings, label: string, sub?: string) => (
+  // boolean 토글 항목용 — bgmVolume(number) 등은 별도 UI 사용
+  type BoolKeys = {
+    [K in keyof UserSettings]: UserSettings[K] extends boolean ? K : never
+  }[keyof UserSettings];
+  const settingItem = (key: BoolKeys, label: string, sub?: string) => (
     <Row
       label={label}
       sub={sub}
@@ -158,6 +162,23 @@ export default function Settings() {
 
       <Section title="피드백">
         {settingItem('sound', '사운드')}
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 w-[90px] shrink-0">
+            <p className="text-[15px] font-bold text-text">BGM 볼륨</p>
+            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.bgmVolume ?? 60}%</p>
+          </div>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            disabled={!u.settings.sound}
+            value={u.settings.bgmVolume ?? 60}
+            onChange={(e) => u.setSetting('bgmVolume', Number(e.target.value))}
+            aria-label="BGM 볼륨"
+            className="flex-1 accent-accent disabled:opacity-40"
+          />
+        </div>
         {settingItem('vibration', '진동')}
       </Section>
 
