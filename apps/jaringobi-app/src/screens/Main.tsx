@@ -209,13 +209,6 @@ export default function Main() {
                 strokeWidth="3"
                 strokeLinejoin="round"
               />
-              <text
-                x="60" y="72"
-                textAnchor="middle"
-                fontSize="34"
-                fontWeight="900"
-                fill="#3D3833"
-              >팡!</text>
             </svg>
           </div>
         )}
