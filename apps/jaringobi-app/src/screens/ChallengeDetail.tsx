@@ -22,7 +22,7 @@ export default function ChallengeDetail() {
         </div>
       </header>
 
-      <section className="mx-5">
+      <section className="mx-5 break-keep">
         <Tag color="accent">{m.category} 절약</Tag>
         <h2 className="font-bold text-[22px] mt-2 leading-tight">{m.title}</h2>
         <div className="flex gap-2 mt-1.5 items-center">
