@@ -11,6 +11,14 @@ const CAT_LABEL: Record<MissionCategory, string> = {
   통장: '통장사수',
 };
 
+// 카테고리별 카드 배경색 (수다방 리스트와 같은 톤 팔레트)
+const CAT_BG: Record<MissionCategory, string> = {
+  식비: '#D8E6CF',
+  여가: '#D7D5EC',
+  충동: '#F3CFD2',
+  통장: '#CFE2EA',
+};
+
 export default function ChallengeList() {
   const [cat, setCat] = useState<MissionCategory>('식비');
   const items = MISSIONS.filter((m) => m.category === cat);
@@ -37,52 +45,42 @@ export default function ChallengeList() {
         })}
       </div>
 
-      {/* 챌린지 카드 리스트 (수다방 리스트와 동일 폭/사이즈) */}
+      {/* 챌린지 카드 리스트 — 수다방 리스트와 동일 구조/사이즈 */}
       <ul className="px-5 mt-4 pb-4 space-y-3">
         {items.map((m) => (
           <li key={m.id}>
             <Link
               to={`/challenges/${m.id}`}
-              className="relative block rounded-[22px] px-4 py-3 bg-white shadow-soft active:scale-[.99] transition overflow-hidden"
+              aria-label={`${m.title} 챌린지 상세`}
+              className="relative block rounded-[22px] px-4 py-3 shadow-soft active:scale-[.99] transition"
+              style={{ background: CAT_BG[m.category] }}
             >
               <div className="flex items-center gap-3">
-                <div className="w-[128px] h-[128px] grid place-items-center bg-[#ABBCA2] rounded-2xl shrink-0">
-                  <img
-                    src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
-                    alt=""
-                    className="w-[88px] h-[88px] object-contain scale-[1.4]"
-                    onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
-                  />
-                </div>
-                <div className="flex-1 min-w-0 pr-12">
-                  <p className="font-bold text-[20px] leading-snug text-text">
+                <img
+                  src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
+                  alt={`${m.title} 아이콘`}
+                  className="w-[88px] h-[88px] ml-3 object-contain shrink-0 scale-[1.4]"
+                  draggable={false}
+                  onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
+                />
+                <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
+                  <p className="font-bold text-[20px] leading-snug text-text text-center">
                     {m.title}
                   </p>
-                  <p className="text-[18px] text-text/80 leading-snug mt-1.5 line-clamp-2">
-                    {m.intro}
+                  <p className="font-bold text-[18px] leading-snug text-text/80 mt-0.5">
+                    챌린지
                   </p>
                 </div>
               </div>
 
               {/* 난이도 뱃지 (우상단) */}
-              <span
-                className="absolute bg-pink text-white text-[12px] font-bold px-3 py-1 rounded-full"
-                style={{ top: '12px', right: '12px' }}
-              >
+              <span className="absolute top-3 right-3 bg-pink text-white text-[12px] font-bold px-3 py-1 rounded-full">
                 {m.difficulty}
               </span>
 
-              {/* 바로가기 화살표 (우하단) */}
-              <span
-                className="absolute text-text/70"
-                style={{ bottom: '12px', right: '12px' }}
-                aria-hidden
-              >
-                <svg width="32" height="14" viewBox="0 0 32 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="2" y1="7" x2="28" y2="7" />
-                  <polyline points="22 2 30 7 22 12" />
-                </svg>
-              </span>
+              <p className="absolute right-4 bottom-2 text-[15px] text-text/70 font-medium">
+                바로가기 <span aria-hidden>⟶</span>
+              </p>
             </Link>
           </li>
         ))}

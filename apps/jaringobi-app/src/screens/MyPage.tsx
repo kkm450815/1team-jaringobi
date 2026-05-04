@@ -2,12 +2,9 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
+import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
-
-function challIconUrl(key: string) {
-  return `/jarin/chall/icon/chall_list_${key}.png`;
-}
 
 const MAX_NICK = 10;
 
@@ -322,7 +319,9 @@ function TitleGrid({
             <li key={t.id} className="flex flex-col items-center">
               <button
                 onClick={() => onPick(t.id)}
-                className="relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition"
+                className={`relative w-[78px] h-[78px] grid place-items-center rounded-2xl bg-white shadow-soft active:scale-[.98] transition ${
+                  owned ? 'text-text' : 'text-text/35'
+                }`}
                 aria-label={`${t.name} ${owned ? '획득' : '미획득'}`}
               >
                 {active && (
@@ -330,12 +329,7 @@ function TitleGrid({
                     사용 중
                   </span>
                 )}
-                <img
-                  src={challIconUrl(t.iconKey)}
-                  alt=""
-                  className={`w-[58px] h-[58px] object-contain transition ${owned ? '' : 'grayscale opacity-40'}`}
-                  onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
-                />
+                <TitleIcon iconKey={t.iconKey} size={48} />
                 {!owned && (
                   <span className="absolute right-1.5 bottom-1.5 text-text/55" aria-hidden>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -391,13 +385,8 @@ function TitleDetail({
 
       {/* 아이콘 + 이름 + 진행도 */}
       <div className="mt-3 flex items-center gap-3">
-        <div className="w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0">
-          <img
-            src={challIconUrl(title.iconKey)}
-            alt=""
-            className={`w-[48px] h-[48px] object-contain ${owned ? '' : 'grayscale opacity-40'}`}
-            onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
-          />
+        <div className={`w-[64px] h-[64px] grid place-items-center rounded-2xl bg-white shadow-soft shrink-0 ${owned ? 'text-text' : 'text-text/40'}`}>
+          <TitleIcon iconKey={title.iconKey} size={42} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-[16px] font-bold text-text">{title.name}</p>
