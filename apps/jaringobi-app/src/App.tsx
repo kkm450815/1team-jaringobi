@@ -3,6 +3,7 @@ import { PhoneFrame } from './components/PhoneFrame';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
 import ModeSelect from './screens/ModeSelect';
+import NickSetup from './screens/NickSetup';
 import Main from './screens/Main';
 import Wardrobe from './screens/Wardrobe';
 import Shop from './screens/Shop';
@@ -25,6 +26,7 @@ export default function App() {
         <Route path="/" element={<Splash />} />
         <Route path="/login" element={<Login />} />
         <Route path="/mode" element={<ModeSelect />} />
+        <Route path="/nickname" element={<NickSetup />} />
         <Route path="/main" element={<Main />} />
         <Route path="/wardrobe" element={<Wardrobe />} />
         <Route path="/shop" element={<Shop />} />

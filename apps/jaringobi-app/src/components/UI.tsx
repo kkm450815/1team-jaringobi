@@ -70,3 +70,25 @@ export function TopBar({
     </header>
   );
 }
+
+/* ---------------- CloseButton (모달 우상단 X 통일) ---------------- */
+export function CloseButton({
+  onClick,
+  className = '',
+  ariaLabel = '닫기',
+}: {
+  onClick: () => void;
+  className?: string;
+  ariaLabel?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={ariaLabel}
+      className={`w-9 h-9 grid place-items-center text-[24px] leading-none text-text/70 font-bold ${className}`}
+    >
+      ×
+    </button>
+  );
+}

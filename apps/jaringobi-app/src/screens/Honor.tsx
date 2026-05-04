@@ -92,6 +92,7 @@ export default function Honor() {
                   <Link
                     key={r.nick}
                     to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
+                    state={{ from: '/honor' }}
                     className={`relative flex flex-col items-center justify-end rounded-2xl shadow-soft px-2 pb-2 pt-3 ${bg} ${ring} ${podiumH} active:scale-[.98] transition`}
                   >
                     <div className="absolute -top-3 left-1/2 -translate-x-1/2">
@@ -123,6 +124,7 @@ export default function Honor() {
             <li key={`${r.nick}-${rank}`}>
               <Link
                 to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
+                    state={{ from: '/honor' }}
                 className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-soft active:scale-[.99] transition ${
                   r.isMe ? 'bg-accent/15 ring-2 ring-accent/40' : 'bg-white'
                 }`}

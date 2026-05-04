@@ -12,8 +12,8 @@ function ModeCard({
 }) {
   const isHard = variant === 'hard';
   const bg = isHard ? 'bg-accent' : 'bg-primary';
-  const labelColor = isHard ? 'text-[#FFFFAD]' : 'text-text/70';
-  const textColor = isHard ? 'text-[#FFFFAD]' : 'text-text/85';
+  const labelColor = isHard ? 'text-accent-soft' : 'text-text/70';
+  const textColor = isHard ? 'text-accent-soft' : 'text-text/85';
   const label = isHard ? 'HARD MODE' : 'NORMAL MODE';
 
   return (
@@ -44,7 +44,9 @@ export default function ModeSelect() {
 
   function start(goal: number) {
     u.update({ goal });
-    nav('/main');
+    // 닉네임 미설정(기본 '자린이')인 신규 사용자는 닉네임 단계로
+    if (u.nickname === '자린이') nav('/nickname', { replace: true });
+    else nav('/main', { replace: true });
   }
 
   return (

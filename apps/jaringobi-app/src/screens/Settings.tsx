@@ -80,6 +80,7 @@ export default function Settings() {
   const [nickDraft, setNickDraft] = useState(u.nickname);
   const [nickError, setNickError] = useState<string | null>(null);
   const [legalKey, setLegalKey] = useState<keyof typeof LEGAL_DOCS | null>(null);
+  const [modeModal, setModeModal] = useState(false);
 
   function commitNick() {
     if (!nickDraft.trim()) {
@@ -111,6 +112,7 @@ export default function Settings() {
 
   useEscape(legalKey !== null, () => setLegalKey(null));
   useEscape(confirmReset, () => setConfirmReset(false));
+  useEscape(modeModal, () => setModeModal(false));
 
   return (
     <main className="min-h-full pb-12">
@@ -159,11 +161,20 @@ export default function Settings() {
         {settingItem('vibration', '진동')}
       </Section>
 
+      <Section title="챌린지 모드">
+        <Row
+          label={u.goal >= 1_000_000 ? '하드 모드 (100만원)' : '노말 모드 (30만원)'}
+          sub={u.day === 1 ? '회차 시작 전이라 변경 가능' : '진행 중이라 변경 시 누적이 그대로 유지돼요'}
+          right={<span className="text-accent text-[13px] font-bold">변경</span>}
+          onClick={() => setModeModal(true)}
+        />
+      </Section>
+
       <Section title="데이터">
         <Row
           label="모든 데이터 초기화"
           sub="닉네임, 사진, 북마크가 사라져요"
-          right={<span className="text-pink text-[13px] font-bold">초기화</span>}
+          right={<span className="text-danger text-[13px] font-bold">초기화</span>}
           onClick={() => setConfirmReset(true)}
         />
       </Section>
@@ -215,20 +226,20 @@ export default function Settings() {
           onClick={() => { setConfirmReset(false); setResetAck(false); }}
         >
           <div
-            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl border-2 border-pink/30"
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl border-2 border-danger/30"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[18px] font-bold text-pink">⚠️ 모든 데이터 영구 삭제</p>
+            <p className="text-[18px] font-bold text-danger">⚠️ 모든 데이터 영구 삭제</p>
             <p className="text-[13px] text-text/80 mt-2 leading-relaxed">
               닉네임, 인증 사진, 챌린지 진행, 북마크, 보유 아이템이<br />
-              <span className="font-bold text-pink">모두 사라지며 복구할 수 없어요.</span>
+              <span className="font-bold text-danger">모두 사라지며 복구할 수 없어요.</span>
             </p>
             <label className="mt-4 flex items-center justify-center gap-2 text-[13px] text-text/80 cursor-pointer">
               <input
                 type="checkbox"
                 checked={resetAck}
                 onChange={(e) => setResetAck(e.target.checked)}
-                className="w-4 h-4 accent-pink"
+                className="w-4 h-4 accent-danger"
               />
               <span>위 내용을 이해했고 정말 초기화합니다</span>
             </label>
@@ -250,11 +261,52 @@ export default function Settings() {
                 disabled={!resetAck}
                 className={`flex-1 font-bold rounded-2xl py-3 transition ${
                   resetAck
-                    ? 'bg-pink text-white active:scale-[.98]'
-                    : 'bg-text/20 text-text/40 cursor-not-allowed'
+                    ? 'bg-danger text-white active:scale-[.98]'
+                    : 'bg-text/15 text-text/40 cursor-not-allowed'
                 }`}
               >초기화</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 모드 변경 모달 */}
+      {modeModal && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 flex items-center justify-center px-7"
+          onClick={() => setModeModal(false)}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-center font-bold text-[16px] text-text">챌린지 모드 변경</p>
+            <p className="mt-2 text-center text-[12px] text-text/65 leading-relaxed">
+              하드 모드는 직접 고른 미션 합계만큼 적립돼요.<br />
+              현재 누적/일자/코인은 그대로 유지됩니다.
+            </p>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={() => { u.update({ goal: 300_000 }); setModeModal(false); }}
+                className={`rounded-2xl py-3 text-[14px] font-bold transition ${
+                  u.goal < 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
+                }`}
+              >
+                노말<br /><span className="text-[11px] font-normal opacity-80">30만원</span>
+              </button>
+              <button
+                onClick={() => { u.update({ goal: 1_000_000 }); setModeModal(false); }}
+                className={`rounded-2xl py-3 text-[14px] font-bold transition ${
+                  u.goal >= 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
+                }`}
+              >
+                하드<br /><span className="text-[11px] font-normal opacity-80">100만원+</span>
+              </button>
+            </div>
+            <button
+              onClick={() => setModeModal(false)}
+              className="mt-3 w-full bg-text/15 text-text/70 font-bold rounded-2xl py-2.5 text-[13px]"
+            >닫기</button>
           </div>
         </div>
       )}

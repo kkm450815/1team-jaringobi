@@ -104,6 +104,24 @@ export default function MyPage() {
         </Link>
       </header>
 
+      {/* 진행 안내 배너 — 오늘 챌린지 진행 상태 + 메인으로 빠른 이동 */}
+      <div className="mx-4 mb-3 bg-accent/10 ring-1 ring-accent/30 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-bold text-text">
+            {u.day === 1 ? '챌린지 시작!' : `${u.day}일차 진행 중`} · D-{Math.max(0, 31 - u.day)}
+          </p>
+          <p className="text-[11px] text-text/65 mt-0.5 truncate">
+            누적 {u.totalSaved.toLocaleString()}원 · 코인 {u.coins.toLocaleString()}P · 인증 시 +100P
+          </p>
+        </div>
+        <Link
+          to="/main"
+          className="text-[12px] font-bold bg-accent text-white px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+        >
+          메인으로
+        </Link>
+      </div>
+
       {/* 노트 카드 */}
       <section className="mx-4 bg-grid-paper rounded-[18px] shadow-soft px-4 pt-3 pb-6 relative">
         {/* 노트 바인딩 구멍 */}
@@ -208,6 +226,16 @@ export default function MyPage() {
                   style={{ background: 'radial-gradient(circle at 35% 30%, #FFD56A 0%, #E8AB2A 70%)' }}
                 >
                   ₩
+                </span>
+              </Link>
+              <Link to="/honor" aria-label="명예의 전당" className="p-1">
+                <span
+                  className="inline-grid place-items-center w-7 h-7 rounded-full"
+                  style={{ background: '#F4C430' }}
+                >
+                  <svg width="16" height="14" viewBox="0 0 24 20" aria-hidden>
+                    <path d="M2 6 L7 11 L12 3 L17 11 L22 6 L20 17 H4 Z" fill="#FFFCDC" stroke="#3D3833" strokeWidth="1.5" strokeLinejoin="round" />
+                  </svg>
                 </span>
               </Link>
               <Link to="/wardrobe" aria-label="옷장" className="p-1">
@@ -469,6 +497,11 @@ function TitleDetail({
         )}
         <p className="mt-3 text-[13px] font-bold text-text">tip!</p>
         <p className="mt-1 text-[12px] text-text/80 leading-relaxed">{title.tip}</p>
+        {!owned && prog.entries.length > 0 && (
+          <p className="mt-3 text-[11px] text-text/55 leading-relaxed text-center">
+            ※ 모든 조건을 만족하면 자동으로 획득됩니다.
+          </p>
+        )}
       </div>
 
       {/* 하단 버튼 — 둘 다 '이 칭호로 변경' 액션. 좌(획득): 모달 닫기, 우(변경): 그리드로 */}
@@ -479,7 +512,7 @@ function TitleDetail({
             className={`rounded-full py-3 text-[14px] font-bold transition ${
               active
                 ? 'bg-accent/40 text-text/60'
-                : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
+                : 'bg-accent text-accent-soft active:scale-[.98]'
             }`}
           >
             {active ? '사용 중' : '칭호 획득'}
@@ -494,7 +527,7 @@ function TitleDetail({
         )}
         <button
           onClick={owned && !active ? onChangeToThis : onBackToGrid}
-          className="rounded-full py-3 text-[14px] font-bold bg-accent text-[#FFFFAD] active:scale-[.98]"
+          className="rounded-full py-3 text-[14px] font-bold bg-accent text-accent-soft active:scale-[.98]"
         >
           칭호 변경
         </button>

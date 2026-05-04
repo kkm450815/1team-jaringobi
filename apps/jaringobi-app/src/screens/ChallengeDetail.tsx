@@ -10,7 +10,10 @@ export default function ChallengeDetail() {
   return (
     <main className="min-h-full pb-12 bg-grid-paper">
       <header className="relative pt-10 pb-4">
-        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text" fallback="/challenges" />
+        <BackButton
+          className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text"
+          fallback={`/challenges?cat=${typeof window !== 'undefined' ? (localStorage.getItem('jaringobi.lastCat') ?? '식비') : '식비'}`}
+        />
         <div className="flex justify-center">
           <Link to="/main" aria-label="홈으로">
             <img
