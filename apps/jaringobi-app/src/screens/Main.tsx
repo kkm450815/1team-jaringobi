@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { RoomPreview } from '../components/RoomPreview';
@@ -39,18 +39,24 @@ export default function Main() {
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
-  // 캐릭터 클릭 시 잠깐 찡그린 표정으로 — 350ms 동안 action_character 표시
-  const [hitTick, setHitTick] = useState(0);
-  function hitCharacter() {
-    setHitTick((n) => n + 1);
+  // 캐릭터 클릭 시 잠깐 찡그린 표정 + 클릭한 위치에 팡 버스트 표시 (350ms)
+  const roomRef = useRef<HTMLDivElement>(null);
+  const [hit, setHit] = useState<{ x: number; y: number; tick: number } | null>(null);
+  function hitCharacter(e: React.MouseEvent) {
+    const root = roomRef.current;
+    if (!root) return;
+    const rect = root.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setHit({ x, y, tick: (hit?.tick ?? 0) + 1 });
     if (u.settings.sound) playLoseSfx();
     if (u.settings.vibration) vibrate(20);
   }
   useEffect(() => {
-    if (hitTick === 0) return;
-    const t = setTimeout(() => setHitTick(0), 350);
+    if (!hit) return;
+    const t = setTimeout(() => setHit(null), 350);
     return () => clearTimeout(t);
-  }, [hitTick]);
+  }, [hit?.tick]);
 
   // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
@@ -188,21 +194,21 @@ export default function Main() {
       </section>
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
-      <div className="relative w-full mt-2">
+      <div ref={roomRef} className="relative w-full mt-2">
         <RoomPreview
           equipped={u.equipped}
           framed={false}
-          characterSrc={hitTick > 0 ? '/jarin/action_character.png' : '/jarin/main_character.png'}
+          characterSrc={hit ? '/jarin/action_character.png' : '/jarin/main_character.png'}
           onCharacterClick={hitCharacter}
-          characterClassName={hitTick > 0 ? 'animate-hit-shake' : ''}
         />
-        {hitTick > 0 && (
+        {hit && (
           <div
-            key={hitTick}
-            className="absolute left-[58%] top-[40%] z-20 pointer-events-none animate-hit-pop"
+            key={hit.tick}
+            className="absolute z-20 pointer-events-none animate-hit-pop"
+            style={{ left: hit.x, top: hit.y, transform: 'translate(-50%, -50%)' }}
             aria-hidden
           >
-            <svg width="120" height="120" viewBox="0 0 120 120">
+            <svg width="56" height="56" viewBox="0 0 120 120">
               <polygon
                 points="60,4 70,30 96,18 84,44 116,52 88,64 108,90 78,82 84,114 60,92 36,114 42,82 12,90 32,64 4,52 36,44 24,18 50,30"
                 fill="#FFE34D"
@@ -210,15 +216,6 @@ export default function Main() {
                 strokeWidth="3"
                 strokeLinejoin="round"
               />
-              <text
-                x="60" y="70"
-                textAnchor="middle"
-                fontSize="26"
-                fontWeight="900"
-                fill="#3D3833"
-                stroke="#3D3833"
-                strokeWidth="0.5"
-              >팡!</text>
             </svg>
           </div>
         )}
