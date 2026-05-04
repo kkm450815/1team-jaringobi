@@ -56,23 +56,23 @@ export default function ChallengeList() {
         })}
       </div>
 
-      {/* 챌린지 카드 리스트 — 좌측 olive 컨테이너 + 우측 흰 영역 (모서리 둥글게) */}
+      {/* 챌린지 카드 리스트 — 모든 카드 동일 높이, 텍스트 영역 좁혀 줄바꿈 유도 */}
       <ul className="px-5 mt-4 pb-4 space-y-3">
         {items.map((m) => (
           <li key={m.id}>
             <Link
               to={`/challenges/${m.id}`}
-              className="relative flex items-stretch rounded-[22px] bg-white shadow-soft active:scale-[.99] transition overflow-hidden"
+              className="relative flex items-stretch h-[104px] rounded-[22px] bg-white shadow-soft active:scale-[.99] transition overflow-hidden"
             >
-              <div className="w-[88px] grid place-items-center bg-[#ABBCA2] shrink-0 overflow-hidden">
+              <div className="w-[104px] grid place-items-center bg-[#ABBCA2] shrink-0 overflow-hidden">
                 <img
                   src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
                   alt=""
-                  className="w-[64px] h-[64px] object-contain"
+                  className="w-[72px] h-[72px] object-contain"
                   onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
                 />
               </div>
-              <div className="flex-1 min-w-0 pl-4 pr-3 py-3 pb-7">
+              <div className="flex-1 min-w-0 pl-4 pr-3 py-3 flex flex-col">
                 <div className="flex items-center justify-between gap-2">
                   <p className="font-bold text-[16px] leading-snug text-text truncate break-keep">
                     {m.title}
@@ -81,7 +81,7 @@ export default function ChallengeList() {
                     {m.difficulty}
                   </span>
                 </div>
-                <p className="text-[13px] text-text/75 leading-relaxed mt-1 line-clamp-2 break-keep">
+                <p className="text-[13px] text-text/75 leading-relaxed mt-1 line-clamp-2 break-keep pr-10">
                   {m.intro}
                 </p>
               </div>
