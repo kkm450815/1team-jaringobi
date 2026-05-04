@@ -18,7 +18,7 @@ export function BottomTabBar() {
           <Link
             key={t.to}
             to={t.to}
-            className={`flex items-center justify-center text-center py-5 rounded-2xl font-bold transition-colors ${
+            className={`tap-pill flex items-center justify-center text-center py-5 rounded-2xl font-bold transition-colors ${
               isChallenge ? 'text-[20px]' : 'text-[14px]'
             } ${
               active ? 'bg-accent text-white shadow-soft' : 'bg-primary/60 text-text/80'

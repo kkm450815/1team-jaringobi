@@ -53,15 +53,21 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-/* 버튼/Pill 안 텍스트 수직 중앙 정렬
+/* 버튼/탭/Pill 안 텍스트 수직 중앙 정렬
    GangwonEducationModuche 같은 한국어 손글씨 폰트는 baseline이 시각 중앙보다
    위에 있어 padding-y가 같아도 글씨가 위로 떠 보임.
-   - inline-flex + items-center 로 line-box 강제 중앙
    - line-height: 1 로 line-box 자체를 글씨 크기로 압축 → 수직 정렬 정확
-   - !important 로 Tailwind text-* 유틸의 line-height 오버라이드 */
+   - !important 로 Tailwind text-* 유틸의 line-height 오버라이드
+   - button 뿐 아니라 a(Link)에도 적용 (BottomTabBar 같이 a로 구현된 탭 포함) */
 button {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
+  line-height: 1 !important;
+}
+
+/* 탭/Pill 형태로 쓰이는 a(Link) — 명시적 .tap-pill 클래스로만 적용해
+   본문/카드 안 멀티라인 a 의 줄간격을 깨지 않게 함. */
+a.tap-pill {
   line-height: 1 !important;
 }
