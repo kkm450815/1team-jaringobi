@@ -44,10 +44,18 @@ export default function Bookmarks() {
             const room = TALK_ROOMS.find((r) => r.id === p.roomId);
             return (
               <li key={p.id} className="flex items-start gap-3">
-                <img src={AVATAR} alt="" className="w-9 h-9 rounded-full bg-white object-contain shrink-0" />
+                <Link
+                  to={`/profile/${encodeURIComponent(p.nick)}`}
+                  aria-label={`${p.nick} 프로필 보기`}
+                  className="shrink-0"
+                >
+                  <img src={AVATAR} alt="" className="w-9 h-9 rounded-full bg-white object-contain" />
+                </Link>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <p className="text-[13px] font-bold text-text">{p.nick}</p>
+                    <Link to={`/profile/${encodeURIComponent(p.nick)}`} className="text-[13px] font-bold text-text active:opacity-80">
+                      {p.nick}
+                    </Link>
                     {room && (
                       <Link
                         to={`/talk/${room.id}`}

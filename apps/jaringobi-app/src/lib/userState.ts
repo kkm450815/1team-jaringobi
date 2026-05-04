@@ -58,7 +58,7 @@ const DEFAULT: UserState = {
   totalSaved: 10_000,
   goal: 300_000,
   coins: 180,
-  owned: ['/shop/clothes/clo_shop_01.png'],
+  owned: ['/shop/clothes/clo_shop_01.png', '/shop/clothes/clo_shop_51.png'],
   equipped: [],
   missionPicks: ['m2', 'm12', 'm13'],
   missionConfirmed: [],
@@ -87,7 +87,8 @@ function read(): UserState {
       ...parsed,
       settings: { ...DEFAULT.settings, ...(parsed.settings ?? {}) },
       photos: parsed.photos ?? {},
-      owned: parsed.owned ?? DEFAULT.owned,
+      // clo_shop_51 은 무료 칭호처럼 모든 사용자에게 기본 보유
+      owned: Array.from(new Set([...(parsed.owned ?? DEFAULT.owned), '/shop/clothes/clo_shop_51.png'])),
       equipped: parsed.equipped ?? DEFAULT.equipped,
       missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
       missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
