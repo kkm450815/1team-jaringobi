@@ -22,23 +22,20 @@ import ScreenIndex from './screens/ScreenIndex';
 import Bookmarks from './screens/Bookmarks';
 import Settings from './screens/Settings';
 
-// 전역 BGM 컨트롤러 — 사용자 sound 토글 + bgmVolume 변화에 반응.
-// 첫 사용자 인터랙션 후 자동 시작 (브라우저 autoplay 정책).
+// 전역 BGM 컨트롤러
+// - sound 토글 변경 시에만 start/stop (재시작 방지)
+// - bgmVolume 변경은 setVolumePercent 만 호출 → 끊김 없이 볼륨만 조절
+// - 첫 사용자 인터랙션 후 자동 시작 (브라우저 autoplay 정책)
 function BgmController() {
   const u = useUser();
+  // sound 토글 — start/stop
   useEffect(() => {
     const bgm = getBgm();
-    bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
     function tryStart() {
-      if (u.settings.sound) {
-        bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
-        bgm.start();
-      }
+      if (u.settings.sound) bgm.start();
       window.removeEventListener('pointerdown', tryStart);
     }
     if (u.settings.sound) {
-      bgm.setVolumePercent(u.settings.bgmVolume ?? 60);
-      // 이미 한 번이라도 사용자 클릭이 있었으면 시도, 아니면 첫 클릭 대기
       bgm.start();
       window.addEventListener('pointerdown', tryStart, { once: true });
     } else {
@@ -47,7 +44,13 @@ function BgmController() {
     return () => {
       window.removeEventListener('pointerdown', tryStart);
     };
-  }, [u.settings.sound, u.settings.bgmVolume]);
+  }, [u.settings.sound]);
+
+  // 볼륨만 변경 — 끊김 없이 페이드
+  useEffect(() => {
+    getBgm().setVolumePercent(u.settings.bgmVolume ?? 60);
+  }, [u.settings.bgmVolume]);
+
   return null;
 }
 

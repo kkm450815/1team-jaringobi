@@ -9,6 +9,7 @@ import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
+import { playPurchaseSfx, vibrate } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 const CHUNK = 30;
@@ -279,6 +280,8 @@ export default function Shop() {
                 onClick={() => {
                   if (u.buy(selected, selectedPrice)) {
                     setPurchased(selected);
+                    if (u.settings.sound) playPurchaseSfx();
+                    if (u.settings.vibration) vibrate([20, 30, 20]);
                   }
                   setConfirmBuy(false);
                 }}
