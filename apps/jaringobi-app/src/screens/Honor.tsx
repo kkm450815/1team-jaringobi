@@ -77,12 +77,50 @@ export default function Honor() {
       </header>
 
       <ul className="px-5 mt-4 space-y-2">
-        {merged.map((r, i) => {
-          const rank = i + 1;
+        {/* 1·2·3 위 — 시상대 형태 (1위 가운데 위, 2위 왼쪽, 3위 오른쪽) */}
+        {merged.length >= 3 && (
+          <li>
+            <div className="grid grid-cols-3 gap-2 items-end mt-1 mb-3">
+              {[1, 0, 2].map((idxInTop3) => {
+                const r = merged[idxInTop3];
+                const rank = idxInTop3 + 1;
+                const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
+                const podiumH = rank === 1 ? 'h-[148px]' : rank === 2 ? 'h-[124px]' : 'h-[108px]';
+                const bg = rank === 1 ? 'bg-[#FFF7DD]' : rank === 2 ? 'bg-[#F1F1F1]' : 'bg-[#F4E1CC]';
+                const ring = rank === 1 ? 'ring-2 ring-[#F4C430]' : '';
+                return (
+                  <Link
+                    key={r.nick}
+                    to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
+                    className={`relative flex flex-col items-center justify-end rounded-2xl shadow-soft px-2 pb-2 pt-3 ${bg} ${ring} ${podiumH} active:scale-[.98] transition`}
+                  >
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                      <div className="w-9 h-9 rounded-full grid place-items-center shadow" style={{ background: RANK_COLORS[rank - 1] }}>
+                        <span className="text-[18px] font-black text-white drop-shadow">{rank}</span>
+                      </div>
+                    </div>
+                    <img src={AVATAR} alt="" className="w-12 h-12 rounded-full bg-white object-contain mb-1" />
+                    <p className="text-[13px] font-bold text-text truncate w-full text-center">
+                      {r.nick}{r.isMe && <span className="text-accent"> · 나</span>}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1 justify-center">
+                      <TitleIcon src={title.img} size={14} alt={title.name} />
+                      <span className="text-[10px] text-text/65 truncate">{title.name}</span>
+                    </div>
+                    <p className="mt-1 text-[12px] font-bold text-text">{r.totalSaved.toLocaleString()}</p>
+                  </Link>
+                );
+              })}
+            </div>
+          </li>
+        )}
+
+        {/* 4위 이하 — 일반 리스트 */}
+        {merged.slice(3).map((r, i) => {
+          const rank = i + 4;
           const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
-          const isTop3 = rank <= 3;
           return (
-            <li key={`${r.nick}-${i}`}>
+            <li key={`${r.nick}-${rank}`}>
               <Link
                 to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
                 className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-soft active:scale-[.99] transition ${
@@ -90,11 +128,7 @@ export default function Honor() {
                 }`}
               >
                 <div className="w-9 grid place-items-center shrink-0">
-                  {isTop3 ? (
-                    <CrownIcon color={RANK_COLORS[rank - 1]} />
-                  ) : (
-                    <span className="text-[15px] font-bold text-text/55">{rank}</span>
-                  )}
+                  <span className="text-[15px] font-bold text-text/55">{rank}</span>
                 </div>
                 <img src={AVATAR} alt="" className="w-10 h-10 rounded-full bg-white object-contain shrink-0" />
                 <div className="flex-1 min-w-0">
