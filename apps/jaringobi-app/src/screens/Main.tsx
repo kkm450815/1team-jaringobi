@@ -5,7 +5,7 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
-import { playLoseSfx, vibrate } from '../lib/feedback';
+import { playHitSfx, playLoseSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
@@ -55,8 +55,8 @@ export default function Main() {
     const color = HIT_COLORS[Math.floor(Math.random() * HIT_COLORS.length)];
     setHit({ x, y, tick: (hit?.tick ?? 0) + 1, color });
     setHitCount((c) => c + 1);
-    if (u.settings.sound) playLoseSfx();
-    if (u.settings.vibration) vibrate(20);
+    if (u.settings.sound) playHitSfx();
+    if (u.settings.vibration) vibrate(30);
   }
   useEffect(() => {
     if (!hit) return;
@@ -274,12 +274,6 @@ export default function Main() {
                         fill={fillColor}
                       />
                     </svg>
-                    {isDeleting && (
-                      <span
-                        className="absolute inset-0 grid place-items-center text-[40px] font-black text-white"
-                        aria-label="삭제 표시"
-                      >×</span>
-                    )}
                   </div>
                 );
               })}

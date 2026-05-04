@@ -54,6 +54,12 @@ export function playLoseSfx() {
   setTimeout(() => beep(330, 120), 100);
 }
 
+export function playHitSfx() {
+  // 펀치 — 짧고 강한 저음 임팩트 (gain 0.05 → 0.22 로 약 4배 큼)
+  beep(220, 60, 0.22);
+  setTimeout(() => beep(140, 80, 0.18), 30);
+}
+
 export function vibrate(durationMs: number | number[]) {
   if (typeof navigator === 'undefined' || !navigator.vibrate) return;
   try {
