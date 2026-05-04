@@ -9,7 +9,7 @@ export default function ChallengeDetail() {
   return (
     <main className="min-h-full pb-12 bg-grid-paper">
       <header className="relative pt-10 pb-4">
-        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/challenges" />
+        <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text" fallback="/challenges" />
         <div className="flex justify-center">
           <Link to="/main" aria-label="홈으로">
             <img
@@ -32,12 +32,12 @@ export default function ChallengeDetail() {
           </span>
         </div>
 
-        <p className="mt-4 text-[14px] text-text/85 leading-relaxed">
+        <p className="mt-4 text-[14px] text-text leading-relaxed">
           {m.intro}
         </p>
 
         <h3 className="mt-5 font-bold text-[15px]">기대 절약 효과</h3>
-        <p className="mt-1 text-[13px] text-text/80 leading-relaxed">
+        <p className="mt-1 text-[13px] text-text leading-relaxed">
           한 달 기준 약 {(m.amount * 22).toLocaleString()}원의 절약 효과를 기대할 수 있어요.
         </p>
 
@@ -46,14 +46,14 @@ export default function ChallengeDetail() {
           {m.tips.map((t) => (
             <li key={t} className="flex gap-2 text-[13px] leading-relaxed">
               <span className="text-accent font-bold shrink-0">✔</span>
-              <span className="text-text/85">{t}</span>
+              <span className="text-text">{t}</span>
             </li>
           ))}
         </ul>
 
         <h3 className="mt-5 font-bold text-[15px]">인증샷 가이드</h3>
         <div className="mt-2 rounded-2xl overflow-hidden bg-white shadow-soft p-4 text-center">
-          <p className="text-[13px] text-text/70 mb-3 leading-relaxed">
+          <p className="text-[13px] text-text/85 mb-3 leading-relaxed">
             {m.authMethod}
           </p>
           <img
