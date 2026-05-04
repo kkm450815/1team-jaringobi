@@ -39,6 +39,19 @@ export default function Main() {
   const [showHeartModal, setShowHeartModal] = useState(false);
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
+  // 캐릭터 클릭 시 잠깐 찡그린 표정으로 — 350ms 동안 action_character 표시
+  const [hitTick, setHitTick] = useState(0);
+  function hitCharacter() {
+    setHitTick((n) => n + 1);
+    if (u.settings.sound) playLoseSfx();
+    if (u.settings.vibration) vibrate(20);
+  }
+  useEffect(() => {
+    if (hitTick === 0) return;
+    const t = setTimeout(() => setHitTick(0), 350);
+    return () => clearTimeout(t);
+  }, [hitTick]);
+
   // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
   useEffect(() => {
@@ -176,7 +189,12 @@ export default function Main() {
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
       <div className="relative w-full mt-2">
-        <RoomPreview equipped={u.equipped} framed={false} />
+        <RoomPreview
+          equipped={u.equipped}
+          framed={false}
+          characterSrc={hitTick > 0 ? '/jarin/action_character.png' : '/jarin/main_character.png'}
+          onCharacterClick={hitCharacter}
+        />
         <Link
           to="/shop"
           aria-label="상점"

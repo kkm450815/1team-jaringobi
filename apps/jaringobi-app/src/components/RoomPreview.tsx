@@ -37,11 +37,15 @@ export function RoomPreview({
   extra = [],
   className = '',
   framed = true,
+  characterSrc = '/jarin/main_character.png',
+  onCharacterClick,
 }: {
   equipped: string[];
   extra?: string[];
   className?: string;
   framed?: boolean;
+  characterSrc?: string;
+  onCharacterClick?: () => void;
 }) {
   // 슬롯별로 최우선 표시 src 결정 (extra 우선)
   const all = [...equipped, ...extra];
@@ -100,11 +104,15 @@ export function RoomPreview({
         />
       )}
 
-      {/* 캐릭터 + 옷 + 사치품 (모두 같은 좌표/캐릭터 픽셀 스케일) */}
+      {/* 캐릭터 + 옷 + 사치품 (모두 같은 좌표/캐릭터 픽셀 스케일).
+          characterSrc/onCharacterClick 만 prop 으로 외부 주입 — 좌표/사이즈는 그대로. */}
       <img
-        src="/jarin/main_character.png"
+        src={characterSrc}
         alt="캐릭터"
-        className="absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain pointer-events-none select-none"
+        onClick={onCharacterClick}
+        className={`absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain select-none ${
+          onCharacterClick ? 'cursor-pointer' : 'pointer-events-none'
+        }`}
         draggable={false}
       />
       {clothes && <CharFitImage key={clothes} src={fitSrc(clothes)} />}
