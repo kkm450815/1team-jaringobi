@@ -1,21 +1,22 @@
 // 다른 사용자(혹은 본인)의 프로필 보기 페이지. /profile/:nick
 // 본인이면 마이페이지로 redirect, 아니면 read-only 뷰를 마이페이지와 비슷한 레이아웃으로 표시.
+// 캐릭터 방(RoomPreview)을 페이지 안에 항상 표시. 캐릭터 박스를 누르면 방 영역으로 스크롤.
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { fitSrc, ME_NICK, TITLES } from '../lib/data';
+import { fitSrc, TITLES } from '../lib/data';
 import { profilesRepo, PublicProfile } from '../lib/profilesRepo';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { TitleIcon } from '../components/TitleIcon';
-import { useEscape } from '../lib/useEscape';
+import { useUser } from '../lib/userState';
 
 export default function Profile() {
   const { nick: rawNick } = useParams();
   const nick = decodeURIComponent(rawNick ?? '');
+  const u = useUser();
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
-  const [roomOpen, setRoomOpen] = useState(false);
-  useEscape(roomOpen, () => setRoomOpen(false));
+  const roomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -26,8 +27,8 @@ export default function Profile() {
     return () => { cancelled = true; };
   }, [nick]);
 
-  // 본인이면 본인 마이페이지로
-  if (nick === ME_NICK) return <Navigate to="/mypage" replace />;
+  // 본인이면 본인 마이페이지로 (Settings 등에서 닉네임을 바꿨어도 정확히 비교)
+  if (nick === u.nickname) return <Navigate to="/mypage" replace />;
 
   if (profile === undefined) {
     return (
@@ -75,7 +76,7 @@ export default function Profile() {
 
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-3">
           <button
-            onClick={() => setRoomOpen(true)}
+            onClick={() => roomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
             aria-label={`${profile.nickname} 방 보기`}
             className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
           >
@@ -121,6 +122,12 @@ export default function Profile() {
           <span className="text-[14px] font-bold text-text">챌린지 {profile.cycle}회차</span>
         </div>
 
+        {/* 캐릭터 방 — 페이지 안 인라인 표시 */}
+        <div ref={roomRef} className="mt-5">
+          <h3 className="font-bold tracking-[3px] text-[15px] text-text">ROOM</h3>
+          <RoomPreview equipped={profile.equipped} className="mt-2 mx-auto w-full" />
+        </div>
+
         <div className="mt-5">
           <h3 className="font-bold tracking-[3px] text-[15px] text-text">RECORD</h3>
           <ul className="mt-2 grid grid-cols-6 gap-x-2 gap-y-3">
@@ -133,33 +140,6 @@ export default function Profile() {
           </ul>
         </div>
       </section>
-
-      {/* 캐릭터 방 모달 */}
-      {roomOpen && (
-        <div
-          className="fixed inset-0 z-50 bg-black/55 grid place-items-center px-5"
-          onClick={() => setRoomOpen(false)}
-        >
-          <div
-            className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="relative">
-              <p className="text-center font-bold text-[16px] text-text">
-                {profile.nickname} 의 방
-              </p>
-              <button
-                onClick={() => setRoomOpen(false)}
-                aria-label="닫기"
-                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[24px] leading-none text-text/70 font-bold"
-              >×</button>
-            </div>
-            <div className="mt-4">
-              <RoomPreview equipped={profile.equipped} className="mx-auto w-full" />
-            </div>
-          </div>
-        </div>
-      )}
     </main>
   );
 }

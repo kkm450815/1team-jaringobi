@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
+import { RoomPreview } from '../components/RoomPreview';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
@@ -15,6 +16,7 @@ export default function MyPage() {
   const [nickError, setNickError] = useState<string | null>(null);
   const [titleModal, setTitleModal] = useState(false);
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
+  const roomRef = useRef<HTMLDivElement>(null);
 
   function commitNick() {
     if (!nickDraft.trim()) {
@@ -127,12 +129,16 @@ export default function MyPage() {
 
         {/* 프로필 영역 */}
         <div className="grid grid-cols-[140px_1fr] gap-4 items-start mt-1">
-          <div className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative">
+          <button
+            onClick={() => roomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            aria-label="내 방 보기"
+            className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
+          >
             {/* 캐릭터 + 장착 fit을 메인/상점과 동일한 캔버스 비율로 그려 어깨선까지 보이게 */}
             <img
               src="/jarin/main_character.png"
               alt={`${u.nickname} 캐릭터`}
-              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
+              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
               draggable={false}
             />
             {u.equipped
@@ -146,7 +152,10 @@ export default function MyPage() {
                   draggable={false}
                 />
               ))}
-          </div>
+            <span className="absolute right-1.5 bottom-1.5 bg-text/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+              방 보기
+            </span>
+          </button>
           <div>
             <p className="text-[14px] font-bold text-text">
               거지탈출 {u.day}일차
@@ -227,6 +236,12 @@ export default function MyPage() {
             <span>{u.ownedTitles.includes(u.activeTitleId) ? activeTitle.name : '칭호 미획득'}</span>
           </button>
           <span className="text-[14px] font-bold text-text">챌린지 {u.cycle}회차</span>
+        </div>
+
+        {/* ROOM — 본인 방 (옷장에서 장착한 그대로) */}
+        <div ref={roomRef} className="mt-5">
+          <h3 className="font-bold tracking-[3px] text-[15px] text-text">ROOM</h3>
+          <RoomPreview equipped={u.equipped} className="mt-2 mx-auto w-full" />
         </div>
 
         {/* RECORD */}
