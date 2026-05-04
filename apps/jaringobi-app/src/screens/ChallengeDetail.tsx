@@ -1,5 +1,6 @@
 import { Link, useParams } from 'react-router-dom';
 import { BackButton, Tag } from '../components/UI';
+import { Highlight } from '../components/Highlight';
 import { MISSIONS } from '../lib/data';
 
 export default function ChallengeDetail() {
@@ -33,12 +34,12 @@ export default function ChallengeDetail() {
         </div>
 
         <p className="mt-4 text-[14px] text-text leading-relaxed">
-          {m.intro}
+          <Highlight text={m.intro} />
         </p>
 
         <h3 className="mt-5 font-bold text-[15px]">기대 절약 효과</h3>
         <p className="mt-1 text-[13px] text-text leading-relaxed">
-          한 달 기준 약 {(m.amount * 22).toLocaleString()}원의 절약 효과를 기대할 수 있어요.
+          한 달 기준 약 <mark className="bg-[#FFF59D] text-text px-0.5 rounded-[3px]">{(m.amount * 22).toLocaleString()}원</mark>의 절약 효과를 기대할 수 있어요.
         </p>
 
         <h3 className="mt-5 font-bold text-[15px]">실천 팁</h3>
@@ -46,7 +47,7 @@ export default function ChallengeDetail() {
           {m.tips.map((t) => (
             <li key={t} className="flex gap-2 text-[13px] leading-relaxed">
               <span className="text-accent font-bold shrink-0">✔</span>
-              <span className="text-text">{t}</span>
+              <Highlight text={t} className="text-text" />
             </li>
           ))}
         </ul>
@@ -54,7 +55,7 @@ export default function ChallengeDetail() {
         <h3 className="mt-5 font-bold text-[15px]">인증샷 가이드</h3>
         <div className="mt-2 rounded-2xl overflow-hidden bg-white shadow-soft p-4 text-center">
           <p className="text-[13px] text-text/85 mb-3 leading-relaxed">
-            {m.authMethod}
+            <Highlight text={m.authMethod} />
           </p>
           <img
             src={`/jarin/chall/ex/chall_eximg_${m.iconKey}.png`}
