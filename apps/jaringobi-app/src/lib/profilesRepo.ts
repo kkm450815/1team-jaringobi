@@ -2,7 +2,7 @@
 // 현재는 시드 데이터(TALK_POSTS의 nick들 + ME_NICK) 기반 데모 프로필 반환.
 // Supabase 연동 시 profiles 테이블과 매핑.
 
-import { ME_NICK, TALK_POSTS, TITLES } from './data';
+import { ME_NICK, REMODEL_FILES, SHOP_GROUPS, TALK_POSTS, TITLES } from './data';
 import { getSupabase, isSupabaseEnabled } from './supabase';
 
 export interface PublicProfile {
@@ -13,6 +13,7 @@ export interface PublicProfile {
   goal: number;
   activeTitleId: string;   // TITLES 의 id
   ownedTitles: string[];   // 가시화용
+  equipped: string[];      // 캐릭터 방 미리보기용 (티셔츠·조명·벽지·가구·소품·악세 src)
   isMe: boolean;
 }
 
@@ -31,11 +32,34 @@ function hashNick(nick: string): number {
   return h;
 }
 
+function pickFrom(arr: string[], h: number): string | undefined {
+  if (!arr.length) return undefined;
+  return arr[h % arr.length];
+}
+
 function demoProfile(nick: string): PublicProfile {
   const h = hashNick(nick);
   const titleIdx = h % TITLES.length;
   const cycle = (h % 5) + 1;
   const day = (h % 30) + 1;
+  // 닉 해시 기반 결정적 룸 구성 — 티셔츠 1, 벽지 1, 조명/가구/소품 일부
+  const equipped: string[] = [];
+  const shirt = pickFrom(SHOP_GROUPS.티셔츠, h);
+  if (shirt) equipped.push(shirt);
+  const wall = pickFrom(REMODEL_FILES.벽지, h >> 3);
+  if (wall) equipped.push(wall);
+  if ((h >> 1) % 2 === 0) {
+    const lamp = pickFrom(REMODEL_FILES.조명, h >> 5);
+    if (lamp) equipped.push(lamp);
+  }
+  if ((h >> 2) % 2 === 0) {
+    const left = pickFrom(REMODEL_FILES.소품, h >> 7);
+    if (left) equipped.push(left);
+  }
+  if ((h >> 4) % 3 !== 0) {
+    const front = pickFrom(REMODEL_FILES.가구1, h >> 9);
+    if (front) equipped.push(front);
+  }
   return {
     nickname: nick,
     cycle,
@@ -44,6 +68,7 @@ function demoProfile(nick: string): PublicProfile {
     goal: 300_000,
     activeTitleId: TITLES[titleIdx]?.id ?? 'h0',
     ownedTitles: TITLES.slice(0, titleIdx + 1).map((t) => t.id),
+    equipped,
     isMe: nick === ME_NICK,
   };
 }

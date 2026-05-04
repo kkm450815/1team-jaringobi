@@ -8,6 +8,7 @@ import Wardrobe from './screens/Wardrobe';
 import Shop from './screens/Shop';
 import TalkList from './screens/TalkList';
 import TalkRoom from './screens/TalkRoom';
+import Honor from './screens/Honor';
 import ChallengeList from './screens/ChallengeList';
 import ChallengeDetail from './screens/ChallengeDetail';
 import MyPage from './screens/MyPage';
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/shop" element={<Shop />} />
         <Route path="/talk" element={<TalkList />} />
         <Route path="/talk/:id" element={<TalkRoom />} />
+        <Route path="/honor" element={<Honor />} />
         <Route path="/bookmarks" element={<Bookmarks />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/challenges" element={<ChallengeList />} />
