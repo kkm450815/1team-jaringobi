@@ -173,7 +173,8 @@ export default function Camera() {
         </button>
 
         <p className="mt-3 text-[12px] text-text/60 text-center leading-relaxed">
-          저장한 사진은 마이페이지의 RECORD에서 일자별로 확인할 수 있어요.
+          저장한 사진은 마이페이지의 RECORD에서 일자별로 확인할 수 있어요.<br />
+          ※ 사진 인증을 해야만 다음 일자로 넘어갑니다.
         </p>
       </section>
 

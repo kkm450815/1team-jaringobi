@@ -38,6 +38,7 @@ export default function Shop() {
   const [accSub, setAccSub] = useState<AccSub>('모자');
   const [selected, setSelected] = useState<string | null>(null);
   const [confirmBuy, setConfirmBuy] = useState(false);
+  const [purchased, setPurchased] = useState<string | null>(null);
 
   const selectedPrice = selected ? priceFor(selected) : 0;
   const selectedOwned = !!selected && u.owned.includes(selected);
@@ -77,6 +78,13 @@ export default function Shop() {
   }, [items.length]);
 
   useEscape(confirmBuy, () => setConfirmBuy(false));
+
+  // 구매 완료 토스트 — 3초 후 자동 사라짐
+  useEffect(() => {
+    if (!purchased) return;
+    const t = setTimeout(() => setPurchased(null), 3000);
+    return () => clearTimeout(t);
+  }, [purchased]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
@@ -269,12 +277,39 @@ export default function Shop() {
               >취소</button>
               <button
                 onClick={() => {
-                  u.buy(selected, selectedPrice);
+                  if (u.buy(selected, selectedPrice)) {
+                    setPurchased(selected);
+                  }
                   setConfirmBuy(false);
                 }}
                 className="flex-1 bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
               >구매</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 구매 완료 토스트 */}
+      {purchased && (
+        <div
+          className="fixed inset-x-0 bottom-8 z-40 grid place-items-center pointer-events-none"
+          aria-live="polite"
+        >
+          <div className="pointer-events-auto bg-text/90 text-bg rounded-2xl px-4 py-3 shadow-2xl flex items-center gap-3 max-w-[300px]">
+            <img src={purchased} alt="" className="w-10 h-10 object-contain bg-white/15 rounded-lg" onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }} />
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold">획득! 옷장에서 입어보세요</p>
+            </div>
+            <Link
+              to="/wardrobe"
+              onClick={() => setPurchased(null)}
+              className="text-[12px] font-bold bg-accent text-white px-2.5 py-1 rounded-full whitespace-nowrap"
+            >옷장</Link>
+            <button
+              onClick={() => setPurchased(null)}
+              aria-label="닫기"
+              className="text-bg/70 text-[16px] leading-none w-5 h-5 grid place-items-center"
+            >×</button>
           </div>
         </div>
       )}

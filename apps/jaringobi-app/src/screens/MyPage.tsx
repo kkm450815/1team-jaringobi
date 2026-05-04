@@ -104,6 +104,24 @@ export default function MyPage() {
         </Link>
       </header>
 
+      {/* 진행 안내 배너 — 오늘 챌린지 진행 상태 + 메인으로 빠른 이동 */}
+      <div className="mx-4 mb-3 bg-accent/10 ring-1 ring-accent/30 rounded-2xl px-4 py-2.5 flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[13px] font-bold text-text">
+            {u.day === 1 ? '챌린지 시작!' : `${u.day}일차 진행 중`} · D-{Math.max(0, 31 - u.day)}
+          </p>
+          <p className="text-[11px] text-text/65 mt-0.5 truncate">
+            누적 {u.totalSaved.toLocaleString()}원 · 코인 {u.coins.toLocaleString()}P · 인증 시 +100P
+          </p>
+        </div>
+        <Link
+          to="/main"
+          className="text-[12px] font-bold bg-accent text-white px-3 py-1.5 rounded-full whitespace-nowrap shrink-0"
+        >
+          메인으로
+        </Link>
+      </div>
+
       {/* 노트 카드 */}
       <section className="mx-4 bg-grid-paper rounded-[18px] shadow-soft px-4 pt-3 pb-6 relative">
         {/* 노트 바인딩 구멍 */}
@@ -208,6 +226,16 @@ export default function MyPage() {
                   style={{ background: 'radial-gradient(circle at 35% 30%, #FFD56A 0%, #E8AB2A 70%)' }}
                 >
                   ₩
+                </span>
+              </Link>
+              <Link to="/honor" aria-label="명예의 전당" className="p-1">
+                <span
+                  className="inline-grid place-items-center w-7 h-7 rounded-full"
+                  style={{ background: '#F4C430' }}
+                >
+                  <svg width="16" height="14" viewBox="0 0 24 20" aria-hidden>
+                    <path d="M2 6 L7 11 L12 3 L17 11 L22 6 L20 17 H4 Z" fill="#FFFCDC" stroke="#3D3833" strokeWidth="1.5" strokeLinejoin="round" />
+                  </svg>
                 </span>
               </Link>
               <Link to="/wardrobe" aria-label="옷장" className="p-1">
