@@ -62,6 +62,13 @@ export default function Main() {
     const t = setTimeout(() => setHit(null), 350);
     return () => clearTimeout(t);
   }, [hit?.tick]);
+  // 떨떠름 표정(cry_cha)은 누적 20회 도달 후 5초만 유지 → hitCount 0으로 리셋
+  const isCrying = hitCount >= 20;
+  useEffect(() => {
+    if (!isCrying) return;
+    const t = setTimeout(() => setHitCount(0), 5000);
+    return () => clearTimeout(t);
+  }, [isCrying]);
 
   // 양심 0개 도달 시 코인 50% 차감 + 안내 팝업, 닫으면 양심 3개로 복구
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
