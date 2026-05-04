@@ -201,7 +201,7 @@ export default function Shop() {
                 isSelected ? 'bg-text/25' : 'bg-white/70'
               }`}
             >
-              {!owned && (
+              {!owned && price > 0 && (
                 <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="4" y="11" width="16" height="10" rx="2" />

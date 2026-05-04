@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { MISSIONS, MissionCategory } from '../lib/data';
 
@@ -11,8 +10,16 @@ const CAT_LABEL: Record<MissionCategory, string> = {
   통장: '통장사수',
 };
 
+function isCategory(v: string | null): v is MissionCategory {
+  return v === '식비' || v === '여가' || v === '충동' || v === '통장';
+}
+
 export default function ChallengeList() {
-  const [cat, setCat] = useState<MissionCategory>('식비');
+  // 카테고리를 URL 쿼리에 보존 → 상세 뒤로가기 시 같은 카테고리로 복귀
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rawCat = searchParams.get('cat');
+  const cat: MissionCategory = isCategory(rawCat) ? rawCat : '식비';
+  const setCat = (c: MissionCategory) => setSearchParams({ cat: c }, { replace: true });
   const items = MISSIONS.filter((m) => m.category === cat);
 
   return (
@@ -57,11 +64,11 @@ export default function ChallengeList() {
               to={`/challenges/${m.id}`}
               className="relative flex items-stretch rounded-[22px] bg-white shadow-soft active:scale-[.99] transition overflow-hidden"
             >
-              <div className="w-[96px] grid place-items-center bg-[#ABBCA2] shrink-0">
+              <div className="w-[88px] grid place-items-center bg-[#ABBCA2] shrink-0 overflow-hidden">
                 <img
                   src={`/jarin/chall/icon/chall_list_${m.iconKey}.png`}
                   alt=""
-                  className="w-[72px] h-[72px] object-contain scale-[1.4]"
+                  className="w-[64px] h-[64px] object-contain"
                   onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
                 />
               </div>

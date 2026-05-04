@@ -11,6 +11,7 @@ import TalkRoom from './screens/TalkRoom';
 import ChallengeList from './screens/ChallengeList';
 import ChallengeDetail from './screens/ChallengeDetail';
 import MyPage from './screens/MyPage';
+import Profile from './screens/Profile';
 import Camera from './screens/Camera';
 import ScreenIndex from './screens/ScreenIndex';
 import Bookmarks from './screens/Bookmarks';
@@ -33,6 +34,7 @@ export default function App() {
         <Route path="/challenges" element={<ChallengeList />} />
         <Route path="/challenges/:id" element={<ChallengeDetail />} />
         <Route path="/mypage" element={<MyPage />} />
+        <Route path="/profile/:nick" element={<Profile />} />
         <Route path="/camera" element={<Camera />} />
         <Route path="/index" element={<ScreenIndex />} />
         <Route path="*" element={<Navigate to="/" replace />} />

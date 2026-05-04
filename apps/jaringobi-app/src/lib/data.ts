@@ -217,17 +217,6 @@ export const MISSIONS: Mission[] = [
     authMethod: '주간 지출 내역 캡처',
   },
   {
-    id: 'm21', category: '여가', title: '지자체 체육시설 이용', amount: 50000, difficulty: '쉬움', iconKey: 'gym',
-    intro: '구립 체육관·강좌·공원 시설로 헬스장 비용 줄이기.',
-    tips: [
-      '구립 체육관 등록 — 헬스장 월 1~3만원, 시설은 사설과 큰 차이 없음',
-      '수영·요가·필라테스 강좌 — 사설 학원의 1/3 가격, 개강 전날 밤 미리 접수',
-      '공원 야외 운동기구 활용 — 철봉·평행봉·레그프레스 + 트랙 유산소',
-      '유튜브 홈트로 0원 운동 루틴',
-    ],
-    authMethod: '구립 체육센터 등록증 또는 운동 인증 사진 업로드',
-  },
-  {
     id: 'm20', category: '여가', title: '한 달 여가비 5만원 쓰기', amount: 50000, difficulty: '어려움', iconKey: 'leisure',
     intro: '놀건 놀아야지. 근데 한 달에 딱 5만원 안에서.',
     tips: [
@@ -319,13 +308,6 @@ export const TITLES: Title[] = [
     tip: '미리 약속을 줄여두면 자연스럽게 지출도 줄일 수 있어요',
     iconKey: 'friend',
     reqs: [{ type: 'mission', missionId: 'm19', count: 10 }],
-  },
-  {
-    id: 'h4', name: '동네 몸짱', difficulty: '보통',
-    tagline: '오늘도 땀값 세이브',
-    tip: '가까운 공공시설을 미리 알아두면 부담 없이 운동할 수 있어요',
-    iconKey: 'gym',
-    reqs: [{ type: 'mission', missionId: 'm21', count: 10 }],
   },
   {
     id: 'h5', name: '문화 한량', difficulty: '보통',
@@ -454,7 +436,7 @@ const ACC_FILES: string[] = [
   'acc_shop_31','acc_shop_32','acc_shop_33','acc_shop_34','acc_shop_35','acc_shop_36','acc_shop_37','acc_shop_38','acc_shop_39','acc_shop_40',
   'acc_shop_41','acc_shop_42','acc_shop_43','acc_shop_44','acc_shop_45','acc_shop_46','acc_shop_47','acc_shop_48','acc_shop_49','acc_shop_50',
   'acc_shop_51','acc_shop_52','acc_shop_53','acc_shop_54','acc_shop_55','acc_shop_56','acc_shop_57','acc_shop_58','acc_shop_59','acc_shop_60',
-  'acc_shop_61','acc_shop_62','acc_shop_63','acc_shop_64','acc_shop_65','acc_shop_66','acc_shop_67','acc_shop_68','acc_shop_69','acc_shop_70',
+  'acc_shop_61','acc_shop_62','acc_shop_64','acc_shop_65','acc_shop_66','acc_shop_67','acc_shop_68','acc_shop_69','acc_shop_70',
   'acc_shop_71','acc_shop_72','acc_shop_73','acc_shop_74','acc_shop_75','acc_shop_77','acc_shop_78','acc_shop_79','acc_shop_80','acc_shop_81',
 ].map((n) => `/shop/acc/${n}.png`);
 
@@ -580,8 +562,40 @@ export function fitSrc(shopSrc: string): string {
 
 // 가격은 src 해시 기반으로 결정적 분배 (재렌더해도 같은 값 유지)
 const PRICE_BUCKET = [20, 50, 80, 100, 120, 150, 180, 200];
-export function priceFor(src: string): number {
+
+// 개별 가격 오버라이드 (운영에서 직접 지정한 항목)
+const PRICE_OVERRIDE: Record<string, number> = {
+  '/shop/acc/acc_shop_03.png': 400,
+  '/shop/acc/acc_shop_47.png': 300,
+  '/shop/acc/acc_shop_57.png': 200,
+  '/shop/clothes/clo_shop_18.png': 500,
+  '/shop/clothes/clo_shop_20.png': 500,
+  '/shop/clothes/clo_shop_40.png': 180,
+  '/shop/clothes/clo_shop_42.png': 150,
+  '/shop/clothes/clo_shop_43.png': 150,
+  '/shop/clothes/clo_shop_44.png': 150,
+  '/shop/clothes/clo_shop_51.png': 0,   // 무료 — 자물쇠 미표시, 모든 사용자 기본 보유
+  '/shop/clothes/clo_shop_53.png': 200,
+  '/shop/clothes/clo_shop_54.png': 200,
+  '/shop/right/right_shop_03.png': 200,
+  '/shop/right/right_shop_16.png': 50,
+  '/shop/front/front_shop_25.png': 300,
+  '/shop/lamp/lamp_shop_06.png': 200,
+};
+
+// 벽지는 50~150 범위에서 결정적으로 분배
+const WALL_PRICE_BUCKET = [50, 60, 70, 80, 90, 100, 110, 120, 130, 140, 150];
+
+function hashSrc(src: string): number {
   let h = 0;
   for (let i = 0; i < src.length; i += 1) h = (h * 31 + src.charCodeAt(i)) | 0;
-  return PRICE_BUCKET[Math.abs(h) % PRICE_BUCKET.length];
+  return Math.abs(h);
+}
+
+export function priceFor(src: string): number {
+  if (src in PRICE_OVERRIDE) return PRICE_OVERRIDE[src];
+  if (src.includes('/shop/wall_paper/')) {
+    return WALL_PRICE_BUCKET[hashSrc(src) % WALL_PRICE_BUCKET.length];
+  }
+  return PRICE_BUCKET[hashSrc(src) % PRICE_BUCKET.length];
 }

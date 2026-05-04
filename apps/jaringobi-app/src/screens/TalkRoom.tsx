@@ -104,9 +104,17 @@ export default function TalkRoom() {
           const marked = has(p.id);
           return (
             <li key={p.id} className="flex items-start gap-3">
-              <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
+              <Link
+                to={`/profile/${encodeURIComponent(p.nick)}`}
+                aria-label={`${p.nick} 프로필 보기`}
+                className="shrink-0"
+              >
+                <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain" />
+              </Link>
               <div className="flex-1 min-w-0">
-                <p className="text-[15px] font-bold text-text">{p.nick}</p>
+                <Link to={`/profile/${encodeURIComponent(p.nick)}`} className="text-[15px] font-bold text-text active:opacity-80">
+                  {p.nick}
+                </Link>
                 <p className="text-[15px] mt-1.5 leading-relaxed text-text/90 whitespace-pre-wrap">
                   {p.body}
                 </p>
