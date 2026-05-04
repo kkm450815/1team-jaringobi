@@ -1,4 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
+import { playClickSfx } from '../lib/feedback';
+import { useUser } from '../lib/userState';
 
 const tabs = [
   { to: '/talk',       label: '수다방' },
@@ -8,6 +10,7 @@ const tabs = [
 
 export function BottomTabBar() {
   const { pathname } = useLocation();
+  const u = useUser();
   return (
     <nav className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-4 pb-6 grid grid-cols-[0.8fr_2fr_0.8fr] gap-3 items-stretch">
       {tabs.map((t) => {
@@ -18,6 +21,7 @@ export function BottomTabBar() {
           <Link
             key={t.to}
             to={t.to}
+            onClick={() => { if (u.settings.sound) playClickSfx(); }}
             className={`tap-pill flex items-center justify-center text-center py-5 rounded-2xl font-bold transition-colors ${
               isChallenge ? 'text-[20px]' : 'text-[14px]'
             } ${

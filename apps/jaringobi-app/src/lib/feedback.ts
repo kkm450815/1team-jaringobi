@@ -38,7 +38,14 @@ function beep(freq: number, durationMs: number, gain = 0.05) {
 }
 
 export function playClickSfx() {
-  beep(880, 50);
+  beep(880, 40, 0.10);
+}
+
+/** 상점 구매 — 동전 떨어지는 듯한 ka-ching */
+export function playPurchaseSfx() {
+  beep(1175, 70, 0.18);                     // D6
+  setTimeout(() => beep(1568, 90, 0.20), 80); // G6 — 상승 톤
+  setTimeout(() => beep(2093, 140, 0.14), 180); // C7 — 마무리 반짝
 }
 
 export function playSuccessSfx() {

@@ -5,7 +5,7 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
-import { playHitSfx, playLoseSfx, vibrate } from '../lib/feedback';
+import { playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
@@ -133,6 +133,8 @@ export default function Main() {
 
   function confirmToday() {
     u.confirmMission();
+    if (u.settings.sound) playSuccessSfx();
+    if (u.settings.vibration) vibrate([20, 30, 20]);
     setMissionModal(null);
   }
 

@@ -8,6 +8,7 @@ import {
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
+import { playClickSfx } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 
@@ -134,7 +135,10 @@ export default function Wardrobe() {
             return (
               <button
                 key={src}
-                onClick={() => u.toggleEquip(src)}
+                onClick={() => {
+                  u.toggleEquip(src);
+                  if (u.settings.sound) playClickSfx();
+                }}
                 className="relative rounded-xl overflow-hidden bg-primary/35"
               >
                 <span className="absolute top-1.5 left-1.5">
