@@ -268,6 +268,10 @@ export default function MyPage() {
               ctx={titleCtx}
               onActivate={() => {
                 u.update({ activeTitleId: detailTitle.id });
+                closeTitleModal();
+              }}
+              onChangeToThis={() => {
+                u.update({ activeTitleId: detailTitle.id });
                 setDetailTitleId(null);
               }}
               onBackToGrid={() => setDetailTitleId(null)}
@@ -350,14 +354,15 @@ function TitleGrid({
 
 /* ---------- 칭호 상세 ---------- */
 function TitleDetail({
-  title, owned, active, ctx, onActivate, onBackToGrid, onClose,
+  title, owned, active, ctx, onActivate, onChangeToThis, onBackToGrid, onClose,
 }: {
   title: Title;
   owned: boolean;
   active: boolean;
   ctx: { missionWinDays: Record<string, string[]>; totalSaveCount: number; cycle: number };
-  onActivate: () => void;
-  onBackToGrid: () => void;
+  onActivate: () => void;        // 활성화 + 모달 닫기
+  onChangeToThis: () => void;    // 활성화 + 그리드로
+  onBackToGrid: () => void;      // 그리드로 (활성화 X)
   onClose: () => void;
 }) {
   const [lockAlert, setLockAlert] = useState(false);
@@ -427,15 +432,14 @@ function TitleDetail({
         <p className="mt-1 text-[12px] text-text/80 leading-relaxed">{title.tip}</p>
       </div>
 
-      {/* 하단 버튼 */}
+      {/* 하단 버튼 — 둘 다 '이 칭호로 변경' 액션. 좌(획득): 모달 닫기, 우(변경): 그리드로 */}
       <div className="mt-4 grid grid-cols-2 gap-2">
         {owned ? (
           <button
-            onClick={onActivate}
-            disabled={active}
+            onClick={active ? onClose : onActivate}
             className={`rounded-full py-3 text-[14px] font-bold transition ${
               active
-                ? 'bg-accent/40 text-text/60 cursor-not-allowed'
+                ? 'bg-accent/40 text-text/60'
                 : 'bg-accent text-[#FFFFAD] active:scale-[.98]'
             }`}
           >
@@ -450,7 +454,7 @@ function TitleDetail({
           </button>
         )}
         <button
-          onClick={onBackToGrid}
+          onClick={owned && !active ? onChangeToThis : onBackToGrid}
           className="rounded-full py-3 text-[14px] font-bold bg-accent text-[#FFFFAD] active:scale-[.98]"
         >
           칭호 변경
