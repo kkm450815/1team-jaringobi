@@ -40,9 +40,11 @@ export default function Main() {
   const [pendingHeartIdx, setPendingHeartIdx] = useState<number | null>(null);
 
   // 캐릭터 클릭 시 잠깐 찡그린 표정 + 클릭한 위치에 팡 버스트 표시 (350ms)
+  // 누적 hitCount >= 20 이면 평상시 표정이 cry_cha(떨떠름)로 바뀜
   const roomRef = useRef<HTMLDivElement>(null);
   const HIT_COLORS = ['#FFE34D', '#F49496', '#7BC256', '#7AC8E8', '#C49AE8', '#FFA94D', '#F47CC8'];
   const [hit, setHit] = useState<{ x: number; y: number; tick: number; color: string } | null>(null);
+  const [hitCount, setHitCount] = useState(0);
   function hitCharacter(e: React.MouseEvent) {
     const root = roomRef.current;
     if (!root) return;
@@ -51,6 +53,7 @@ export default function Main() {
     const y = e.clientY - rect.top;
     const color = HIT_COLORS[Math.floor(Math.random() * HIT_COLORS.length)];
     setHit({ x, y, tick: (hit?.tick ?? 0) + 1, color });
+    setHitCount((c) => c + 1);
     if (u.settings.sound) playLoseSfx();
     if (u.settings.vibration) vibrate(20);
   }
@@ -200,7 +203,13 @@ export default function Main() {
         <RoomPreview
           equipped={u.equipped}
           framed={false}
-          characterSrc={hit ? '/jarin/action_character.png' : '/jarin/main_character.png'}
+          characterSrc={
+            hit
+              ? '/jarin/action_character.png'
+              : hitCount >= 20
+                ? '/jarin/cry_cha.png'
+                : '/jarin/main_character.png'
+          }
           onCharacterClick={hitCharacter}
         />
         {hit && (
