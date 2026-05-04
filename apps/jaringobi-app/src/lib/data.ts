@@ -112,7 +112,7 @@ export const MISSIONS: Mission[] = [
   },
   {
     id: 'm10', category: '충동', title: '쇼핑 참기', amount: 100000, difficulty: '어려움', iconKey: 'shopping',
-    intro: '장바구니에 담아두면 살 것 같지만, **지우고 나면 꼭 필요하지 않았던** 경우가 많아요.',
+    intro: '담아둔 건 **48시간 뒤** 다시 봐요. 대부분 안 사도 돼요.',
     tips: [
       '**장바구니 삭제 인증** — 쿠팡·무신사·지그재그 비운 화면 캡처',
       '**48시간 룰** — 사고 싶은 게 생기면 담아두고 48시간 뒤 재확인',
@@ -133,7 +133,7 @@ export const MISSIONS: Mission[] = [
   },
   {
     id: 'm12', category: '충동', title: '택시 금지 (2주)', amount: 30000, difficulty: '보통', iconKey: 'taxi',
-    intro: '심야 택시 한 번에 **15,000~30,000원**, **막차**만 챙겨도 절약.',
+    intro: '심야 택시 한 번 **3만원**, **막차**만 챙겨도 절약.',
     tips: [
       '약속 장소 기준 **막차 시간을 캘린더 알람**으로 등록',
       '**카풀 앱**으로 비용 분담',
