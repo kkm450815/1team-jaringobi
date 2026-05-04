@@ -52,3 +52,16 @@ body {
 /* 가로 스크롤 숨김 */
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* 버튼/Pill 안 텍스트 수직 중앙 정렬
+   GangwonEducationModuche 같은 한국어 손글씨 폰트는 baseline이 시각 중앙보다
+   위에 있어 padding-y가 같아도 글씨가 위로 떠 보임.
+   inline-flex + items-center 로 강제 중앙, line-height 1.15로 폰트박스 압축. */
+@layer base {
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1.15;
+  }
+}
