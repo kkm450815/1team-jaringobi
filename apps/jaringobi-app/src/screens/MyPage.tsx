@@ -6,6 +6,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
+import { playSuccessSfx } from '../lib/feedback';
 
 const MAX_NICK = 10;
 
@@ -310,10 +311,12 @@ export default function MyPage() {
               ctx={titleCtx}
               onActivate={() => {
                 u.update({ activeTitleId: detailTitle.id });
+                if (u.settings.sound) playSuccessSfx();
                 closeTitleModal();
               }}
               onChangeToThis={() => {
                 u.update({ activeTitleId: detailTitle.id });
+                if (u.settings.sound) playSuccessSfx();
                 setDetailTitleId(null);
               }}
               onBackToGrid={() => setDetailTitleId(null)}
