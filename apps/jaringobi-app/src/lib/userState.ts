@@ -82,6 +82,19 @@ function read(): UserState {
 
     const parsed = JSON.parse(raw) as Partial<UserState>;
 
+    const missionWinDays = parsed.missionWinDays ?? DEFAULT.missionWinDays;
+    const totalSaveCount = typeof parsed.totalSaveCount === 'number'
+      ? parsed.totalSaveCount
+      : DEFAULT.totalSaveCount;
+    const cycle = typeof parsed.cycle === 'number' ? parsed.cycle : DEFAULT.cycle;
+
+    // 칭호 재평가 — 실제 진행도 기반으로 ownedTitles 결정.
+    // 과거 잘못 부여된(예: 옛 DEFAULT 의 h1) 칭호들 제거.
+    const titleCtx = { missionWinDays, totalSaveCount, cycle };
+    const recomputedOwnedTitles = TITLES
+      .filter((t) => t.id === 'h0' || getTitleProgress(t, titleCtx).achieved)
+      .map((t) => t.id);
+
     return {
       ...DEFAULT,
       ...parsed,
@@ -98,17 +111,12 @@ function read(): UserState {
         (v): v is number => typeof v === 'number',
       ),
 
-      // 초보 절약가(h0)는 모든 사용자가 기본 보유 — 마이그레이션
-      ownedTitles: Array.from(new Set([...(parsed.ownedTitles ?? []), 'h0'])),
-      // 활성 칭호가 보유하지 않은 칭호면 h0로 폴백
-      activeTitleId: (parsed.activeTitleId
-        && Array.from(new Set([...(parsed.ownedTitles ?? []), 'h0'])).includes(parsed.activeTitleId))
+      ownedTitles: recomputedOwnedTitles,
+      activeTitleId: parsed.activeTitleId && recomputedOwnedTitles.includes(parsed.activeTitleId)
         ? parsed.activeTitleId
         : 'h0',
-      missionWinDays: parsed.missionWinDays ?? DEFAULT.missionWinDays,
-      totalSaveCount: typeof parsed.totalSaveCount === 'number'
-        ? parsed.totalSaveCount
-        : DEFAULT.totalSaveCount,
+      missionWinDays,
+      totalSaveCount,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {

@@ -38,7 +38,12 @@ export default function ChallengeList() {
   const rawCat = searchParams.get('cat');
   const cat: MissionCategory = isCategory(rawCat) ? rawCat : '식비';
   const setCat = (c: MissionCategory) => setSearchParams({ cat: c }, { replace: true });
-  const items = MISSIONS.filter((m) => m.category === cat);
+  // 난이도 쉬움 → 보통 → 어려움 순으로 정렬
+  const DIFF_ORDER: Record<string, number> = { '쉬움': 0, '보통': 1, '어려움': 2 };
+  const items = MISSIONS
+    .filter((m) => m.category === cat)
+    .slice()
+    .sort((a, b) => (DIFF_ORDER[a.difficulty] ?? 9) - (DIFF_ORDER[b.difficulty] ?? 9));
 
   return (
     <main className="min-h-full pb-12">
