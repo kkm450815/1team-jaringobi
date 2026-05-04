@@ -112,7 +112,11 @@ export function RoomPreview({
         src={characterSrc}
         alt="캐릭터"
         onClick={onCharacterClick}
-        className={`absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain select-none ${
+        /* h + aspect 로 박스 크기를 main_character(242×458) 기준으로 고정.
+           action/clo_out/in_cha 가 242×460 이라 w-auto면 폭이 0.4% 줄어들어 보임.
+           object-cover 로 박스에 맞춰 채우면 (투명) 여분 패딩만 잘려서
+           캐릭터 시각 사이즈가 모든 이미지에서 동일하게 유지됨. */
+        className={`absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] aspect-[242/458] object-cover select-none ${
           onCharacterClick ? 'cursor-pointer' : 'pointer-events-none'
         } ${characterClassName}`}
         draggable={false}
