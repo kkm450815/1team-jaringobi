@@ -47,7 +47,7 @@ export default function ChallengeDetail() {
           <img
             src={`/jarin/chall/ex/chall_eximg_${m.iconKey}.png`}
             alt=""
-            className="mx-auto max-h-[180px] object-contain"
+            className="mx-auto w-full max-w-[320px] object-contain"
             onError={(e) => (e.currentTarget.style.display = 'none')}
           />
         </div>

@@ -20,25 +20,25 @@ export default function Camera() {
   const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
   const u = useUser();
 
-  // 하드 모드(goal>=100만): picks 합계, 노말: goal/30
+  // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30
   const expectedReward = u.goal >= 1_000_000
-    ? u.missionPicks.reduce(
+    ? u.missionConfirmed.reduce(
         (sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0),
         0,
       )
     : Math.round(u.goal / 30);
 
-  const todayMissions = u.missionPicks
+  const todayMissions = u.missionConfirmed
     .map((id) => MISSIONS.find((m) => m.id === id))
     .filter((m): m is (typeof MISSIONS)[number] => !!m);
 
-  // 미션이 한 개도 선택되지 않은 채 카메라 진입(예: 탭바 직접 클릭)하면 메인으로 자동 복귀.
-  // 메인의 빈 상태 안내가 더 적절하기 때문. 이미 사진 미리보기 중이면 유지.
+  // 오늘의 챌린지를 아직 확정하지 않은 채 카메라 진입(예: 탭바 직접 클릭)하면 메인으로 자동 복귀.
+  // 메인에서 미션 선택 → 확정을 거치고 와야 함. 이미 사진 미리보기 중이면 유지.
   useEffect(() => {
-    if (u.missionPicks.length === 0 && !preview) {
+    if (u.missionConfirmed.length === 0 && !preview) {
       nav('/main', { replace: true });
     }
-  }, [u.missionPicks.length, preview, nav]);
+  }, [u.missionConfirmed.length, preview, nav]);
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
