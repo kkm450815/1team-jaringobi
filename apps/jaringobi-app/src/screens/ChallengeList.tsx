@@ -67,14 +67,14 @@ export default function ChallengeList() {
               </div>
               <div className="flex-1 min-w-0 pl-4 pr-3 py-3 pb-7">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-bold text-[16px] leading-snug text-text truncate">
+                  <p className="font-bold text-[16px] leading-snug text-text truncate break-keep">
                     {m.title}
                   </p>
                   <span className="bg-pink text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full shrink-0">
                     {m.difficulty}
                   </span>
                 </div>
-                <p className="text-[13px] text-text/75 leading-relaxed mt-1 line-clamp-2">
+                <p className="text-[13px] text-text/75 leading-relaxed mt-1 line-clamp-2 break-keep">
                   {m.intro}
                 </p>
               </div>
