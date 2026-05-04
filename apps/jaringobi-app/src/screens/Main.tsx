@@ -194,7 +194,34 @@ export default function Main() {
           framed={false}
           characterSrc={hitTick > 0 ? '/jarin/action_character.png' : '/jarin/main_character.png'}
           onCharacterClick={hitCharacter}
+          characterClassName={hitTick > 0 ? 'animate-hit-shake' : ''}
         />
+        {hitTick > 0 && (
+          <div
+            key={hitTick}
+            className="absolute left-[58%] top-[40%] z-20 pointer-events-none animate-hit-pop"
+            aria-hidden
+          >
+            <svg width="120" height="120" viewBox="0 0 120 120">
+              <polygon
+                points="60,4 70,30 96,18 84,44 116,52 88,64 108,90 78,82 84,114 60,92 36,114 42,82 12,90 32,64 4,52 36,44 24,18 50,30"
+                fill="#FFE34D"
+                stroke="#3D3833"
+                strokeWidth="3"
+                strokeLinejoin="round"
+              />
+              <text
+                x="60" y="70"
+                textAnchor="middle"
+                fontSize="26"
+                fontWeight="900"
+                fill="#3D3833"
+                stroke="#3D3833"
+                strokeWidth="0.5"
+              >팡!</text>
+            </svg>
+          </div>
+        )}
         <Link
           to="/shop"
           aria-label="상점"

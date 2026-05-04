@@ -38,6 +38,7 @@ export function RoomPreview({
   className = '',
   framed = true,
   characterSrc = '/jarin/main_character.png',
+  characterClassName = '',
   onCharacterClick,
 }: {
   equipped: string[];
@@ -45,6 +46,7 @@ export function RoomPreview({
   className?: string;
   framed?: boolean;
   characterSrc?: string;
+  characterClassName?: string;
   onCharacterClick?: () => void;
 }) {
   // 슬롯별로 최우선 표시 src 결정 (extra 우선)
@@ -112,7 +114,7 @@ export function RoomPreview({
         onClick={onCharacterClick}
         className={`absolute left-1/2 bottom-[18%] -translate-x-1/2 h-[58%] w-auto object-contain select-none ${
           onCharacterClick ? 'cursor-pointer' : 'pointer-events-none'
-        }`}
+        } ${characterClassName}`}
         draggable={false}
       />
       {clothes && <CharFitImage key={clothes} src={fitSrc(clothes)} />}
