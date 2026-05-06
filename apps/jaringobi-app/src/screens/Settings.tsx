@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { useUser, UserSettings } from '../lib/userState';
@@ -81,6 +81,51 @@ export default function Settings() {
   const [nickError, setNickError] = useState<string | null>(null);
   const [legalKey, setLegalKey] = useState<keyof typeof LEGAL_DOCS | null>(null);
   const [modeModal, setModeModal] = useState(false);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+
+  // 데이터 백업 — 관련 localStorage 키 모두 JSON으로 묶어 다운로드
+  function exportBackup() {
+    const keys = ['jaringobi.user.v1', 'jaringobi.posts.v1', 'jaringobi.bookmarks.v1', 'jaringobi.lastCat'];
+    const data: Record<string, string | null> = { _exportedAt: new Date().toISOString() };
+    for (const k of keys) data[k] = localStorage.getItem(k);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const dt = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `jaringobi-backup-${dt}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function onImportFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const text = await f.text();
+      const data = JSON.parse(text) as Record<string, string | null>;
+      if (!data['jaringobi.user.v1']) {
+        setImportMsg('자린고비 백업 파일이 아닙니다');
+        setTimeout(() => setImportMsg(null), 3000);
+        return;
+      }
+      const keys = ['jaringobi.user.v1', 'jaringobi.posts.v1', 'jaringobi.bookmarks.v1', 'jaringobi.lastCat'];
+      for (const k of keys) {
+        const v = data[k];
+        if (v == null) localStorage.removeItem(k);
+        else localStorage.setItem(k, v);
+      }
+      setImportMsg('복원 완료! 새로고침합니다…');
+      setTimeout(() => window.location.reload(), 800);
+    } catch {
+      setImportMsg('파일을 읽을 수 없습니다');
+      setTimeout(() => setImportMsg(null), 3000);
+    }
+  }
 
   function commitNick() {
     if (!nickDraft.trim()) {
@@ -210,6 +255,25 @@ export default function Settings() {
       </Section>
 
       <Section title="데이터">
+        <Row
+          label="데이터 내보내기"
+          sub="JSON 파일로 백업 — 재설치 후에도 복원 가능"
+          right={<span className="text-accent text-[13px] font-bold">백업</span>}
+          onClick={exportBackup}
+        />
+        <Row
+          label="데이터 가져오기"
+          sub="백업 파일을 선택해 복원"
+          right={<span className="text-accent text-[13px] font-bold">복원</span>}
+          onClick={() => importInputRef.current?.click()}
+        />
+        <input
+          ref={importInputRef}
+          type="file"
+          accept="application/json"
+          onChange={onImportFile}
+          className="hidden"
+        />
         <Row
           label="모든 데이터 초기화"
           sub="닉네임, 사진, 북마크가 사라져요"
@@ -346,6 +410,15 @@ export default function Settings() {
               onClick={() => setModeModal(false)}
               className="mt-3 w-full bg-text/15 text-text/70 font-bold rounded-2xl py-2.5 text-[13px]"
             >닫기</button>
+          </div>
+        </div>
+      )}
+
+      {/* 백업/복원 토스트 */}
+      {importMsg && (
+        <div className="fixed inset-x-0 bottom-8 z-40 grid place-items-center pointer-events-none" aria-live="polite">
+          <div className="pointer-events-auto bg-text/90 text-bg rounded-2xl px-4 py-2.5 shadow-2xl text-[13px] font-bold">
+            {importMsg}
           </div>
         </div>
       )}

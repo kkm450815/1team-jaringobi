@@ -422,33 +422,48 @@ export function useUser() {
 }
 
 // 카메라 사진을 작게 리사이즈해서 dataURL 반환
-export function downscaleImage(file: File, max = 256): Promise<string> {
+// EXIF orientation 자동 적용 — createImageBitmap 가능 시 imageOrientation: 'from-image'
+// 사용. 폴백으로 기존 Image() 디코드.
+export async function downscaleImage(file: File, max = 256): Promise<string> {
+  // 1) modern path — EXIF 회전 자동 처리
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+      const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
+      const w = Math.max(1, Math.round(bitmap.width * scale));
+      const h = Math.max(1, Math.round(bitmap.height * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas context unavailable');
+      ctx.drawImage(bitmap, 0, 0, w, h);
+      bitmap.close?.();
+      return canvas.toDataURL('image/jpeg', 0.8);
+    } catch {
+      // 옵션 미지원 환경 → 폴백
+    }
+  }
+  // 2) fallback — FileReader + Image (회전 X)
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-
     reader.onload = () => {
       const img = new Image();
-
       img.onload = () => {
         const scale = Math.min(1, max / Math.max(img.width, img.height));
         const w = Math.max(1, Math.round(img.width * scale));
         const h = Math.max(1, Math.round(img.height * scale));
-
         const canvas = document.createElement('canvas');
         canvas.width = w;
         canvas.height = h;
-
         const ctx = canvas.getContext('2d');
         if (!ctx) return reject(new Error('Canvas context unavailable'));
-
         ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', 0.8));
       };
-
       img.onerror = () => reject(new Error('Image decode failed'));
       img.src = reader.result as string;
     };
-
     reader.onerror = () => reject(new Error('File read failed'));
     reader.readAsDataURL(file);
   });
