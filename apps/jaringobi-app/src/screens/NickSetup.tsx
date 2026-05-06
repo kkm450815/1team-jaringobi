@@ -30,7 +30,7 @@ export default function NickSetup() {
       return;
     }
     u.setNickname(trimmed);
-    if (u.settings.sound) playSuccessSfx();
+    playSuccessSfx();
     nav('/main', { replace: true });
   }
 

@@ -8,14 +8,11 @@
 //   bgm.stop();    // 페이지 이탈 시
 //   bgm.setVolume(0.05);
 
-let audioCtx: AudioContext | null = null;
+// AudioContext 는 lib/audio.ts 의 공유 인스턴스 사용 — SFX 와 동일 컨텍스트
+import { getAudioContext } from './audio';
+
 function getCtx(): AudioContext | null {
-  if (typeof window === 'undefined') return null;
-  if (audioCtx) return audioCtx;
-  const W = window as typeof window & { webkitAudioContext?: typeof AudioContext };
-  const Ctor = W.AudioContext ?? W.webkitAudioContext;
-  if (!Ctor) return null;
-  try { audioCtx = new Ctor(); return audioCtx; } catch { return null; }
+  return getAudioContext();
 }
 
 // C 마이너 펜타토닉 (꼬질꼬질 어울리는 5음계)

@@ -1,0 +1,24 @@
+{
+  "name": "자린고비",
+  "short_name": "자린고비",
+  "description": "30일 절약 챌린지",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ABBCA2",
+  "theme_color": "#F6EEDE",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "/jarin/logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/jarin/logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

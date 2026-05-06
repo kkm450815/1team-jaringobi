@@ -57,7 +57,7 @@ export default function Main() {
     const color = HIT_COLORS[Math.floor(Math.random() * HIT_COLORS.length)];
     setHit({ x, y, tick: (hit?.tick ?? 0) + 1, color });
     setHitCount((c) => c + 1);
-    if (u.settings.sound) playHitSfx();
+    playHitSfx();
     if (u.settings.vibration) vibrate(30);
   }
   useEffect(() => {
@@ -81,7 +81,7 @@ export default function Main() {
       const lost = Math.floor(u.coins * 0.5);
       const remain = u.coins - lost;
       setZeroPenalty({ lost, remain });
-      if (u.settings.sound) playLoseSfx();
+      playLoseSfx();
       if (u.settings.vibration) vibrate([20, 60, 20, 60, 60]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -120,7 +120,7 @@ export default function Main() {
   function deleteHeart() {
     if (pendingHeartIdx !== null) {
       u.loseHeart();
-      if (u.settings.sound) playLoseSfx();
+      playLoseSfx();
       if (u.settings.vibration) vibrate([15, 50, 25]);
     }
     setShowHeartModal(false);
@@ -133,14 +133,14 @@ export default function Main() {
 
   function confirmToday() {
     u.confirmMission();
-    if (u.settings.sound) playSuccessSfx();
+    playSuccessSfx();
     if (u.settings.vibration) vibrate([20, 30, 20]);
     setMissionModal(null);
   }
 
   function toggleSuccess(idx: number) {
     u.toggleMissionSuccess(idx);
-    if (u.settings.sound) playClickSfx();
+    playClickSfx();
   }
 
   function completeToday() {
@@ -155,7 +155,7 @@ export default function Main() {
     setPicks((p) => p.map((id, i) => (i === changingFor ? missionId : id)));
     setChangingFor(null);
     setMissionModal('recommend');
-    if (u.settings.sound) playClickSfx();
+    playClickSfx();
   }
 
   // ESC로 모달 닫기 (양심 / 미션)
@@ -335,7 +335,7 @@ export default function Main() {
             {missionModal === 'recommend' && (
               <RecommendPanel
                 picks={picks}
-                onChange={(idx) => { setChangingFor(idx); setMissionModal('change'); if (u.settings.sound) playClickSfx(); }}
+                onChange={(idx) => { setChangingFor(idx); setMissionModal('change'); playClickSfx(); }}
                 onConfirm={confirmToday}
               />
             )}
@@ -343,7 +343,7 @@ export default function Main() {
             {missionModal === 'change' && (
               <ChangePanel
                 filter={filter}
-                onFilter={(c) => { setFilter(c); if (u.settings.sound) playClickSfx(); }}
+                onFilter={(c) => { setFilter(c); playClickSfx(); }}
                 onPick={pickMission}
                 onCancel={() => { setChangingFor(null); setMissionModal('recommend'); }}
               />

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Route, Routes, Navigate } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
+import { unlockAudio } from './lib/audio';
 import { getBgm } from './lib/bgm';
 import { setSfxEnabled, setSfxVolume } from './lib/feedback';
 import { useUser } from './lib/userState';
@@ -52,18 +53,38 @@ function BgmController() {
     getBgm().setVolumePercent(u.settings.bgmVolume ?? 60);
   }, [u.settings.bgmVolume]);
 
-  // SFX — sound 마스터 + sfxEnabled + sfxVolume 합쳐서 적용
+  // SFX — sfxEnabled / sfxVolume 만 반영. sound 마스터(BGM 토글) 와는 독립
+  // → BGM 끈 상태에서도 효과음만 들을 수 있음
   useEffect(() => {
-    setSfxEnabled(u.settings.sound && (u.settings.sfxEnabled ?? true));
+    setSfxEnabled(u.settings.sfxEnabled ?? true);
     setSfxVolume(u.settings.sfxVolume ?? 80);
-  }, [u.settings.sound, u.settings.sfxEnabled, u.settings.sfxVolume]);
+  }, [u.settings.sfxEnabled, u.settings.sfxVolume]);
 
+  return null;
+}
+
+// 첫 사용자 클릭으로 공유 AudioContext 를 unlock — BGM·SFX 모두 사용 가능 상태로
+function AudioUnlocker() {
+  useEffect(() => {
+    function onFirstInteraction() {
+      unlockAudio();
+      window.removeEventListener('pointerdown', onFirstInteraction);
+      window.removeEventListener('keydown', onFirstInteraction);
+    }
+    window.addEventListener('pointerdown', onFirstInteraction, { once: true });
+    window.addEventListener('keydown', onFirstInteraction, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', onFirstInteraction);
+      window.removeEventListener('keydown', onFirstInteraction);
+    };
+  }, []);
   return null;
 }
 
 export default function App() {
   return (
     <PhoneFrame>
+      <AudioUnlocker />
       <BgmController />
       <Routes>
         <Route path="/" element={<Splash />} />

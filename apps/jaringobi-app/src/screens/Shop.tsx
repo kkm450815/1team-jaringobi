@@ -119,7 +119,7 @@ export default function Shop() {
             return (
               <button
                 key={c}
-                onClick={() => { setCat(c); if (u.settings.sound) playClickSfx(); }}
+                onClick={() => { setCat(c); playClickSfx(); }}
                 className={`py-2 rounded-full text-[15px] font-bold text-center transition-colors ${
                   active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
                 }`}
@@ -137,7 +137,7 @@ export default function Shop() {
               return (
                 <button
                   key={s}
-                  onClick={() => { setRemodelSub(s); if (u.settings.sound) playClickSfx(); }}
+                  onClick={() => { setRemodelSub(s); playClickSfx(); }}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
@@ -156,7 +156,7 @@ export default function Shop() {
               return (
                 <button
                   key={s}
-                  onClick={() => { setAccSub(s); if (u.settings.sound) playClickSfx(); }}
+                  onClick={() => { setAccSub(s); playClickSfx(); }}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
@@ -280,7 +280,7 @@ export default function Shop() {
                 onClick={() => {
                   if (u.buy(selected, selectedPrice)) {
                     setPurchased(selected);
-                    if (u.settings.sound) playPurchaseSfx();
+                    playPurchaseSfx();
                     if (u.settings.vibration) vibrate([20, 30, 20]);
                   }
                   setConfirmBuy(false);

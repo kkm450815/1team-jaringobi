@@ -74,7 +74,7 @@ export default function Bookmarks() {
                   </p>
                 </div>
                 <button
-                  onClick={() => { toggle(p.id); if (u.settings.sound) playClickSfx(); }}
+                  onClick={() => { toggle(p.id); playClickSfx(); }}
                   aria-label="북마크 해제"
                   className="p-1 -m-1 shrink-0"
                 >
