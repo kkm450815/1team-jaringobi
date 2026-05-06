@@ -5,6 +5,7 @@ import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
 import { useUser } from '../lib/userState';
+import { playClickSfx, playSuccessSfx } from '../lib/feedback';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -39,6 +40,7 @@ export default function TalkRoom() {
     if (!body) return;
     addPost({ id: crypto.randomUUID(), roomId: room.id, nick: u.nickname, body });
     setInput('');
+    if (u.settings.sound) playSuccessSfx();
   }
 
   return (
@@ -122,7 +124,7 @@ export default function TalkRoom() {
                 </p>
               </div>
               <button
-                onClick={() => toggle(p.id)}
+                onClick={() => { toggle(p.id); if (u.settings.sound) playClickSfx(); }}
                 aria-label={marked ? '북마크 해제' : '북마크'}
                 aria-pressed={marked}
                 className="p-1 -m-1 shrink-0"

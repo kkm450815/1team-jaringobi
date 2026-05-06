@@ -3,6 +3,8 @@ import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
+import { useUser } from '../lib/userState';
+import { playClickSfx } from '../lib/feedback';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -23,6 +25,7 @@ function BookmarkIcon({ filled }: { filled: boolean }) {
 
 export default function Bookmarks() {
   const { has, toggle } = useBookmarks();
+  const u = useUser();
   const { posts } = useTalkPosts();
   const items = posts.filter((p) => has(p.id));
 
@@ -71,7 +74,7 @@ export default function Bookmarks() {
                   </p>
                 </div>
                 <button
-                  onClick={() => toggle(p.id)}
+                  onClick={() => { toggle(p.id); if (u.settings.sound) playClickSfx(); }}
                   aria-label="북마크 해제"
                   className="p-1 -m-1 shrink-0"
                 >

@@ -6,7 +6,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
-import { playSuccessSfx } from '../lib/feedback';
+import { playDeniedSfx, playSuccessSfx } from '../lib/feedback';
 
 const MAX_NICK = 10;
 
@@ -29,6 +29,7 @@ export default function MyPage() {
       return;
     }
     u.setNickname(nickDraft);
+    if (u.settings.sound) playSuccessSfx();
     setEditing(false);
   }
 
@@ -522,7 +523,7 @@ function TitleDetail({
           </button>
         ) : (
           <button
-            onClick={() => setLockAlert(true)}
+            onClick={() => { setLockAlert(true); playDeniedSfx(); }}
             className="rounded-full py-3 text-[14px] font-bold bg-text/15 text-text/55 active:scale-[.98]"
           >
             칭호 미획득

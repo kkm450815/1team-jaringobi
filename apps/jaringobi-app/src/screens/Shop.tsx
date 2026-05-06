@@ -9,7 +9,7 @@ import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
-import { playPurchaseSfx, vibrate } from '../lib/feedback';
+import { playClickSfx, playPurchaseSfx, vibrate } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 const CHUNK = 30;
@@ -119,7 +119,7 @@ export default function Shop() {
             return (
               <button
                 key={c}
-                onClick={() => setCat(c)}
+                onClick={() => { setCat(c); if (u.settings.sound) playClickSfx(); }}
                 className={`py-2 rounded-full text-[15px] font-bold text-center transition-colors ${
                   active ? 'bg-accent text-white' : 'bg-primary/70 text-text/80'
                 }`}
@@ -137,7 +137,7 @@ export default function Shop() {
               return (
                 <button
                   key={s}
-                  onClick={() => setRemodelSub(s)}
+                  onClick={() => { setRemodelSub(s); if (u.settings.sound) playClickSfx(); }}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
@@ -156,7 +156,7 @@ export default function Shop() {
               return (
                 <button
                   key={s}
-                  onClick={() => setAccSub(s)}
+                  onClick={() => { setAccSub(s); if (u.settings.sound) playClickSfx(); }}
                   className={`py-1.5 rounded-full text-[13px] font-bold text-center transition-colors ${
                     active ? 'bg-accent text-white' : 'bg-primary/40 text-text/70'
                   }`}
