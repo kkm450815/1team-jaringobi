@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../lib/userState';
+import { playSuccessSfx } from '../lib/feedback';
 
 const MAX_NICK = 10;
 
@@ -29,6 +30,7 @@ export default function NickSetup() {
       return;
     }
     u.setNickname(trimmed);
+    if (u.settings.sound) playSuccessSfx();
     nav('/main', { replace: true });
   }
 

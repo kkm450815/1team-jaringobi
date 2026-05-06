@@ -326,7 +326,7 @@ export default function Settings() {
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                onClick={() => { u.update({ goal: 300_000 }); setModeModal(false); }}
+                onClick={() => { u.update({ goal: 300_000 }); if (u.settings.sound) playClickSfx(); setModeModal(false); }}
                 className={`rounded-2xl py-3 text-[14px] font-bold transition ${
                   u.goal < 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
                 }`}
@@ -334,7 +334,7 @@ export default function Settings() {
                 노말<br /><span className="text-[11px] font-normal opacity-80">30만원</span>
               </button>
               <button
-                onClick={() => { u.update({ goal: 1_000_000 }); setModeModal(false); }}
+                onClick={() => { u.update({ goal: 1_000_000 }); if (u.settings.sound) playClickSfx(); setModeModal(false); }}
                 className={`rounded-2xl py-3 text-[14px] font-bold transition ${
                   u.goal >= 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
                 }`}

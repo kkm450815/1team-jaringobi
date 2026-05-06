@@ -124,6 +124,12 @@ export function playHitSfx() {
   setTimeout(() => beep(140, 80, 0.18), 30);
 }
 
+/** 잠긴/거부 — 짧은 저음 단음 (locked, blocked) */
+export function playDeniedSfx() {
+  beep(200, 80, 0.18);
+  setTimeout(() => beep(160, 100, 0.14), 60);
+}
+
 export function vibrate(durationMs: number | number[]) {
   if (typeof navigator === 'undefined' || !navigator.vibrate) return;
   try {

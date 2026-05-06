@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { downscaleImage, useUser } from '../lib/userState';
-import { playSuccessSfx, vibrate } from '../lib/feedback';
+import { playClickSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
 function iconUrl(key: string) {
@@ -44,6 +44,7 @@ export default function Camera() {
     try {
       const dataUrl = await downscaleImage(f, 320);
       setPreview(dataUrl);
+      if (u.settings.sound) playClickSfx();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '이미지를 처리하지 못했어요';
       setPickError(`사진 불러오기 실패: ${msg}`);

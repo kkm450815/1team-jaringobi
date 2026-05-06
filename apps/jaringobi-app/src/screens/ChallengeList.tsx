@@ -2,6 +2,8 @@ import { useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { MISSIONS, MissionCategory } from '../lib/data';
+import { useUser } from '../lib/userState';
+import { playClickSfx } from '../lib/feedback';
 
 const LAST_CAT_KEY = 'jaringobi.lastCat';
 
@@ -41,6 +43,7 @@ const ICON_SCALE: Record<string, string> = {
 };
 
 export default function ChallengeList() {
+  const u = useUser();
   // 카테고리를 URL 쿼리 + localStorage 양쪽에 보존 → 상세 뒤로가기, 직접 진입 모두 대응
   const [searchParams, setSearchParams] = useSearchParams();
   const rawCat = searchParams.get('cat');
@@ -88,7 +91,7 @@ export default function ChallengeList() {
           return (
             <button
               key={c}
-              onClick={() => setCat(c)}
+              onClick={() => { setCat(c); if (u.settings.sound) playClickSfx(); }}
               className={`flex items-center justify-center text-center py-2 rounded-full text-[13px] font-bold transition-colors ${
                 active ? 'bg-accent text-accent-soft' : 'bg-primary/40 text-text/70'
               }`}

@@ -5,7 +5,7 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
-import { playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
+import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
 const CATEGORY_LABEL: Record<MissionCategory, string> = {
@@ -140,6 +140,7 @@ export default function Main() {
 
   function toggleSuccess(idx: number) {
     u.toggleMissionSuccess(idx);
+    if (u.settings.sound) playClickSfx();
   }
 
   function completeToday() {
@@ -154,6 +155,7 @@ export default function Main() {
     setPicks((p) => p.map((id, i) => (i === changingFor ? missionId : id)));
     setChangingFor(null);
     setMissionModal('recommend');
+    if (u.settings.sound) playClickSfx();
   }
 
   // ESC로 모달 닫기 (양심 / 미션)
@@ -333,7 +335,7 @@ export default function Main() {
             {missionModal === 'recommend' && (
               <RecommendPanel
                 picks={picks}
-                onChange={(idx) => { setChangingFor(idx); setMissionModal('change'); }}
+                onChange={(idx) => { setChangingFor(idx); setMissionModal('change'); if (u.settings.sound) playClickSfx(); }}
                 onConfirm={confirmToday}
               />
             )}
@@ -341,7 +343,7 @@ export default function Main() {
             {missionModal === 'change' && (
               <ChangePanel
                 filter={filter}
-                onFilter={setFilter}
+                onFilter={(c) => { setFilter(c); if (u.settings.sound) playClickSfx(); }}
                 onPick={pickMission}
                 onCancel={() => { setChangingFor(null); setMissionModal('recommend'); }}
               />
