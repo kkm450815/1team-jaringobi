@@ -92,7 +92,7 @@ export default function Honor() {
                   key={r.nick}
                   to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
                   state={{ from: '/honor' }}
-                  className={`relative flex flex-col items-center rounded-2xl shadow-soft px-2 pt-5 pb-2 ${bg} ${ring} ${podiumH} active:scale-[.98] transition`}
+                  className={`relative flex flex-col items-center rounded-2xl shadow-soft px-2 pt-7 pb-3 ${bg} ${ring} ${podiumH} active:scale-[.98] transition`}
                 >
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <div className="w-9 h-9 rounded-full grid place-items-center shadow" style={{ background: RANK_COLORS[rank - 1] }}>
@@ -100,14 +100,14 @@ export default function Honor() {
                     </div>
                   </div>
                   <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
-                  <p className="mt-1 text-[12px] font-bold text-text truncate w-full text-center leading-tight">
+                  <p className="mt-1.5 text-[12px] font-bold text-text truncate w-full text-center leading-tight">
                     {r.nick}{r.isMe && <span className="text-accent"> · 나</span>}
                   </p>
                   <div className="mt-1 flex items-center gap-1 justify-center min-w-0 w-full">
                     <TitleIcon src={title.img} size={14} alt={title.name} />
                     <span className="text-[10px] text-text/65 truncate">{title.name}</span>
                   </div>
-                  <p className="mt-auto text-[12px] font-bold text-text leading-tight">{r.totalSaved.toLocaleString()}</p>
+                  <p className="mt-2 text-[12px] font-bold text-text leading-tight">{r.totalSaved.toLocaleString()}</p>
                 </Link>
               );
             })}
