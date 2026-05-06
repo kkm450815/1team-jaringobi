@@ -78,12 +78,13 @@ export default function Honor() {
       {/* 시상대 (1·2·3위) — 상단 sticky 고정. 4위 이하 스크롤해도 항상 보임 */}
       {merged.length >= 3 && (
         <div className="sticky top-0 z-20 bg-bg px-5 pt-2 pb-3 shadow-[0_8px_12px_-8px_rgba(81,76,68,0.15)]">
-          <div className="grid grid-cols-3 gap-2 items-end mt-2">
+          <div className="grid grid-cols-3 gap-2 items-stretch mt-2">
             {[1, 0, 2].map((idxInTop3) => {
               const r = merged[idxInTop3];
               const rank = idxInTop3 + 1;
               const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
-              const podiumH = rank === 1 ? 'h-[148px]' : rank === 2 ? 'h-[124px]' : 'h-[108px]';
+              // 1위만 살짝 크고, 2·3위는 동일 높이로 통일 (콘텐츠 잘림 방지)
+              const podiumH = rank === 1 ? 'h-[160px]' : 'h-[150px]';
               const bg = rank === 1 ? 'bg-[#FFF7DD]' : rank === 2 ? 'bg-[#F1F1F1]' : 'bg-[#F4E1CC]';
               const ring = rank === 1 ? 'ring-2 ring-[#F4C430]' : '';
               return (
@@ -91,22 +92,22 @@ export default function Honor() {
                   key={r.nick}
                   to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
                   state={{ from: '/honor' }}
-                  className={`relative flex flex-col items-center justify-end rounded-2xl shadow-soft px-2 pb-2 pt-3 ${bg} ${ring} ${podiumH} active:scale-[.98] transition`}
+                  className={`relative flex flex-col items-center rounded-2xl shadow-soft px-2 pt-5 pb-2 ${bg} ${ring} ${podiumH} active:scale-[.98] transition overflow-hidden`}
                 >
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
                     <div className="w-9 h-9 rounded-full grid place-items-center shadow" style={{ background: RANK_COLORS[rank - 1] }}>
                       <span className="text-[18px] font-black text-white drop-shadow">{rank}</span>
                     </div>
                   </div>
-                  <img src={AVATAR} alt="" className="w-12 h-12 rounded-full bg-white object-contain mb-1" />
-                  <p className="text-[13px] font-bold text-text truncate w-full text-center">
+                  <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
+                  <p className="mt-1 text-[12px] font-bold text-text truncate w-full text-center leading-tight">
                     {r.nick}{r.isMe && <span className="text-accent"> · 나</span>}
                   </p>
-                  <div className="mt-0.5 flex items-center gap-1 justify-center">
+                  <div className="mt-1 flex items-center gap-1 justify-center min-w-0 w-full">
                     <TitleIcon src={title.img} size={14} alt={title.name} />
                     <span className="text-[10px] text-text/65 truncate">{title.name}</span>
                   </div>
-                  <p className="mt-1 text-[12px] font-bold text-text">{r.totalSaved.toLocaleString()}</p>
+                  <p className="mt-auto text-[12px] font-bold text-text leading-tight">{r.totalSaved.toLocaleString()}</p>
                 </Link>
               );
             })}
