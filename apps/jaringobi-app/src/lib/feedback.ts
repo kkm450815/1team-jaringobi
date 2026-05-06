@@ -81,17 +81,21 @@ function clink(durationMs: number, gain: number) {
   }
 }
 
-/** 상점 구매 — 코인 짤랑 + ka-ching */
+/** 상점 구매 — 코인 짤랑 + ka-ching (gain 강하게) */
 export function playPurchaseSfx() {
-  // 짤랑 — 동전이 부딪히는 메탈릭 임팩트 + 살짝 다른 고음 벨 3개 (gain 상향)
-  clink(80, 0.45);
-  beep(2400, 140, 0.28);
-  setTimeout(() => beep(2900, 130, 0.24), 60);
-  setTimeout(() => beep(2200, 150, 0.22), 130);
-  setTimeout(() => clink(50, 0.30), 90);
+  // 호출 직전 한 번 더 audio context 깨우기 (suspended 상태 보호막)
+  const c = getCtx();
+  if (c && c.state === 'suspended') c.resume().catch(() => {});
+  // 짤랑 — 동전이 부딪히는 메탈릭 임팩트 + 살짝 다른 고음 벨
+  clink(120, 0.65);
+  beep(2400, 160, 0.42);
+  setTimeout(() => beep(2900, 150, 0.36), 70);
+  setTimeout(() => clink(80, 0.50), 100);
+  setTimeout(() => beep(2200, 170, 0.34), 150);
+  setTimeout(() => clink(60, 0.40), 200);
   // ka-ching 마무리 상승 톤
-  setTimeout(() => beep(1568, 120, 0.30), 230); // G6
-  setTimeout(() => beep(2093, 160, 0.26), 320); // C7
+  setTimeout(() => beep(1568, 140, 0.42), 260); // G6
+  setTimeout(() => beep(2093, 180, 0.38), 360); // C7
 }
 
 export function playSuccessSfx() {
