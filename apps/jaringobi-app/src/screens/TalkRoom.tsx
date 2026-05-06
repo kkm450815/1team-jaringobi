@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
 import { useUser } from '../lib/userState';
-import { playClickSfx, playSuccessSfx } from '../lib/feedback';
+import { newId } from '../lib/ids';
+import { playClickSfx, playSuccessSfx, playDeniedSfx } from '../lib/feedback';
 
 const AVATAR = '/jarin/main_mypage.png';
 
@@ -32,15 +33,44 @@ export default function TalkRoom() {
 
   const { posts, addPost } = useTalkPosts(room.id);
   const [input, setInput] = useState('');
+  const [toast, setToast] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  // 모바일 Safari/Chrome 에서 같은 탭에 onClick 과 form submit 이 동시에 들어오는 경우
+  // 중복 insert 가 일어나지 않도록 가드
+  const inFlight = useRef(false);
   const { has, toggle } = useBookmarks();
   const u = useUser();
 
-  function send() {
+  function showToast(msg: string, ms = 2800) {
+    setToast(msg);
+    window.setTimeout(() => setToast(null), ms);
+  }
+
+  async function send() {
+    if (inFlight.current) return;
     const body = input.trim();
     if (!body) return;
-    addPost({ id: crypto.randomUUID(), roomId: room.id, nick: u.nickname, body });
+    const nick = (u.nickname ?? '').trim() || '익명';
+
+    inFlight.current = true;
+    setSending(true);
+    // 입력은 즉시 비워줌 (사용자 체감 반응성)
     setInput('');
-    playSuccessSfx();
+
+    const post = { id: newId(), roomId: room.id, nick, body };
+    const saved = await addPost(post, (err) => {
+      const msg =
+        (err as { message?: string } | null)?.message ??
+        '글을 올리지 못했어요. 잠시 후 다시 시도해 주세요.';
+      console.error('[TalkRoom.send] addPost 에러', err);
+      showToast(`작성 실패: ${msg}`);
+      // 실패 시 입력 복원
+      setInput(body);
+      playDeniedSfx();
+    });
+    inFlight.current = false;
+    setSending(false);
+    if (saved) playSuccessSfx();
   }
 
   return (
@@ -74,12 +104,15 @@ export default function TalkRoom() {
           </Link>
         </header>
 
-        {/* 입력 영역 */}
+        {/* 입력 영역 — form 으로 감싸서 모바일 키보드 "전송" 키도 동작 */}
         <section className="px-5 pt-4">
-          <div className="flex items-start gap-3">
+          <form
+            onSubmit={(e) => { e.preventDefault(); send(); }}
+            className="flex items-start gap-3"
+          >
             <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
             <div className="flex-1">
-              <p className="text-[15px] font-bold text-text">{u.nickname}</p>
+              <p className="text-[15px] font-bold text-text">{u.nickname || '익명'}</p>
               <textarea
                 rows={1}
                 value={input}
@@ -90,13 +123,14 @@ export default function TalkRoom() {
             </div>
             {input.trim() && (
               <button
-                onClick={send}
-                className="text-accent text-[14px] font-bold whitespace-nowrap pt-1"
+                type="submit"
+                disabled={sending}
+                className="text-accent text-[14px] font-bold whitespace-nowrap pt-1 disabled:opacity-50"
               >
-                올리기
+                {sending ? '올리는 중…' : '올리기'}
               </button>
             )}
-          </div>
+          </form>
         </section>
 
         <hr className="mx-5 mt-4 border-t border-text/20" />
@@ -135,6 +169,15 @@ export default function TalkRoom() {
           );
         })}
       </ul>
+
+      {toast && (
+        <div
+          role="alert"
+          className="fixed left-1/2 -translate-x-1/2 bottom-6 z-50 max-w-[88%] bg-text/90 text-white text-[13px] font-medium px-4 py-2.5 rounded-full shadow-lg whitespace-pre-line text-center"
+        >
+          {toast}
+        </div>
+      )}
     </main>
   );
 }

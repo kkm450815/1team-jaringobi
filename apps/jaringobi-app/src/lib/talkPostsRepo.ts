@@ -1,15 +1,20 @@
-// 수다방 게시글 저장소 추상화. localStorage 또는 Supabase 백엔드를 동일 인터페이스로 노출.
-// useTalkPosts는 이 모듈만 의존 → Supabase 연동 시 이 파일만 수정하면 됨.
+// 수다방 게시글 저장소 — Supabase 가 활성화돼 있으면 모든 클라이언트(데스크톱·모바일)에서
+// 동일하게 talk_posts 테이블을 사용한다. localStorage 폴백은 Supabase 미설정 시에만 사용.
+//
+// 모바일에서 글이 안 올라가던 이슈 대응:
+// - insert 실패 시 console.error 로 원인 출력 + 호출자에게 throw
+// - id/nick/body/room_id 가 비어 있어도 안전한 기본값으로 채움
+// - Realtime 구독이 없을 때를 대비해 호출자가 add 후 직접 list() 갱신할 수 있게 add 가
+//   서버에서 echo 한 row 를 반환
 
 import { TALK_POSTS, TalkPost } from './data';
 import { getSupabase, isSupabaseEnabled } from './supabase';
+import { newId } from './ids';
 
 export interface TalkPostsRepo {
-  /** 모든 글 조회 (시드 + 사용자 작성) */
   list(roomId?: string): Promise<TalkPost[]>;
-  /** 글 추가 — 성공 시 저장된 post 반환 (서버에서 id를 발급할 수 있어 echo) */
   add(post: TalkPost): Promise<TalkPost>;
-  /** 변경 구독 — 새 글이 들어올 때마다 cb 호출. unsubscribe 함수 반환 */
+  remove(id: string): Promise<void>;
   subscribe(cb: () => void): () => void;
 }
 
@@ -44,6 +49,11 @@ const localRepo: TalkPostsRepo = {
     window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
     return post;
   },
+  async remove(id) {
+    const next = readUserPosts().filter((p) => p.id !== id);
+    writeUserPosts(next);
+    window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+  },
   subscribe(cb) {
     function onStorage(e: StorageEvent) {
       if (e.key === KEY) cb();
@@ -64,10 +74,27 @@ interface TalkPostRow {
 }
 
 function rowToPost(r: TalkPostRow): TalkPost {
-  return { id: r.id, roomId: r.room_id, nick: r.nick, body: r.body };
+  return {
+    id: r.id ?? newId(),
+    roomId: r.room_id ?? '',
+    nick: r.nick ?? '익명',
+    body: r.body ?? '',
+  };
 }
-function postToRow(p: TalkPost): Omit<TalkPostRow, 'created_at'> {
-  return { id: p.id, room_id: p.roomId, nick: p.nick, body: p.body };
+
+// Supabase 의 talk_posts.id 컬럼은 uuid default gen_random_uuid().
+// 클라이언트에서 newId() 가 폴백 비-uuid 문자열을 만들면 insert 가 깨지므로,
+// uuid 형식이 아닐 때는 아예 id 를 보내지 않고 서버 디폴트에 맡긴다.
+const UUID_RE = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/;
+
+function postToRow(p: TalkPost): Partial<TalkPostRow> {
+  const row: Partial<TalkPostRow> = {
+    room_id: (p.roomId ?? '').toString().trim() || 't1',
+    nick: (p.nick ?? '').toString().trim() || '익명',
+    body: (p.body ?? '').toString().trim() || '(빈 메시지)',
+  };
+  if (p.id && UUID_RE.test(p.id)) row.id = p.id;
+  return row;
 }
 
 const supabaseRepo: TalkPostsRepo = {
@@ -77,9 +104,11 @@ const supabaseRepo: TalkPostsRepo = {
     let q = sb.from('talk_posts').select('*').order('created_at', { ascending: false });
     if (roomId) q = q.eq('room_id', roomId);
     const { data, error } = await q;
-    if (error) throw error;
+    if (error) {
+      console.error('[talkPostsRepo.list] Supabase select 실패', error);
+      throw error;
+    }
     const dbPosts = (data ?? []).map((r: TalkPostRow) => rowToPost(r));
-    // 시드 글도 함께 보여주되 DB 글이 위에 오도록
     const seeds = roomId
       ? TALK_POSTS.filter((p) => p.roomId === roomId)
       : TALK_POSTS;
@@ -88,13 +117,26 @@ const supabaseRepo: TalkPostsRepo = {
   async add(post) {
     const sb = getSupabase();
     if (!sb) throw new Error('Supabase not configured');
+    const row = postToRow(post);
     const { data, error } = await sb
       .from('talk_posts')
-      .insert(postToRow(post))
+      .insert(row)
       .select()
       .single();
-    if (error) throw error;
+    if (error) {
+      console.error('[talkPostsRepo.add] Supabase insert 실패', { error, row });
+      throw error;
+    }
     return rowToPost(data as TalkPostRow);
+  },
+  async remove(id) {
+    const sb = getSupabase();
+    if (!sb) throw new Error('Supabase not configured');
+    const { error } = await sb.from('talk_posts').delete().eq('id', id);
+    if (error) {
+      console.error('[talkPostsRepo.remove] Supabase delete 실패', { error, id });
+      throw error;
+    }
   },
   subscribe(cb) {
     const sb = getSupabase();
@@ -102,8 +144,8 @@ const supabaseRepo: TalkPostsRepo = {
     const channel = sb
       .channel('talk_posts_changes')
       .on(
-        'postgres_changes' as 'system', // event name typing relax
-        { event: 'INSERT', schema: 'public', table: 'talk_posts' },
+        'postgres_changes' as 'system',
+        { event: '*', schema: 'public', table: 'talk_posts' },
         () => cb(),
       )
       .subscribe();
@@ -114,3 +156,4 @@ const supabaseRepo: TalkPostsRepo = {
 /* ---------------- export ---------------- */
 
 export const talkPostsRepo: TalkPostsRepo = isSupabaseEnabled() ? supabaseRepo : localRepo;
+export const isUsingSupabase = isSupabaseEnabled();

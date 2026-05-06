@@ -182,11 +182,17 @@ export function useUser() {
   }, []);
 
   const setNickname = useCallback((nickname: string) => {
-    setState((s) => {
-      const next = { ...s, nickname: nickname.trim() || s.nickname };
-      write(next);
-      return next;
-    });
+    // 모바일에서 setState 업데이터가 batched 로 늦게 실행돼,
+    // 다음 라우트가 stale localStorage 를 읽어 닉네임이 반영 안되던 이슈 방지.
+    // → 최신 localStorage 를 직접 읽어 동기적으로 write 한 뒤 React state 동기화.
+    const trimmed = nickname.trim();
+    const fresh = read();
+    const next: UserState = {
+      ...fresh,
+      nickname: trimmed || fresh.nickname,
+    };
+    write(next);
+    setState(next);
   }, []);
 
   const setSetting = useCallback(
