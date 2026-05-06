@@ -89,23 +89,43 @@ const localRepo: ProfilesRepo = {
 
 /* ---------------- Supabase 구현 (스텁) ---------------- */
 
+interface ProfileRow {
+  nickname: string;
+  cycle: number;
+  day: number;
+  total_saved: number;
+  goal: number;
+  active_title_id: string;
+  owned_titles: string[] | null;
+  equipped: string[] | null;
+}
+
 const supabaseRepo: ProfilesRepo = {
-  async getByNick(_nick) {
-    // const sb = getSupabase() as any;
-    // const { data, error } = await sb.from('profiles').select('*').eq('nickname', _nick).single();
-    // if (error || !data) return null;
-    // return {
-    //   nickname: data.nickname,
-    //   cycle: data.cycle,
-    //   day: data.day,
-    //   totalSaved: data.total_saved,
-    //   goal: data.goal,
-    //   activeTitleId: data.active_title_id,
-    //   ownedTitles: data.owned_titles ?? [],
-    //   isMe: false, // 호출 측에서 본인 여부 판별
-    // };
-    void getSupabase();
-    return demoProfile(_nick); // 폴백: 데모 프로필
+  async getByNick(nick) {
+    if (!nick) return null;
+    const sb = getSupabase();
+    if (!sb) return demoProfile(nick);
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .eq('nickname', nick)
+      .maybeSingle();
+    if (error || !data) {
+      // DB 미존재 시 데모 프로필 폴백 (시드 닉용)
+      return demoProfile(nick);
+    }
+    const row = data as ProfileRow;
+    return {
+      nickname: row.nickname,
+      cycle: row.cycle,
+      day: row.day,
+      totalSaved: row.total_saved,
+      goal: row.goal,
+      activeTitleId: row.active_title_id,
+      ownedTitles: row.owned_titles ?? [],
+      equipped: row.equipped ?? [],
+      isMe: nick === ME_NICK,
+    };
   },
 };
 
