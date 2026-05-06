@@ -240,14 +240,6 @@ export default function MyPage() {
                   </svg>
                 </span>
               </Link>
-              <Link to="/wardrobe" aria-label="옷장" className="p-1">
-                <img
-                  src="/jarin/wardrobe_icon.png"
-                  alt="옷장"
-                  className="w-7 h-7 object-contain"
-                  draggable={false}
-                />
-              </Link>
             </div>
           </div>
         </div>
