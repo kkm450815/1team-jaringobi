@@ -56,7 +56,7 @@ export default function Honor() {
   }, [myRank]);
 
   return (
-    <main className="min-h-full pb-10">
+    <main className="h-full flex flex-col overflow-hidden">
       <header className="relative pt-10 pb-3">
         <BackButton className="absolute left-3 top-8 w-14 h-14 grid place-items-center text-text/80" fallback="/talk" />
         <div className="flex flex-col items-center gap-2">
@@ -75,9 +75,9 @@ export default function Honor() {
         </div>
       </header>
 
-      {/* 시상대 (1·2·3위) — 상단 sticky 고정. 4위 이하 스크롤해도 항상 보임 */}
+      {/* 시상대 (1·2·3위) — 상단 고정 (Flex layout 으로 본질적 고정). 4위 이하만 스크롤 */}
       {merged.length >= 3 && (
-        <div className="sticky top-0 z-20 bg-bg px-5 pt-2 pb-3 shadow-[0_8px_12px_-8px_rgba(81,76,68,0.15)]">
+        <div className="shrink-0 bg-bg px-5 pt-2 pb-3 shadow-[0_8px_12px_-8px_rgba(81,76,68,0.15)]">
           <div className="grid grid-cols-3 gap-2 items-stretch mt-2">
             {[1, 0, 2].map((idxInTop3) => {
               const r = merged[idxInTop3];
@@ -115,8 +115,9 @@ export default function Honor() {
         </div>
       )}
 
-      {/* 4위 이하 — 스크롤 영역 (페이지 자체 스크롤). 본인 행에 ref 부여 */}
-      <ul className="px-5 mt-3 space-y-2">
+      {/* 4위 이하 — 자체 스크롤 영역. 본인 행에 ref 부여 */}
+      <div className="flex-1 overflow-y-auto no-scrollbar px-5 mt-3 pb-6">
+      <ul className="space-y-2">
         {merged.slice(3).map((r, i) => {
           const rank = i + 4;
           const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
@@ -155,10 +156,11 @@ export default function Honor() {
         })}
       </ul>
 
-      <p className="px-5 mt-6 text-center text-[11px] text-text/45 leading-relaxed">
+      <p className="mt-6 text-center text-[11px] text-text/45 leading-relaxed">
         * 백엔드 연동 전까지 노출되는 데모 랭킹입니다.<br />
         실시간 사용자 절약액은 추후 적용될 예정.
       </p>
+      </div>
     </main>
   );
 }
