@@ -492,7 +492,7 @@ function ChangePanel({
           다른 카테고리를 선택해 보세요.
         </p>
       ) : (
-        <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+        <ul className="space-y-3 max-h-[420px] overflow-y-auto pr-2 thin-scrollbar">
           {list.map((m) => (
             <li key={m.id}>
               <button

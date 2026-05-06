@@ -365,7 +365,7 @@ function TitleGrid({
 }) {
   return (
     <div
-      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto"
+      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[80vh] overflow-y-auto thin-scrollbar"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="relative">
@@ -439,7 +439,7 @@ function TitleDetail({
 
   return (
     <div
-      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto"
+      className="w-full max-w-[340px] bg-bg rounded-3xl p-5 shadow-2xl max-h-[85vh] overflow-y-auto thin-scrollbar"
       onClick={(e) => e.stopPropagation()}
     >
       <div className="relative">

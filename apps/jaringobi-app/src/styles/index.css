@@ -53,6 +53,26 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* 얇고 둥근 자린고비 스타일 스크롤바 */
+.thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(81, 76, 68, 0.30) transparent;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(81, 76, 68, 0.25);
+  border-radius: 999px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(81, 76, 68, 0.45);
+}
+
 /* 버튼/탭/Pill 안 텍스트 수직 중앙 정렬
    한국어 폰트(GangwonEducationModuche) baseline 보정:
    line-height: 1 로 line-box 를 글씨 크기에 맞춰 padding-y 가 정확히 좌우 대칭이 되게 함.

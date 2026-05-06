@@ -13,7 +13,7 @@ export interface TalkPostsRepo {
   subscribe(cb: () => void): () => void;
 }
 
-/* ---------------- localStorage 구현 (현재 기본값) ---------------- */
+/* ---------------- localStorage 구현 (Supabase 미설정 폴백) ---------------- */
 
 const KEY = 'jaringobi.posts.v1';
 
@@ -41,7 +41,6 @@ const localRepo: TalkPostsRepo = {
   async add(post) {
     const next = [post, ...readUserPosts()];
     writeUserPosts(next);
-    // 같은 탭 안에서도 listener 깨우기 위해 storage 이벤트 수동 디스패치
     window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
     return post;
   },
@@ -54,45 +53,63 @@ const localRepo: TalkPostsRepo = {
   },
 };
 
-/* ---------------- Supabase 구현 (환경변수 설정 시 활성) ---------------- */
+/* ---------------- Supabase 구현 ---------------- */
 
-// docs/SUPABASE.md 의 talk_posts 테이블과 1:1 매핑.
-// 패키지 설치 + 환경변수 + 스키마 적용 후 아래 주석 해제하면 자동으로 활성화됨.
+interface TalkPostRow {
+  id: string;
+  room_id: string;
+  nick: string;
+  body: string;
+  created_at?: string;
+}
+
+function rowToPost(r: TalkPostRow): TalkPost {
+  return { id: r.id, roomId: r.room_id, nick: r.nick, body: r.body };
+}
+function postToRow(p: TalkPost): Omit<TalkPostRow, 'created_at'> {
+  return { id: p.id, room_id: p.roomId, nick: p.nick, body: p.body };
+}
 
 const supabaseRepo: TalkPostsRepo = {
-  async list(_roomId) {
-    // const sb = getSupabase() as any;
-    // let q = sb.from('talk_posts').select('*').order('created_at', { ascending: false });
-    // if (_roomId) q = q.eq('room_id', _roomId);
-    // const { data, error } = await q;
-    // if (error) throw error;
-    // return (data ?? []).map(rowToPost);
-    void getSupabase();
-    return [];
+  async list(roomId) {
+    const sb = getSupabase();
+    if (!sb) throw new Error('Supabase not configured');
+    let q = sb.from('talk_posts').select('*').order('created_at', { ascending: false });
+    if (roomId) q = q.eq('room_id', roomId);
+    const { data, error } = await q;
+    if (error) throw error;
+    const dbPosts = (data ?? []).map((r: TalkPostRow) => rowToPost(r));
+    // 시드 글도 함께 보여주되 DB 글이 위에 오도록
+    const seeds = roomId
+      ? TALK_POSTS.filter((p) => p.roomId === roomId)
+      : TALK_POSTS;
+    return [...dbPosts, ...seeds];
   },
   async add(post) {
-    // const sb = getSupabase() as any;
-    // const { data, error } = await sb.from('talk_posts').insert(postToRow(post)).select().single();
-    // if (error) throw error;
-    // return rowToPost(data);
-    return post;
+    const sb = getSupabase();
+    if (!sb) throw new Error('Supabase not configured');
+    const { data, error } = await sb
+      .from('talk_posts')
+      .insert(postToRow(post))
+      .select()
+      .single();
+    if (error) throw error;
+    return rowToPost(data as TalkPostRow);
   },
-  subscribe(_cb) {
-    // const sb = getSupabase() as any;
-    // const channel = sb.channel('talk_posts_changes')
-    //   .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'talk_posts' }, () => _cb())
-    //   .subscribe();
-    // return () => sb.removeChannel(channel);
-    return () => {};
+  subscribe(cb) {
+    const sb = getSupabase();
+    if (!sb) return () => {};
+    const channel = sb
+      .channel('talk_posts_changes')
+      .on(
+        'postgres_changes' as 'system', // event name typing relax
+        { event: 'INSERT', schema: 'public', table: 'talk_posts' },
+        () => cb(),
+      )
+      .subscribe();
+    return () => { sb.removeChannel(channel); };
   },
 };
-
-// function rowToPost(r: { id: string; room_id: string; nick: string; body: string }): TalkPost {
-//   return { id: r.id, roomId: r.room_id, nick: r.nick, body: r.body };
-// }
-// function postToRow(p: TalkPost) {
-//   return { id: p.id, room_id: p.roomId, nick: p.nick, body: p.body };
-// }
 
 /* ---------------- export ---------------- */
 
