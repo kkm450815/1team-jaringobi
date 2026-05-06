@@ -311,7 +311,7 @@ export default function Settings() {
             <p className="text-[16px] font-bold text-text text-center">
               {LEGAL_DOCS[legalKey].title}
             </p>
-            <div className="mt-3 overflow-y-auto text-[13px] text-text/80 leading-relaxed whitespace-pre-line">
+            <div className="mt-3 overflow-y-auto thin-scrollbar text-[13px] text-text/80 leading-relaxed whitespace-pre-line">
               {LEGAL_DOCS[legalKey].body}
             </div>
             <button
