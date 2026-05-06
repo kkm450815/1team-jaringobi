@@ -136,7 +136,13 @@ function read(): UserState {
 
 function write(s: UserState) {
   localStorage.setItem(KEY, JSON.stringify(s));
+  // 같은 탭 안의 다른 useUser 인스턴스도 동기화 (storage 이벤트는 다른 탭에만 발사됨)
+  try {
+    window.dispatchEvent(new Event(USER_SYNC_EVENT));
+  } catch { /* ignore */ }
 }
+
+const USER_SYNC_EVENT = 'jaringobi-user-sync';
 
 export function useUser() {
   const [state, setState] = useState<UserState>(() => read());
@@ -146,12 +152,25 @@ export function useUser() {
   }, [state]);
 
   useEffect(() => {
-    function onStorage(e: StorageEvent) {
-      if (e.key === KEY) setState(read());
+    // deep-equal 로 무한 루프 방지: 내가 방금 쓴 값을 다시 받으면 setState 시 동일 객체 반환
+    function applyFresh() {
+      const next = read();
+      setState((cur) => {
+        try {
+          if (JSON.stringify(cur) === JSON.stringify(next)) return cur;
+        } catch { /* ignore */ }
+        return next;
+      });
     }
-
-    window.addEventListener('storage', onStorage);
-    return () => window.removeEventListener('storage', onStorage);
+    function onStorage(e: StorageEvent) {
+      if (e.key === KEY) applyFresh();
+    }
+    window.addEventListener('storage', onStorage);                  // 다른 탭
+    window.addEventListener(USER_SYNC_EVENT, applyFresh);            // 같은 탭
+    return () => {
+      window.removeEventListener('storage', onStorage);
+      window.removeEventListener(USER_SYNC_EVENT, applyFresh);
+    };
   }, []);
 
   const update = useCallback((patch: Partial<UserState>) => {
@@ -163,12 +182,20 @@ export function useUser() {
   }, []);
 
   const setNickname = useCallback((nickname: string) => {
-    setState((s) => ({ ...s, nickname: nickname.trim() || s.nickname }));
+    setState((s) => {
+      const next = { ...s, nickname: nickname.trim() || s.nickname };
+      write(next);
+      return next;
+    });
   }, []);
 
   const setSetting = useCallback(
     <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
-      setState((s) => ({ ...s, settings: { ...s.settings, [key]: value } }));
+      setState((s) => {
+        const next = { ...s, settings: { ...s.settings, [key]: value } };
+        write(next);
+        return next;
+      });
     },
     [],
   );
