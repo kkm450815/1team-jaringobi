@@ -279,7 +279,15 @@ export function useUser() {
       write(next);
       return next;
     });
-    return { reward, coins, cycleEnded: isCycleEnd };
+    // 회차 완료 시 초기화 직전 사진 + 회차 정보를 호출자에게 넘김 (저장 안내 화면용)
+    const archive = isCycleEnd
+      ? {
+          cycle: state.cycle,
+          photos: { ...state.photos, [state.day]: dataUrl },
+          totalSaved: state.totalSaved + reward,
+        }
+      : undefined;
+    return { reward, coins, cycleEnded: isCycleEnd, archive };
   }, [state]);
 
   // 양심 1개 차감 (사용자가 ♥ 누르고 확인 모달에서 삭제 누른 경우)

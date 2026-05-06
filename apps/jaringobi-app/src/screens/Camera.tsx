@@ -18,6 +18,12 @@ export default function Camera() {
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
   const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
+  // 회차 완료 시 사진들이 초기화되기 직전의 스냅샷 — 사용자에게 캡처/저장 유도
+  const [archive, setArchive] = useState<{
+    cycle: number;
+    photos: Record<number, string>;
+    totalSaved: number;
+  } | null>(null);
   const u = useUser();
 
   // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30
@@ -59,17 +65,41 @@ export default function Camera() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
     setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
+    if (r.archive) setArchive(r.archive);
     if (u.settings.sound) playSuccessSfx();
     if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
   }
 
   function closeRewardAndContinue() {
+    // 회차 완료(archive 있음)면 보상 모달 닫기 → archive 화면 노출
+    // 아니면 곧장 마이페이지로 이동
     setReward(null);
-    // /camera 를 history에서 교체 → 마이페이지에서 뒤로가기 시 메인으로 복귀
+    if (!archive) {
+      nav('/mypage', { replace: true });
+    }
+  }
+
+  function closeArchive() {
+    setArchive(null);
     nav('/mypage', { replace: true });
   }
 
+  async function shareArchive() {
+    if (!archive) return;
+    const text = `🎉 자린고비 ${archive.cycle}회차 30일 챌린지 완주!\n` +
+      `누적 절약: ${archive.totalSaved.toLocaleString()}원\n` +
+      `${u.nickname} 의 자린고비 일기`;
+    if (typeof navigator !== 'undefined' && navigator.share) {
+      try { await navigator.share({ title: '자린고비', text }); return; } catch { /* cancelled */ }
+    }
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      try { await navigator.clipboard.writeText(text); alert('내용이 클립보드에 복사됐어요'); return; } catch { /* ignore */ }
+    }
+    alert(text);
+  }
+
   useEscape(reward !== null, closeRewardAndContinue);
+  useEscape(archive !== null && reward === null, closeArchive);
 
   return (
     <main className="min-h-full pb-10">
@@ -242,6 +272,85 @@ export default function Camera() {
             >
               메인으로 가기
             </button>
+          </div>
+        </div>
+      )}
+
+      {/* 회차 완주 후 — 사진 사라지기 전 캡처/저장 안내 화면 */}
+      {archive && reward === null && (
+        <div
+          className="fixed inset-0 z-50 bg-black/55 grid place-items-center px-4 py-6 overflow-y-auto"
+          onClick={closeArchive}
+        >
+          <div
+            className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-center text-[14px] font-bold text-accent tracking-[2px]">
+              🎉 30일 완주 기록
+            </p>
+            <p className="mt-2 text-center text-[12px] text-text/65 leading-relaxed">
+              다음 회차가 시작되면 사진들이 초기화돼요.<br />
+              <span className="font-bold text-text">화면을 캡처해 저장</span>해주세요!
+            </p>
+
+            {/* 노트 카드 — 마이페이지와 비슷한 레이아웃 */}
+            <div className="mt-4 bg-grid-paper rounded-2xl shadow-soft px-4 pt-4 pb-5 relative">
+              <div className="absolute -top-2 left-0 right-0 flex justify-around px-6 pointer-events-none">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <span key={i} className="w-2.5 h-2.5 rounded-full bg-text/20" />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3 mt-1">
+                <div className="w-14 h-14 bg-white rounded-2xl shadow-soft overflow-hidden relative shrink-0">
+                  <img
+                    src="/jarin/main_character.png"
+                    alt=""
+                    className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[13px] font-bold text-text truncate">{u.nickname}</p>
+                  <p className="text-[11px] text-text/65">자린고비 {archive.cycle}회차 완료</p>
+                  <p className="text-[14px] font-bold text-accent mt-0.5">
+                    누적 {archive.totalSaved.toLocaleString()}원
+                  </p>
+                </div>
+              </div>
+
+              <h3 className="mt-4 font-bold tracking-[3px] text-[13px] text-text">RECORD</h3>
+              <ul className="mt-2 grid grid-cols-6 gap-x-1.5 gap-y-2">
+                {Array.from({ length: 30 }, (_, i) => i + 1).map((d) => {
+                  const photo = archive.photos[d];
+                  return (
+                    <li key={d} className="flex flex-col items-center">
+                      <div className={`w-full aspect-square rounded-md overflow-hidden ${photo ? 'bg-white' : 'bg-text/65'}`}>
+                        {photo && (
+                          <img src={photo} alt={`${d}일차`} className="w-full h-full object-cover" />
+                        )}
+                      </div>
+                      <span className="mt-0.5 text-[10px] font-bold text-text">{d}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={shareArchive}
+                className="flex-1 bg-primary/70 text-text font-bold rounded-2xl py-3 text-[14px] active:scale-[.98]"
+              >
+                공유
+              </button>
+              <button
+                onClick={closeArchive}
+                className="flex-1 bg-accent text-white font-bold rounded-2xl py-3 text-[14px] active:scale-[.98]"
+              >
+                다음 회차로
+              </button>
+            </div>
           </div>
         </div>
       )}
