@@ -40,7 +40,7 @@ export default function TalkRoom() {
     if (!body) return;
     addPost({ id: crypto.randomUUID(), roomId: room.id, nick: u.nickname, body });
     setInput('');
-    if (u.settings.sound) playSuccessSfx();
+    playSuccessSfx();
   }
 
   return (
@@ -124,7 +124,7 @@ export default function TalkRoom() {
                 </p>
               </div>
               <button
-                onClick={() => { toggle(p.id); if (u.settings.sound) playClickSfx(); }}
+                onClick={() => { toggle(p.id); playClickSfx(); }}
                 aria-label={marked ? '북마크 해제' : '북마크'}
                 aria-pressed={marked}
                 className="p-1 -m-1 shrink-0"

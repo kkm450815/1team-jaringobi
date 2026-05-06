@@ -29,7 +29,7 @@ export default function MyPage() {
       return;
     }
     u.setNickname(nickDraft);
-    if (u.settings.sound) playSuccessSfx();
+    playSuccessSfx();
     setEditing(false);
   }
 
@@ -304,12 +304,12 @@ export default function MyPage() {
               ctx={titleCtx}
               onActivate={() => {
                 u.update({ activeTitleId: detailTitle.id });
-                if (u.settings.sound) playSuccessSfx();
+                playSuccessSfx();
                 closeTitleModal();
               }}
               onChangeToThis={() => {
                 u.update({ activeTitleId: detailTitle.id });
-                if (u.settings.sound) playSuccessSfx();
+                playSuccessSfx();
                 setDetailTitleId(null);
               }}
               onBackToGrid={() => setDetailTitleId(null)}

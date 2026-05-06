@@ -21,7 +21,7 @@ export function BottomTabBar() {
           <Link
             key={t.to}
             to={t.to}
-            onClick={() => { if (u.settings.sound) playClickSfx(); }}
+            onClick={() => { playClickSfx(); }}
             className={`tap-pill flex items-center justify-center text-center py-5 rounded-2xl font-bold transition-colors ${
               isChallenge ? 'text-[20px]' : 'text-[14px]'
             } ${

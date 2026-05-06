@@ -137,7 +137,7 @@ export default function Wardrobe() {
                 key={src}
                 onClick={() => {
                   u.toggleEquip(src);
-                  if (u.settings.sound) playClickSfx();
+                  playClickSfx();
                 }}
                 className="relative rounded-xl overflow-hidden bg-primary/35"
               >

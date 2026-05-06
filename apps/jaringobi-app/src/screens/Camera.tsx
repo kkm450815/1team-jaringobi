@@ -50,7 +50,7 @@ export default function Camera() {
     try {
       const dataUrl = await downscaleImage(f, 320);
       setPreview(dataUrl);
-      if (u.settings.sound) playClickSfx();
+      playClickSfx();
     } catch (err) {
       const msg = err instanceof Error ? err.message : '이미지를 처리하지 못했어요';
       setPickError(`사진 불러오기 실패: ${msg}`);
@@ -66,7 +66,7 @@ export default function Camera() {
     const r = u.savePhoto(preview);
     setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
     if (r.archive) setArchive(r.archive);
-    if (u.settings.sound) playSuccessSfx();
+    playSuccessSfx();
     if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
   }
 

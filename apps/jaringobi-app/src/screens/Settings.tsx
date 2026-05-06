@@ -143,7 +143,7 @@ export default function Settings() {
   // 진동 활성이면 햅틱
   function handleSettingChange<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
     u.setSetting(key, value);
-    if (u.settings.sound) playClickSfx();
+    playClickSfx();
     if (u.settings.vibration) vibrate(15);
   }
 
@@ -206,7 +206,7 @@ export default function Settings() {
       </Section>
 
       <Section title="피드백">
-        {settingItem('sound', '사운드', '전체 사운드 마스터 — OFF 면 BGM·효과음 모두 무음')}
+        {settingItem('sound', '배경 음악(BGM)', '메인·수다방 등에서 흐르는 음악')}
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 w-[90px] shrink-0">
             <p className="text-[15px] font-bold text-text">BGM 볼륨</p>
@@ -235,7 +235,7 @@ export default function Settings() {
             min={0}
             max={100}
             step={5}
-            disabled={!u.settings.sound || !(u.settings.sfxEnabled ?? true)}
+            disabled={!(u.settings.sfxEnabled ?? true)}
             value={u.settings.sfxVolume ?? 80}
             onChange={(e) => u.setSetting('sfxVolume', Number(e.target.value))}
             aria-label="효과음 볼륨"
@@ -390,7 +390,7 @@ export default function Settings() {
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
-                onClick={() => { u.update({ goal: 300_000 }); if (u.settings.sound) playClickSfx(); setModeModal(false); }}
+                onClick={() => { u.update({ goal: 300_000 }); playClickSfx(); setModeModal(false); }}
                 className={`rounded-2xl py-3 text-[14px] font-bold transition ${
                   u.goal < 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
                 }`}
@@ -398,7 +398,7 @@ export default function Settings() {
                 노말<br /><span className="text-[11px] font-normal opacity-80">30만원</span>
               </button>
               <button
-                onClick={() => { u.update({ goal: 1_000_000 }); if (u.settings.sound) playClickSfx(); setModeModal(false); }}
+                onClick={() => { u.update({ goal: 1_000_000 }); playClickSfx(); setModeModal(false); }}
                 className={`rounded-2xl py-3 text-[14px] font-bold transition ${
                   u.goal >= 1_000_000 ? 'bg-accent text-white' : 'bg-primary/70 text-text'
                 }`}
