@@ -22,10 +22,19 @@ export function getAudioContext(): AudioContext | null {
   }
 }
 
-/** 사용자 인터랙션 직후 호출해 정지 상태인 AudioContext 를 resume. */
+/** 사용자 인터랙션 직후 호출해 정지 상태인 AudioContext 를 resume.
+ *  iOS Safari 등에서는 resume 만으로 부족할 수 있어 짧은 무음 oscillator
+ *  를 한 번 재생해 audio thread 를 확실히 깨운다. */
 export function unlockAudio() {
   const c = getAudioContext();
-  if (c && c.state === 'suspended') {
-    c.resume().catch(() => {});
-  }
+  if (!c) return;
+  if (c.state === 'suspended') c.resume().catch(() => {});
+  try {
+    const osc = c.createOscillator();
+    const g = c.createGain();
+    g.gain.value = 0.0001; // 거의 무음
+    osc.connect(g).connect(c.destination);
+    osc.start();
+    osc.stop(c.currentTime + 0.04);
+  } catch { /* ignore */ }
 }
