@@ -151,6 +151,14 @@ export default function TalkRoom() {
       </div>
 
       {/* 게시물 리스트 (스크롤 대상) */}
+      {posts.length === 0 && (
+        <div className="px-5 mt-16 text-center">
+          <p className="text-[14px] font-bold text-text/55">아직 글이 없어요</p>
+          <p className="mt-2 text-[12px] text-text/40 leading-relaxed">
+            첫 번째로 마음을 나눠 보세요.
+          </p>
+        </div>
+      )}
       <ul className="px-5 mt-6 space-y-8">
         {posts.map((p) => {
           const marked = has(p.id);

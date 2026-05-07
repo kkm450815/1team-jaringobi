@@ -108,11 +108,9 @@ const supabaseRepo: TalkPostsRepo = {
       console.error('[talkPostsRepo.list] Supabase select 실패', error);
       throw error;
     }
-    const dbPosts = (data ?? []).map((r: TalkPostRow) => rowToPost(r));
-    const seeds = roomId
-      ? TALK_POSTS.filter((p) => p.roomId === roomId)
-      : TALK_POSTS;
-    return [...dbPosts, ...seeds];
+    // 시드(TALK_POSTS) 는 더 이상 섞지 않음 — 실서비스에선 실제 DB 글만 노출.
+    // 시드는 Supabase 미설정 폴백(localRepo) 에서만 데모용으로 사용.
+    return (data ?? []).map((r: TalkPostRow) => rowToPost(r));
   },
   async add(post) {
     const sb = getSupabase();
