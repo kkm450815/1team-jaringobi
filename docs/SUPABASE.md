@@ -278,6 +278,46 @@ Realtime publication 에도 추가하면 admin 변경이 사용자 화면에 즉
 alter publication supabase_realtime add table public.talk_rooms;
 ```
 
+### 3-6. 공지/이벤트 (announcements)
+
+메인 화면 상단 배너용 공지/이벤트 테이블. 관리자만 작성 가능, 누구나 읽기 가능.
+
+```sql
+create table if not exists public.announcements (
+  id          uuid primary key default gen_random_uuid(),
+  title       text not null,
+  body        text not null default '',
+  link_url    text,
+  link_label  text,
+  bg_color    text not null default '#FCE0BF',
+  active      boolean not null default true,
+  starts_at   timestamptz,
+  ends_at     timestamptz,
+  sort_order  int not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index if not exists announcements_active_idx
+  on public.announcements (active, sort_order);
+
+alter table public.announcements enable row level security;
+
+drop policy if exists "announcements read" on public.announcements;
+create policy "announcements read" on public.announcements for select using (true);
+
+drop policy if exists "announcements admin write" on public.announcements;
+create policy "announcements admin write" on public.announcements for all
+  using (exists(select 1 from public.admins where user_id = auth.uid()))
+  with check (exists(select 1 from public.admins where user_id = auth.uid()));
+
+alter publication supabase_realtime add table public.announcements;
+```
+
+활성 판정 (앱 클라이언트에서):
+- `active = true`
+- `starts_at IS NULL OR starts_at <= now()`
+- `ends_at IS NULL OR ends_at > now()`
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

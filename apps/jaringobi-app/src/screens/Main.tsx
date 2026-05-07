@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
+import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { useUser } from '../lib/userState';
 import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
@@ -199,6 +200,8 @@ export default function Main() {
         </Link>
       </header>
 
+      {/* 공지/이벤트 배너 — 활성 공지가 있을 때만 노출 */}
+      <AnnouncementBanner />
 
       {/* 오늘의 절약미션 버튼 */}
       <section className="px-10 pt-8 pb-8">
