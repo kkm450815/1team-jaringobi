@@ -19,7 +19,10 @@ export default function NickSetup() {
     return <Navigate to="/main" replace />;
   }
 
-  function submit() {
+  const [busy, setBusy] = useState(false);
+
+  async function submit() {
+    if (busy) return;
     const trimmed = draft.trim();
     if (!trimmed) {
       setError('닉네임을 입력해주세요');
@@ -29,10 +32,16 @@ export default function NickSetup() {
       setError('닉네임은 2자 이상이어야 해요');
       return;
     }
-    // setNickname 이 localStorage 에 동기 write 한 뒤 React state 도 갱신.
-    u.setNickname(trimmed);
+    setBusy(true);
+    // profiles 테이블에 닉네임 등록 시도. unique 위반(=이미 다른 사용자가 사용)
+    // 이면 변경 거부, 사용자에게 다른 닉 입력 요청.
+    const result = await u.tryRenameNickname(trimmed);
+    setBusy(false);
+    if (!result.ok) {
+      setError(result.message);
+      return;
+    }
     playSuccessSfx();
-    // requestAnimationFrame 으로 한 프레임 양보 — 모바일에서 setState commit 보장
     if (typeof requestAnimationFrame === 'function') {
       requestAnimationFrame(() => nav('/main', { replace: true }));
     } else {
@@ -78,14 +87,14 @@ export default function NickSetup() {
 
       <button
         onClick={submit}
-        disabled={!draft.trim()}
+        disabled={!draft.trim() || busy}
         className={`mt-8 w-full rounded-full py-3.5 text-[15px] font-bold transition ${
-          draft.trim()
+          draft.trim() && !busy
             ? 'bg-accent text-white active:scale-[.98]'
             : 'bg-text/15 text-text/40 cursor-not-allowed'
         }`}
       >
-        시작하기
+        {busy ? '확인 중…' : '시작하기'}
       </button>
     </main>
   );

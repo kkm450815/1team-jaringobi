@@ -1,8 +1,13 @@
-// 사용자 프로필 저장소 추상화. /profile/:nick 라우트에서 다른 사용자 프로필을 불러올 때 사용.
-// 현재는 시드 데이터(TALK_POSTS의 nick들 + ME_NICK) 기반 데모 프로필 반환.
-// Supabase 연동 시 profiles 테이블과 매핑.
+// 사용자 프로필 저장소.
+//
+// schema (docs/SUPABASE.md):
+//   profiles(nickname pk, cycle, day, total_saved, goal,
+//            active_title_id, owned_titles[], equipped[], updated_at)
+//
+// nickname 이 PK (=unique). 닉네임 변경 = 새 row INSERT + 옛 row DELETE 시도.
+// 새 INSERT 가 unique 위반이면 "이미 사용 중" 으로 변경 거부.
 
-import { ME_NICK, REMODEL_FILES, SHOP_GROUPS, TALK_POSTS, TITLES } from './data';
+import { REMODEL_FILES, SHOP_GROUPS, TITLES } from './data';
 import { getSupabase, isSupabaseEnabled } from './supabase';
 
 export interface PublicProfile {
@@ -11,21 +16,26 @@ export interface PublicProfile {
   day: number;
   totalSaved: number;
   goal: number;
-  activeTitleId: string;   // TITLES 의 id
-  ownedTitles: string[];   // 가시화용
-  equipped: string[];      // 캐릭터 방 미리보기용 (티셔츠·조명·벽지·가구·소품·악세 src)
-  isMe: boolean;
+  activeTitleId: string;
+  ownedTitles: string[];
+  equipped: string[];
 }
+
+export type RenameResult =
+  | { ok: true }
+  | { ok: false; reason: 'taken' | 'unknown'; message: string };
 
 export interface ProfilesRepo {
   /** 닉네임으로 프로필 조회. 없으면 null */
   getByNick(nick: string): Promise<PublicProfile | null>;
+  /** 본인 프로필 upsert — 닉네임 외 필드 갱신용 (nickname 충돌 가능성 없음) */
+  upsertMe(profile: PublicProfile): Promise<void>;
+  /** 닉네임 변경 — unique 위반 시 reason: 'taken' 반환. 성공 시 옛 row 삭제 시도 */
+  tryRename(oldNick: string, profile: PublicProfile): Promise<RenameResult>;
 }
 
-/* ---------------- 데모 데이터 (시드 사용자별 임의 진행도) ---------------- */
+/* ---------------- 데모 데이터 (Supabase 미설정 시 — 개발용) ---------------- */
 
-// 시드 사용자 닉네임 → 프로필 더미 데이터.
-// nick 해시값으로 deterministic하게 cycle/day/title을 분배.
 function hashNick(nick: string): number {
   let h = 0;
   for (let i = 0; i < nick.length; i++) h = (h * 31 + nick.charCodeAt(i)) >>> 0;
@@ -42,7 +52,6 @@ function demoProfile(nick: string): PublicProfile {
   const titleIdx = h % TITLES.length;
   const cycle = (h % 5) + 1;
   const day = (h % 30) + 1;
-  // 닉 해시 기반 결정적 룸 구성 — 티셔츠 1, 벽지 1, 조명/가구/소품 일부
   const equipped: string[] = [];
   const shirt = pickFrom(SHOP_GROUPS.티셔츠, h);
   if (shirt) equipped.push(shirt);
@@ -69,25 +78,19 @@ function demoProfile(nick: string): PublicProfile {
     activeTitleId: TITLES[titleIdx]?.id ?? 'h0',
     ownedTitles: TITLES.slice(0, titleIdx + 1).map((t) => t.id),
     equipped,
-    isMe: nick === ME_NICK,
   };
 }
-
-/* ---------------- localStorage(시드) 구현 ---------------- */
 
 const localRepo: ProfilesRepo = {
   async getByNick(nick) {
     if (!nick) return null;
-    // 본인이면 useUser 로 직접 읽으면 되지만, 통일된 인터페이스로 노출
-    const seedNicks = new Set(TALK_POSTS.map((p) => p.nick));
-    if (nick === ME_NICK || seedNicks.has(nick)) {
-      return demoProfile(nick);
-    }
-    return demoProfile(nick); // 그 외 닉네임도 데모 프로필 생성 (사용자가 직접 작성한 글의 작성자 등)
+    return demoProfile(nick);
   },
+  async upsertMe() { /* localStorage 모드에선 별도 저장소 불필요 — useUser 가 곧 본인 프로필 */ },
+  async tryRename() { return { ok: true }; },
 };
 
-/* ---------------- Supabase 구현 (스텁) ---------------- */
+/* ---------------- Supabase 구현 ---------------- */
 
 interface ProfileRow {
   nickname: string;
@@ -100,32 +103,87 @@ interface ProfileRow {
   equipped: string[] | null;
 }
 
+function rowToProfile(r: ProfileRow): PublicProfile {
+  return {
+    nickname: r.nickname,
+    cycle: r.cycle,
+    day: r.day,
+    totalSaved: r.total_saved,
+    goal: r.goal,
+    activeTitleId: r.active_title_id,
+    ownedTitles: r.owned_titles ?? [],
+    equipped: r.equipped ?? [],
+  };
+}
+
+function profileToRow(p: PublicProfile): ProfileRow {
+  return {
+    nickname: p.nickname,
+    cycle: p.cycle,
+    day: p.day,
+    total_saved: p.totalSaved,
+    goal: p.goal,
+    active_title_id: p.activeTitleId,
+    owned_titles: p.ownedTitles,
+    equipped: p.equipped,
+  };
+}
+
 const supabaseRepo: ProfilesRepo = {
   async getByNick(nick) {
     if (!nick) return null;
     const sb = getSupabase();
-    if (!sb) return demoProfile(nick);
+    if (!sb) return null;
     const { data, error } = await sb
       .from('profiles')
       .select('*')
       .eq('nickname', nick)
       .maybeSingle();
-    if (error || !data) {
-      // DB 미존재 시 데모 프로필 폴백 (시드 닉용)
-      return demoProfile(nick);
+    if (error) {
+      console.error('[profilesRepo.getByNick] 조회 실패', { nick, error });
+      return null;
     }
-    const row = data as ProfileRow;
-    return {
-      nickname: row.nickname,
-      cycle: row.cycle,
-      day: row.day,
-      totalSaved: row.total_saved,
-      goal: row.goal,
-      activeTitleId: row.active_title_id,
-      ownedTitles: row.owned_titles ?? [],
-      equipped: row.equipped ?? [],
-      isMe: nick === ME_NICK,
-    };
+    if (!data) return null;
+    return rowToProfile(data as ProfileRow);
+  },
+
+  async upsertMe(profile) {
+    const sb = getSupabase();
+    if (!sb) return;
+    const row = profileToRow(profile);
+    const { error } = await sb.from('profiles').upsert(row, { onConflict: 'nickname' });
+    if (error) {
+      console.error('[profilesRepo.upsertMe] upsert 실패', { row, error });
+      // 호출자에게 던지지 않음 — 사진 저장 등 메인 흐름이 막히지 않도록 best-effort
+    }
+  },
+
+  async tryRename(oldNick, profile) {
+    const sb = getSupabase();
+    if (!sb) return { ok: true };
+    if (oldNick === profile.nickname) {
+      // 닉 미변경 — 그냥 upsert
+      await this.upsertMe(profile);
+      return { ok: true };
+    }
+    // 새 닉으로 INSERT 시도 (PK 충돌이면 unique violation)
+    const row = profileToRow(profile);
+    const { error: insertErr } = await sb.from('profiles').insert(row);
+    if (insertErr) {
+      // Postgres unique_violation 코드: 23505
+      const code = (insertErr as { code?: string }).code;
+      if (code === '23505') {
+        return { ok: false, reason: 'taken', message: '이미 사용 중인 닉네임이에요.' };
+      }
+      console.error('[profilesRepo.tryRename] insert 실패', { row, insertErr });
+      return { ok: false, reason: 'unknown', message: insertErr.message ?? '닉네임 변경에 실패했어요.' };
+    }
+    // 새 row INSERT 성공 — 옛 row 삭제 시도 (실패해도 critical 아님)
+    if (oldNick) {
+      const { error: delErr } = await sb.from('profiles').delete().eq('nickname', oldNick);
+      if (delErr) console.warn('[profilesRepo.tryRename] 옛 닉 row 삭제 실패 (무시)', { oldNick, delErr });
+    }
+    return { ok: true };
   },
 };
 

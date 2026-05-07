@@ -62,6 +62,8 @@ create policy "self admin check" on public.admins for select
 
 -- ============================================================
 -- 사용자 프로필 (공개 정보)
+--  - nickname 이 PK → 닉네임 변경은 새 row INSERT + 옛 row DELETE
+--  - equipped: 캐릭터 방 미리보기용 src 배열
 -- ============================================================
 create table public.profiles (
   nickname        text primary key,
@@ -71,12 +73,15 @@ create table public.profiles (
   goal            bigint not null default 300000,
   active_title_id text not null default 'h0',
   owned_titles    text[] not null default array['h0'],
+  equipped        text[] not null default '{}'::text[],
   updated_at      timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
 create policy "profiles read"   on public.profiles for select using (true);
--- 본인만 자기 프로필 갱신 가능하게 하려면 auth 연동 후 다음 줄 사용
--- create policy "profiles update" on public.profiles for update using (auth.uid() = id);
+create policy "profiles insert" on public.profiles for insert with check (true);
+create policy "profiles update" on public.profiles for update using (true);
+create policy "profiles delete" on public.profiles for delete using (true);
+-- 익명 사용자도 프로필 작성 가능. 추후 auth 연동 시 정책 강화 필요.
 ```
 
 ### 3-1. 첫 관리자 부트스트랩

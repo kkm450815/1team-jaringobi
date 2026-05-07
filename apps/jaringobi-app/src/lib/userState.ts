@@ -1,5 +1,21 @@
 import { useCallback, useEffect, useState } from 'react';
 import { equipSlotOf, getTitleProgress, MISSIONS, TITLES } from './data';
+import { profilesRepo, PublicProfile } from './profilesRepo';
+
+const DEFAULT_NICK = '자린이';
+
+function userToProfile(s: UserState): PublicProfile {
+  return {
+    nickname: s.nickname,
+    cycle: s.cycle,
+    day: s.day,
+    totalSaved: s.totalSaved,
+    goal: s.goal,
+    activeTitleId: s.activeTitleId,
+    ownedTitles: s.ownedTitles,
+    equipped: s.equipped,
+  };
+}
 
 // 미션 ID → 보상 금액 룩업 (savePhoto 보상 계산용)
 const MISSION_AMOUNTS: Record<string, number> = Object.fromEntries(
@@ -195,6 +211,32 @@ export function useUser() {
     setState(next);
   }, []);
 
+  // 닉네임 변경 시 profiles 테이블에 새 row INSERT 시도. unique 위반(=다른 사용자
+  // 사용 중) 이면 변경 거부하고 reason='taken' 반환.
+  // 기본 닉('자린이') → 다른 닉으로 처음 설정할 때도 이 함수 사용.
+  const tryRenameNickname = useCallback(
+    async (newNick: string): Promise<{ ok: true } | { ok: false; reason: 'taken' | 'unknown'; message: string }> => {
+      const trimmed = newNick.trim();
+      if (!trimmed) return { ok: false, reason: 'unknown', message: '닉네임을 입력해주세요.' };
+      const fresh = read();
+      const oldNick = fresh.nickname;
+      if (oldNick === trimmed) return { ok: true };
+      // 기본 닉('자린이') 에서 시작하는 경우엔 옛 row 가 있을 가능성이 낮지만,
+      // 안전을 위해 tryRename 에 oldNick 그대로 전달 (기본 닉이면 DELETE 가 다른
+      // 사용자 row 를 건드릴 위험이 있어 oldNick 을 빈 문자열로 넘겨 옛 row 삭제 skip).
+      const oldForRename = oldNick === DEFAULT_NICK ? '' : oldNick;
+      const profile: PublicProfile = { ...userToProfile(fresh), nickname: trimmed };
+      const result = await profilesRepo.tryRename(oldForRename, profile);
+      if (!result.ok) return result;
+      // 로컬 상태 갱신
+      const next: UserState = { ...fresh, nickname: trimmed };
+      write(next);
+      setState(next);
+      return { ok: true };
+    },
+    [],
+  );
+
   const setSetting = useCallback(
     <K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
       setState((s) => {
@@ -283,6 +325,12 @@ export function useUser() {
             day: day + 1,
           };
       write(next);
+      // 사진 저장으로 totalSaved/cycle/day 가 갱신됐으니 profiles 도 동기화.
+      // 기본 닉('자린이') 사용자는 아직 프로필을 만들지 않았으므로 skip — 다른
+      // 사용자가 같은 기본 닉으로 row 를 가질 가능성을 회피.
+      if (next.nickname && next.nickname !== DEFAULT_NICK) {
+        void profilesRepo.upsertMe(userToProfile(next));
+      }
       return next;
     });
     // 회차 완료 시 초기화 직전 사진 + 회차 정보를 호출자에게 넘김 (저장 안내 화면용)
@@ -420,6 +468,7 @@ export function useUser() {
   return {
     ...state,
     setNickname,
+    tryRenameNickname,
     setSetting,
     savePhoto,
     update,
