@@ -13,10 +13,11 @@ import { getSupabase, isSupabaseEnabled } from '../lib/supabase';
 import { talkPostsRepo } from '../lib/talkPostsRepo';
 import { TalkRoom, talkRoomsRepo } from '../lib/talkRoomsRepo';
 import { useTalkRooms } from '../lib/useTalkRooms';
+import { Announcement, announcementsRepo } from '../lib/announcementsRepo';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'rooms';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements';
 
 interface RawPost {
   id: string;
@@ -202,6 +203,7 @@ function AdminPanel({ email }: { email: string }) {
         <nav className="max-w-6xl mx-auto px-6 flex gap-1 text-[13px] flex-wrap">
           <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>대시보드</TabButton>
           <TabButton active={tab === 'users'} onClick={() => setTab('users')}>가입자</TabButton>
+          <TabButton active={tab === 'announcements'} onClick={() => setTab('announcements')}>공지/이벤트</TabButton>
           <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
           <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
         </nav>
@@ -210,6 +212,7 @@ function AdminPanel({ email }: { email: string }) {
       <div className="max-w-6xl mx-auto px-6 py-6">
         {tab === 'dashboard' && <DashboardSection />}
         {tab === 'users' && <UsersSection />}
+        {tab === 'announcements' && <AnnouncementsSection />}
         {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
       </div>
@@ -832,5 +835,325 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="block text-[11px] text-[#2a2723]/55 mb-1">{label}</span>
       {children}
     </label>
+  );
+}
+
+/* ============================================================
+ * 공지/이벤트 관리 — announcements CRUD
+ * ============================================================ */
+
+const EMPTY_ANNOUNCEMENT: Announcement = {
+  id: '',
+  title: '',
+  body: '',
+  linkUrl: '',
+  linkLabel: '',
+  bgColor: '#FCE0BF',
+  active: true,
+  startsAt: null,
+  endsAt: null,
+  sortOrder: 1,
+};
+
+// HTML datetime-local input (YYYY-MM-DDTHH:MM) ↔ ISO 변환 헬퍼.
+function toLocalInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+function fromLocalInput(s: string): string | null {
+  if (!s) return null;
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+function statusOf(a: Announcement): { label: string; tone: string } {
+  if (!a.active) return { label: '비활성', tone: 'bg-black/10 text-black/55' };
+  const now = Date.now();
+  if (a.startsAt && new Date(a.startsAt).getTime() > now)
+    return { label: '예약', tone: 'bg-blue-100 text-blue-700' };
+  if (a.endsAt && new Date(a.endsAt).getTime() <= now)
+    return { label: '종료', tone: 'bg-black/10 text-black/55' };
+  return { label: '게시 중', tone: 'bg-emerald-100 text-emerald-700' };
+}
+
+function AnnouncementsSection() {
+  const [items, setItems] = useState<Announcement[] | null>(null);
+  const [editing, setEditing] = useState<Announcement | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function load() {
+    setErr(null);
+    try {
+      const data = await announcementsRepo.listAll();
+      setItems(data);
+    } catch (e) {
+      console.error('[AnnouncementsSection.load] 실패', e);
+      setErr((e as Error).message ?? '불러오기 실패');
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function startNew() {
+    setErr(null);
+    const list = items ?? [];
+    const nextOrder = list.length > 0 ? Math.max(...list.map((a) => a.sortOrder)) + 1 : 1;
+    setEditing({ ...EMPTY_ANNOUNCEMENT, sortOrder: nextOrder });
+  }
+  function startEdit(a: Announcement) {
+    setErr(null);
+    setEditing({ ...a });
+  }
+  function cancel() {
+    setEditing(null);
+    setErr(null);
+  }
+
+  async function save() {
+    if (!editing) return;
+    const title = editing.title.trim();
+    if (!title) { setErr('제목을 입력하세요.'); return; }
+    if (!/^#[0-9a-fA-F]{6}$/.test(editing.bgColor)) { setErr('배경색은 #FCE0BF 형식.'); return; }
+    setBusy(true);
+    setErr(null);
+    try {
+      const saved = await announcementsRepo.upsert({ ...editing, title });
+      setEditing(null);
+      // 새로 만든 거면 list 에 push, 수정이면 replace
+      setItems((prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((a) => a.id === saved.id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = saved;
+          return next.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
+        return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
+      });
+    } catch (e) {
+      console.error('[AnnouncementsSection.save] 실패', e);
+      setErr((e as Error).message ?? '저장 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(a: Announcement) {
+    if (!confirm(`"${a.title}" 공지를 삭제하시겠습니까?`)) return;
+    setBusy(true);
+    try {
+      await announcementsRepo.remove(a.id);
+      setItems((prev) => (prev ?? []).filter((x) => x.id !== a.id));
+    } catch (e) {
+      console.error('[AnnouncementsSection.remove] 실패', e);
+      setErr((e as Error).message ?? '삭제 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive(a: Announcement) {
+    setBusy(true);
+    try {
+      const saved = await announcementsRepo.upsert({ ...a, active: !a.active });
+      setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      console.error('[AnnouncementsSection.toggleActive] 실패', e);
+      setErr((e as Error).message ?? '변경 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const list = items ?? [];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h2 className="text-[18px] font-bold">공지/이벤트 ({list.length})</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
+          >새로고침</button>
+          <button
+            onClick={startNew}
+            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+          >+ 새 공지</button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+          {err}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-[14px] font-bold mb-3">{editing.id ? '공지 수정' : '새 공지 만들기'}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="제목 (필수)">
+              <input
+                value={editing.title}
+                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                placeholder="이번 주 절약 이벤트"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="정렬 순서 (작을수록 위)">
+              <input
+                type="number"
+                value={editing.sortOrder}
+                onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="본문 (선택)">
+              <textarea
+                value={editing.body}
+                onChange={(e) => setEditing({ ...editing, body: e.target.value })}
+                rows={3}
+                placeholder="자세한 안내를 적어주세요"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] resize-y"
+              />
+            </Field>
+            <Field label="배경색 (hex)">
+              <div className="flex gap-2 items-center">
+                <input
+                  value={editing.bgColor}
+                  onChange={(e) => setEditing({ ...editing, bgColor: e.target.value })}
+                  placeholder="#FCE0BF"
+                  className="flex-1 bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+                />
+                <span
+                  className="w-10 h-10 rounded border border-black/10 shrink-0"
+                  style={{ background: /^#[0-9a-fA-F]{6}$/.test(editing.bgColor) ? editing.bgColor : 'transparent' }}
+                />
+              </div>
+            </Field>
+            <Field label="링크 URL (선택, https:// 또는 /talk 같은 내부 경로)">
+              <input
+                value={editing.linkUrl}
+                onChange={(e) => setEditing({ ...editing, linkUrl: e.target.value })}
+                placeholder="https://example.com 또는 /talk/t1"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+              />
+            </Field>
+            <Field label="링크 텍스트 (선택)">
+              <input
+                value={editing.linkLabel}
+                onChange={(e) => setEditing({ ...editing, linkLabel: e.target.value })}
+                placeholder="자세히 보기"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="시작 시각 (선택)">
+              <input
+                type="datetime-local"
+                value={toLocalInput(editing.startsAt)}
+                onChange={(e) => setEditing({ ...editing, startsAt: fromLocalInput(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="종료 시각 (선택)">
+              <input
+                type="datetime-local"
+                value={toLocalInput(editing.endsAt)}
+                onChange={(e) => setEditing({ ...editing, endsAt: fromLocalInput(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="활성 여부">
+              <label className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={editing.active}
+                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                />
+                활성 (체크 해제 시 사용자에게 안 보임)
+              </label>
+            </Field>
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-md"
+            >취소</button>
+            <button
+              onClick={save}
+              disabled={busy}
+              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-md disabled:opacity-40"
+            >{busy ? '저장 중…' : '저장'}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+              <th className="px-4 py-2 w-[80px]">순서</th>
+              <th className="px-4 py-2 w-[100px]">상태</th>
+              <th className="px-4 py-2">제목</th>
+              <th className="px-4 py-2">기간</th>
+              <th className="px-4 py-2 w-[200px]">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items === null && (
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+            )}
+            {items !== null && list.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-[#2a2723]/50">공지가 없습니다. "+ 새 공지" 로 만들어 보세요.</td></tr>
+            )}
+            {list.map((a) => {
+              const st = statusOf(a);
+              const start = a.startsAt ? new Date(a.startsAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+              const end = a.endsAt ? new Date(a.endsAt).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' }) : '—';
+              return (
+                <tr key={a.id} className="border-b border-black/5">
+                  <td className="px-4 py-2 tabular-nums">{a.sortOrder}</td>
+                  <td className="px-4 py-2">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${st.tone}`}>
+                      {st.label}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <p className="font-bold">{a.title}</p>
+                    {a.body && <p className="mt-0.5 text-[11px] text-[#2a2723]/55 line-clamp-2 max-w-md">{a.body}</p>}
+                  </td>
+                  <td className="px-4 py-2 text-[11px] text-[#2a2723]/65 whitespace-nowrap">
+                    {start} ~ {end}
+                  </td>
+                  <td className="px-4 py-2 whitespace-nowrap">
+                    <button
+                      onClick={() => toggleActive(a)}
+                      disabled={busy}
+                      className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded mr-1 disabled:opacity-40"
+                    >{a.active ? '비활성화' : '활성화'}</button>
+                    <button
+                      onClick={() => startEdit(a)}
+                      className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded mr-1"
+                    >수정</button>
+                    <button
+                      onClick={() => remove(a)}
+                      disabled={busy}
+                      className="text-[12px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-40"
+                    >삭제</button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
