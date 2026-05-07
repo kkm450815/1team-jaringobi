@@ -243,8 +243,6 @@ export interface TalkPost {
   body: string;
 }
 
-export const ME_NICK = '자린이 1호';
-
 export const TALK_POSTS: TalkPost[] = [
   { id: 'p1',  roomId: 't1', nick: '자린이 103호', body: '돈 모으기 힘들어요' },
   { id: 'p2',  roomId: 't1', nick: '자린이 2호',

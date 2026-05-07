@@ -1,6 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
+import { isLocalStorageAvailable } from './lib/storage';
+import { ensureAnonymousSession } from './lib/auth';
 import Admin from './screens/Admin';
 import { unlockAudio } from './lib/audio';
 import { getBgm } from './lib/bgm';
@@ -82,22 +84,61 @@ function AudioUnlocker() {
   return null;
 }
 
+// 앱 시작 시 1회 — Supabase 익명 sign-in. 사용자에게 보이지 않는 자동 인증.
+// 이미 매직 링크 등으로 세션이 있으면 그대로 유지. 활성화 안 됐거나 실패해도
+// 앱은 계속 동작 (RLS 가 INSERT 를 막을 뿐).
+function AuthBootstrap() {
+  useEffect(() => {
+    ensureAnonymousSession();
+  }, []);
+  return null;
+}
+
+// 앱 시작 시 1회 — iOS 프라이빗 모드/저장소 차단 환경 감지 후 사용자 안내.
+function StorageGuard() {
+  const [warn, setWarn] = useState(false);
+  useEffect(() => {
+    if (!isLocalStorageAvailable()) setWarn(true);
+  }, []);
+  if (!warn) return null;
+  return (
+    <div
+      role="alert"
+      className="fixed top-4 left-1/2 -translate-x-1/2 z-[60] max-w-[88%] bg-red-600/95 text-white text-[12px] font-medium px-4 py-2.5 rounded-lg shadow-xl text-center leading-relaxed"
+    >
+      ⚠ 저장소를 사용할 수 없는 환경이에요.<br />
+      Safari 의 시크릿(프라이빗) 모드를 끄거나 일반 브라우저로 다시 열어주세요.
+      <button
+        onClick={() => setWarn(false)}
+        className="ml-3 underline underline-offset-2"
+        aria-label="안내 닫기"
+      >닫기</button>
+    </div>
+  );
+}
+
 // /admin 은 데스크톱 풀스크린 레이아웃이 필요해 PhoneFrame 을 거치지 않는다.
 function AppShell() {
   const loc = useLocation();
   const isAdmin = loc.pathname.startsWith('/admin');
 
   if (isAdmin) {
+    // /admin 은 매직 링크로 직접 로그인하므로 익명 부트스트랩 불필요.
     return (
-      <Routes>
-        <Route path="/admin" element={<Admin />} />
-        <Route path="*" element={<Navigate to="/admin" replace />} />
-      </Routes>
+      <>
+        <StorageGuard />
+        <Routes>
+          <Route path="/admin" element={<Admin />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
+      </>
     );
   }
 
   return (
     <PhoneFrame>
+      <AuthBootstrap />
+      <StorageGuard />
       <AudioUnlocker />
       <BgmController />
       <Routes>

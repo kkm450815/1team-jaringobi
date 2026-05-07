@@ -62,6 +62,8 @@ create policy "self admin check" on public.admins for select
 
 -- ============================================================
 -- 사용자 프로필 (공개 정보)
+--  - nickname 이 PK → 닉네임 변경은 새 row INSERT + 옛 row DELETE
+--  - equipped: 캐릭터 방 미리보기용 src 배열
 -- ============================================================
 create table public.profiles (
   nickname        text primary key,
@@ -71,12 +73,15 @@ create table public.profiles (
   goal            bigint not null default 300000,
   active_title_id text not null default 'h0',
   owned_titles    text[] not null default array['h0'],
+  equipped        text[] not null default '{}'::text[],
   updated_at      timestamptz not null default now()
 );
 alter table public.profiles enable row level security;
 create policy "profiles read"   on public.profiles for select using (true);
--- 본인만 자기 프로필 갱신 가능하게 하려면 auth 연동 후 다음 줄 사용
--- create policy "profiles update" on public.profiles for update using (auth.uid() = id);
+create policy "profiles insert" on public.profiles for insert with check (true);
+create policy "profiles update" on public.profiles for update using (true);
+create policy "profiles delete" on public.profiles for delete using (true);
+-- 익명 사용자도 프로필 작성 가능. 추후 auth 연동 시 정책 강화 필요.
 ```
 
 ### 3-1. 첫 관리자 부트스트랩
@@ -100,6 +105,138 @@ Supabase Dashboard → Authentication → URL Configuration:
 - **Additional Redirect URLs**: `https://<배포-도메인>/admin`, 프리뷰 URL 도 등록 가능
 
 미등록 시 매직 링크 클릭이 거부됩니다.
+
+### 3-3. Anonymous Sign-In + 본인-only 정책 (보안 강화)
+
+일반 사용자도 보이지 않게 Supabase 의 익명 인증을 사용해 `auth.uid()` 를
+확보하고, RLS 가 본인 row 만 변경 가능하게 강화합니다.
+
+**대시보드**: Authentication → Providers → **Anonymous Sign-Ins** 토글 ON
+
+**SQL 마이그레이션** (이미 만든 talk_posts/profiles 가 있을 때):
+
+```sql
+-- talk_posts.user_id 추가 + 정책 강화
+alter table public.talk_posts
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
+create index if not exists talk_posts_user_idx on public.talk_posts(user_id);
+
+drop policy if exists "talk_posts insert" on public.talk_posts;
+drop policy if exists "talk_posts write" on public.talk_posts;
+create policy "talk_posts insert" on public.talk_posts for insert
+  with check (auth.uid() is not null and user_id = auth.uid());
+
+drop policy if exists "talk_posts admin delete" on public.talk_posts;
+drop policy if exists "talk_posts delete" on public.talk_posts;
+create policy "talk_posts delete" on public.talk_posts for delete using (
+  exists (select 1 from public.admins where user_id = auth.uid())
+  or user_id = auth.uid()
+);
+
+-- profiles.user_id 추가 + 정책 강화
+alter table public.profiles
+  add column if not exists user_id uuid references auth.users(id) on delete cascade;
+create unique index if not exists profiles_user_id_unique on public.profiles(user_id);
+
+drop policy if exists "profiles insert" on public.profiles;
+create policy "profiles insert" on public.profiles for insert
+  with check (auth.uid() is not null and user_id = auth.uid());
+
+drop policy if exists "profiles update" on public.profiles;
+create policy "profiles update" on public.profiles for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "profiles delete" on public.profiles;
+create policy "profiles delete" on public.profiles for delete
+  using (user_id = auth.uid());
+```
+
+**적용 순서 권장**:
+1. Anonymous Sign-In 토글 ON (Dashboard)
+2. 새 코드 prod 배포 (앱이 자동으로 익명 세션 발급)
+3. 위 SQL 실행 (정책 강화)
+
+순서를 바꾸면 잠시 INSERT 가 실패할 수 있음. 기존 NULL `user_id` row 는 사용자
+삭제 불가 (관리자만 가능).
+
+### 3-4. 관리자 RPC 함수 (대시보드 / 가입자 목록)
+
+`/admin` 페이지의 대시보드와 가입자 목록은 `auth.users` 를 읽어야 하므로
+anon key 로는 접근 불가. **security definer 함수**로 admin 만 호출 가능하게
+래핑합니다.
+
+```sql
+-- 대시보드 통계
+create or replace function public.admin_dashboard_stats()
+returns table(
+  total_auth_users bigint,
+  total_profiles   bigint,
+  total_posts      bigint,
+  active_posters   bigint,
+  posts_24h        bigint,
+  posts_7d         bigint
+)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  return query
+  select
+    (select count(*) from auth.users)::bigint,
+    (select count(*) from public.profiles)::bigint,
+    (select count(*) from public.talk_posts)::bigint,
+    (select count(distinct user_id) from public.talk_posts where user_id is not null)::bigint,
+    (select count(*) from public.talk_posts where created_at >= now() - interval '24 hours')::bigint,
+    (select count(*) from public.talk_posts where created_at >= now() - interval '7 days')::bigint;
+end;
+$$;
+
+revoke all on function public.admin_dashboard_stats() from public, anon;
+grant execute on function public.admin_dashboard_stats() to authenticated;
+
+-- 가입자 목록
+create or replace function public.admin_list_users()
+returns table(
+  user_id      uuid,
+  email        text,
+  nickname     text,
+  cycle        int,
+  total_saved  bigint,
+  post_count   bigint,
+  signed_up_at timestamptz,
+  last_post_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  return query
+  select
+    au.id,
+    au.email,
+    p.nickname,
+    p.cycle,
+    p.total_saved,
+    coalesce((select count(*) from public.talk_posts tp where tp.user_id = au.id), 0)::bigint,
+    au.created_at,
+    (select max(tp.created_at) from public.talk_posts tp where tp.user_id = au.id)
+  from auth.users au
+  left join public.profiles p on p.user_id = au.id
+  order by au.created_at desc;
+end;
+$$;
+
+revoke all on function public.admin_list_users() from public, anon;
+grant execute on function public.admin_list_users() to authenticated;
+```
 
 ## 4. Realtime 설정
 

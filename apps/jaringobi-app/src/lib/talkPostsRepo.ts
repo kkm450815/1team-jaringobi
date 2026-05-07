@@ -70,6 +70,7 @@ interface TalkPostRow {
   room_id: string;
   nick: string;
   body: string;
+  user_id?: string | null;
   created_at?: string;
 }
 
@@ -108,16 +109,22 @@ const supabaseRepo: TalkPostsRepo = {
       console.error('[talkPostsRepo.list] Supabase select 실패', error);
       throw error;
     }
-    const dbPosts = (data ?? []).map((r: TalkPostRow) => rowToPost(r));
-    const seeds = roomId
-      ? TALK_POSTS.filter((p) => p.roomId === roomId)
-      : TALK_POSTS;
-    return [...dbPosts, ...seeds];
+    // 시드(TALK_POSTS) 는 더 이상 섞지 않음 — 실서비스에선 실제 DB 글만 노출.
+    // 시드는 Supabase 미설정 폴백(localRepo) 에서만 데모용으로 사용.
+    return (data ?? []).map((r: TalkPostRow) => rowToPost(r));
   },
   async add(post) {
     const sb = getSupabase();
     if (!sb) throw new Error('Supabase not configured');
-    const row = postToRow(post);
+    // 인증 사용자만 INSERT 가능 (RLS) — 세션이 없으면 명확한 에러로 안내.
+    const { data: sessionData } = await sb.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) {
+      const e = new Error('인증 세션이 없어 글을 올릴 수 없어요. 페이지를 새로고침해 주세요.');
+      console.error('[talkPostsRepo.add] no auth session');
+      throw e;
+    }
+    const row: Partial<TalkPostRow> = { ...postToRow(post), user_id: userId };
     const { data, error } = await sb
       .from('talk_posts')
       .insert(row)

@@ -20,15 +20,27 @@ export default function MyPage() {
   const [roomOpen, setRoomOpen] = useState(false);
   useEscape(roomOpen, () => setRoomOpen(false));
 
-  function commitNick() {
-    if (!nickDraft.trim()) {
+  async function commitNick() {
+    const trimmed = nickDraft.trim();
+    if (!trimmed) {
       setNickError('닉네임은 비울 수 없어요');
       setNickDraft(u.nickname);
       setEditing(false);
       setTimeout(() => setNickError(null), 2500);
       return;
     }
-    u.setNickname(nickDraft);
+    if (trimmed === u.nickname) {
+      setEditing(false);
+      return;
+    }
+    const result = await u.tryRenameNickname(trimmed);
+    if (!result.ok) {
+      setNickError(result.message);
+      setNickDraft(u.nickname);
+      setEditing(false);
+      setTimeout(() => setNickError(null), 3000);
+      return;
+    }
     playSuccessSfx();
     setEditing(false);
   }

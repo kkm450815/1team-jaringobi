@@ -9,6 +9,9 @@ import { newId } from '../lib/ids';
 import { playClickSfx, playSuccessSfx, playDeniedSfx } from '../lib/feedback';
 
 const AVATAR = '/jarin/main_mypage.png';
+// DB 제약(body_len: 1..500) 과 동일하게 클라이언트에서도 막아 사용자가
+// 알지 못한 채 insert 실패 토스트 받는 일 방지
+const MAX_BODY_LEN = 500;
 
 function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number }) {
   const w = size;
@@ -111,15 +114,37 @@ export default function TalkRoom() {
             className="flex items-start gap-3"
           >
             <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-[15px] font-bold text-text">{u.nickname || '익명'}</p>
               <textarea
                 rows={1}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="하고 싶은 말이 있나요?"
+                onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
+                maxLength={MAX_BODY_LEN}
+                placeholder="하고 싶은 말이 있나요? (Enter 로 올리기, Shift+Enter 줄바꿈)"
+                onKeyDown={(e) => {
+                  // 한글 IME 조합 중에는 Enter 가 조합 확정용 → submit 하지 않음
+                  // (e.nativeEvent.isComposing 또는 keyCode 229 둘 다 체크)
+                  const composing =
+                    (e.nativeEvent as KeyboardEvent).isComposing ||
+                    (e.nativeEvent as KeyboardEvent).keyCode === 229;
+                  if (e.key === 'Enter' && !e.shiftKey && !composing) {
+                    e.preventDefault();
+                    if (input.trim()) send();
+                  }
+                }}
                 className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
               />
+              {input.length > 0 && (
+                <p
+                  className={`mt-0.5 text-[11px] text-right ${
+                    input.length >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
+                  }`}
+                  aria-live="polite"
+                >
+                  {input.length} / {MAX_BODY_LEN}
+                </p>
+              )}
             </div>
             {input.trim() && (
               <button
@@ -137,6 +162,14 @@ export default function TalkRoom() {
       </div>
 
       {/* 게시물 리스트 (스크롤 대상) */}
+      {posts.length === 0 && (
+        <div className="px-5 mt-16 text-center">
+          <p className="text-[14px] font-bold text-text/55">아직 글이 없어요</p>
+          <p className="mt-2 text-[12px] text-text/40 leading-relaxed">
+            첫 번째로 마음을 나눠 보세요.
+          </p>
+        </div>
+      )}
       <ul className="px-5 mt-6 space-y-8">
         {posts.map((p) => {
           const marked = has(p.id);
