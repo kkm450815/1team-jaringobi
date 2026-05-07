@@ -1,15 +1,23 @@
-// 관리자 페이지 — 수다방 글 관리, 통계 확인.
-// 인증: VITE_ADMIN_PASSWORD 환경변수가 설정돼 있으면 입력 비밀번호와 일치해야 진입.
-//      미설정 시에는 누구나 진입 가능 (로컬 개발용).
-// 데스크톱 풀-와이드 레이아웃으로, PhoneFrame 을 거치지 않는다.
+// 관리자 페이지 — 수다방 글 관리.
+//
+// 인증 흐름:
+//  1) 비로그인 → 이메일 입력 폼 → Supabase 매직 링크 발송
+//  2) 메일 링크 클릭 → /admin 복귀, 자동 세션 설정
+//  3) admins 테이블에 등록된 user_id 인지 확인
+//     - 등록됨 → 관리 패널
+//     - 미등록 → 403 + 로그아웃 안내
+//
+// 보안 모델:
+//  - 비밀번호를 클라이언트 번들에 박지 않음
+//  - 진짜 권한 검사는 Supabase RLS 가 수행 (talk_posts admin delete 정책)
+//  - 클라이언트의 admin 체크는 UI 노출 가드일 뿐
 
 import { useEffect, useMemo, useState } from 'react';
-import { TALK_ROOMS, TalkPost } from '../lib/data';
+import { TALK_ROOMS } from '../lib/data';
 import { getSupabase, isSupabaseEnabled } from '../lib/supabase';
 import { talkPostsRepo } from '../lib/talkPostsRepo';
-
-const AUTH_KEY = 'jaringobi.admin.auth.v1';
-const ADMIN_PASSWORD = (import.meta.env.VITE_ADMIN_PASSWORD as string | undefined) ?? '';
+import { signInWithEmail, signOut, useSession } from '../lib/auth';
+import { useIsAdmin } from '../lib/admins';
 
 interface RawPost {
   id: string;
@@ -19,74 +27,142 @@ interface RawPost {
   created_at?: string;
 }
 
-function useAdminAuth() {
-  const [authed, setAuthed] = useState<boolean>(() => {
-    if (!ADMIN_PASSWORD) return true;
-    try {
-      return sessionStorage.getItem(AUTH_KEY) === '1';
-    } catch {
-      return false;
-    }
-  });
-  function login(pw: string): boolean {
-    if (!ADMIN_PASSWORD) {
-      setAuthed(true);
-      return true;
-    }
-    if (pw === ADMIN_PASSWORD) {
-      try { sessionStorage.setItem(AUTH_KEY, '1'); } catch { /* ignore */ }
-      setAuthed(true);
-      return true;
-    }
-    return false;
+export default function Admin() {
+  if (!isSupabaseEnabled()) {
+    return (
+      <main className="min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
+        <div className="max-w-md text-center">
+          <h1 className="text-[20px] font-bold tracking-[2px]">자린고비 ADMIN</h1>
+          <p className="mt-3 text-[13px] text-white/70">
+            Supabase 환경변수(<code>VITE_SUPABASE_URL</code>, <code>VITE_SUPABASE_ANON_KEY</code>)가
+            설정돼 있어야 관리자 페이지를 사용할 수 있습니다.
+          </p>
+        </div>
+      </main>
+    );
   }
-  function logout() {
-    try { sessionStorage.removeItem(AUTH_KEY); } catch { /* ignore */ }
-    setAuthed(false);
-  }
-  return { authed, login, logout };
+  return <AdminInner />;
 }
 
-function LoginGate({ onLogin }: { onLogin: (pw: string) => boolean }) {
-  const [pw, setPw] = useState('');
-  const [err, setErr] = useState<string | null>(null);
-  function submit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!onLogin(pw)) setErr('비밀번호가 올바르지 않습니다.');
+function AdminInner() {
+  const session = useSession();
+  const userId = session?.user?.id ?? null;
+  const adminCheck = useIsAdmin(userId);
+
+  if (session === undefined) return <FullScreenMessage>세션 확인 중…</FullScreenMessage>;
+  if (session === null) return <LoginGate />;
+  if (adminCheck === 'loading') return <FullScreenMessage>권한 확인 중…</FullScreenMessage>;
+  if (adminCheck === 'error') {
+    return (
+      <FullScreenMessage>
+        <p>권한을 확인할 수 없습니다.</p>
+        <p className="mt-2 text-[12px] text-white/60">
+          admins 테이블/정책이 올바르게 설정되었는지 확인해 주세요.
+        </p>
+        <LogoutButton className="mt-6" />
+      </FullScreenMessage>
+    );
   }
+  if (adminCheck === 'not-admin') {
+    return (
+      <FullScreenMessage>
+        <p className="text-[18px] font-bold">접근 권한이 없습니다</p>
+        <p className="mt-2 text-[13px] text-white/70">
+          {session.user.email} 계정은 관리자가 아닙니다.
+        </p>
+        <LogoutButton className="mt-6" />
+      </FullScreenMessage>
+    );
+  }
+  return <AdminPanel email={session.user.email ?? ''} />;
+}
+
+function FullScreenMessage({ children }: { children: React.ReactNode }) {
+  return (
+    <main className="min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
+      <div className="text-center max-w-md">{children}</div>
+    </main>
+  );
+}
+
+function LogoutButton({ className = '' }: { className?: string }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <button
+      onClick={async () => { setBusy(true); await signOut(); setBusy(false); }}
+      disabled={busy}
+      className={`text-[12px] font-bold bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md ${className}`}
+    >
+      {busy ? '로그아웃 중…' : '로그아웃'}
+    </button>
+  );
+}
+
+function LoginGate() {
+  const [email, setEmail] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setErr(null);
+    try {
+      await signInWithEmail(email);
+      setSent(true);
+    } catch (e2) {
+      setErr((e2 as Error).message ?? String(e2));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <main className="min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
       <form onSubmit={submit} className="w-full max-w-sm bg-[#2a2723] rounded-2xl p-8 shadow-2xl">
-        <h1 className="text-[20px] font-bold tracking-[2px] text-center">자린고비 관리자</h1>
-        <p className="mt-2 text-[12px] text-white/60 text-center">관리자 비밀번호 입력</p>
-        <input
-          type="password"
-          autoFocus
-          value={pw}
-          onChange={(e) => { setPw(e.target.value); setErr(null); }}
-          placeholder="••••••••"
-          className="mt-6 w-full bg-black/30 rounded-lg px-4 py-3 outline-none text-[15px] text-white placeholder:text-white/30 ring-1 ring-white/10 focus:ring-white/30"
-        />
-        {err && <p className="mt-2 text-[12px] text-red-400" role="alert">{err}</p>}
-        <button
-          type="submit"
-          className="mt-5 w-full bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] rounded-lg py-3 text-[14px] font-bold transition"
-        >
-          로그인
-        </button>
+        <h1 className="text-[20px] font-bold tracking-[2px] text-center">자린고비 ADMIN</h1>
+        <p className="mt-2 text-[12px] text-white/60 text-center">
+          관리자 이메일로 로그인 링크를 받아 진행해주세요.
+        </p>
+        {sent ? (
+          <div className="mt-6 bg-emerald-500/10 ring-1 ring-emerald-400/30 rounded-lg p-4 text-[13px] text-emerald-200">
+            <p className="font-bold">메일을 발송했습니다.</p>
+            <p className="mt-1 text-emerald-300/80">
+              {email} 의 받은편지함에서 로그인 링크를 클릭해 주세요.
+              스팸함도 확인해 보세요.
+            </p>
+          </div>
+        ) : (
+          <>
+            <input
+              type="email"
+              autoFocus
+              value={email}
+              onChange={(e) => { setEmail(e.target.value); setErr(null); }}
+              placeholder="admin@example.com"
+              required
+              className="mt-6 w-full bg-black/30 rounded-lg px-4 py-3 outline-none text-[15px] text-white placeholder:text-white/30 ring-1 ring-white/10 focus:ring-white/30"
+            />
+            {err && <p className="mt-2 text-[12px] text-red-400" role="alert">{err}</p>}
+            <button
+              type="submit"
+              disabled={busy || !email.trim()}
+              className="mt-5 w-full bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-[#1f1d1a] rounded-lg py-3 text-[14px] font-bold transition"
+            >
+              {busy ? '메일 발송 중…' : '매직 링크 받기'}
+            </button>
+            <p className="mt-4 text-[11px] text-white/40 leading-relaxed">
+              ※ admins 테이블에 등록되지 않은 이메일은 로그인 후에도 접근이 거부됩니다.
+            </p>
+          </>
+        )}
       </form>
     </main>
   );
 }
 
-export default function Admin() {
-  const { authed, login, logout } = useAdminAuth();
-
-  if (!authed) return <LoginGate onLogin={login} />;
-  return <AdminPanel onLogout={logout} />;
-}
-
-function AdminPanel({ onLogout }: { onLogout: () => void }) {
+function AdminPanel({ email }: { email: string }) {
   const [posts, setPosts] = useState<RawPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -98,16 +174,6 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
     setLoading(true);
     setErr(null);
     try {
-      if (!isSupabaseEnabled()) {
-        // Supabase 미설정 — localStorage 폴백 모드
-        const all = await talkPostsRepo.list();
-        setPosts(
-          all.map((p: TalkPost) => ({
-            id: p.id, room_id: p.roomId, nick: p.nick, body: p.body,
-          })),
-        );
-        return;
-      }
       const sb = getSupabase();
       if (!sb) throw new Error('Supabase 클라이언트를 만들 수 없습니다.');
       const { data, error } = await sb
@@ -134,7 +200,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setPosts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
       console.error('[Admin.deletePost] 실패', e);
-      alert(`삭제 실패: ${(e as Error).message ?? String(e)}`);
+      alert(`삭제 실패: ${(e as Error).message ?? String(e)}\n\nRLS 정책(talk_posts admin delete)이 설정돼 있는지 확인하세요.`);
     } finally {
       setBusyId(null);
     }
@@ -169,12 +235,10 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
   return (
     <main className="min-h-dvh w-full bg-[#f7f3ec] text-[#2a2723]">
       <header className="sticky top-0 z-10 bg-[#1f1d1a] text-white shadow">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-3">
             <span className="font-black tracking-[3px] text-[16px]">자린고비 ADMIN</span>
-            <span className="text-[11px] text-white/55">
-              {isSupabaseEnabled() ? 'Supabase 모드' : '로컬 모드 (Supabase 미설정)'}
-            </span>
+            <span className="text-[11px] text-white/55 truncate">{email}</span>
           </div>
           <div className="flex items-center gap-2">
             <button
@@ -183,14 +247,7 @@ function AdminPanel({ onLogout }: { onLogout: () => void }) {
             >
               새로고침
             </button>
-            {ADMIN_PASSWORD && (
-              <button
-                onClick={onLogout}
-                className="text-[12px] font-bold bg-amber-400 text-[#1f1d1a] hover:bg-amber-300 px-3 py-1.5 rounded-md"
-              >
-                로그아웃
-              </button>
-            )}
+            <LogoutButton />
           </div>
         </div>
       </header>
