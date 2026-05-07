@@ -121,7 +121,18 @@ export default function TalkRoom() {
                 value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
                 maxLength={MAX_BODY_LEN}
-                placeholder="하고 싶은 말이 있나요?"
+                placeholder="하고 싶은 말이 있나요? (Enter 로 올리기, Shift+Enter 줄바꿈)"
+                onKeyDown={(e) => {
+                  // 한글 IME 조합 중에는 Enter 가 조합 확정용 → submit 하지 않음
+                  // (e.nativeEvent.isComposing 또는 keyCode 229 둘 다 체크)
+                  const composing =
+                    (e.nativeEvent as KeyboardEvent).isComposing ||
+                    (e.nativeEvent as KeyboardEvent).keyCode === 229;
+                  if (e.key === 'Enter' && !e.shiftKey && !composing) {
+                    e.preventDefault();
+                    if (input.trim()) send();
+                  }
+                }}
                 className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
               />
               {input.length > 0 && (
