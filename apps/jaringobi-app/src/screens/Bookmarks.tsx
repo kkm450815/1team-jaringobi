@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom';
-import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
+import { useTalkRooms } from '../lib/useTalkRooms';
 import { useUser } from '../lib/userState';
 import { playClickSfx } from '../lib/feedback';
 
@@ -27,7 +27,9 @@ export default function Bookmarks() {
   const { has, toggle } = useBookmarks();
   const u = useUser();
   const { posts } = useTalkPosts();
+  const { rooms } = useTalkRooms();
   const items = posts.filter((p) => has(p.id));
+  const roomList = rooms ?? [];
 
   return (
     <main className="min-h-full pb-10">
@@ -44,7 +46,7 @@ export default function Bookmarks() {
       ) : (
         <ul className="px-5 mt-3 space-y-5">
           {items.map((p) => {
-            const room = TALK_ROOMS.find((r) => r.id === p.roomId);
+            const room = roomList.find((r) => r.id === p.roomId);
             return (
               <li key={p.id} className="flex items-start gap-3">
                 <Link

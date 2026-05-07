@@ -1,8 +1,10 @@
 import { Link } from 'react-router-dom';
-import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
+import { useTalkRooms } from '../lib/useTalkRooms';
 
 export default function TalkList() {
+  const { rooms } = useTalkRooms();
+  const list = rooms ?? [];
   return (
     <main className="min-h-full flex flex-col">
       <header className="relative pt-10 pb-4">
@@ -33,7 +35,13 @@ export default function TalkList() {
       </header>
 
       <ul className="px-5 pb-4 space-y-3">
-        {TALK_ROOMS.map((r) => (
+        {rooms === null && (
+          <li className="text-center text-[13px] text-text/55 py-8">불러오는 중…</li>
+        )}
+        {rooms !== null && list.length === 0 && (
+          <li className="text-center text-[13px] text-text/55 py-8">수다방이 아직 없어요.</li>
+        )}
+        {list.map((r) => (
           <li key={r.id}>
             <Link
               to={`/talk/${r.id}`}
@@ -42,12 +50,16 @@ export default function TalkList() {
               style={{ background: r.bg }}
             >
               <div className="flex items-center gap-3">
-                <img
-                  src={r.icon}
-                  alt={`${r.title} 아이콘`}
-                  className="w-[88px] h-[88px] ml-3 object-contain shrink-0 scale-[1.4]"
-                  draggable={false}
-                />
+                {r.icon ? (
+                  <img
+                    src={r.icon}
+                    alt={`${r.title} 아이콘`}
+                    className="w-[88px] h-[88px] ml-3 object-contain shrink-0 scale-[1.4]"
+                    draggable={false}
+                  />
+                ) : (
+                  <div className="w-[88px] h-[88px] ml-3 shrink-0" aria-hidden />
+                )}
                 <div className="flex-1 min-w-0 flex flex-col items-center justify-center">
                   <p className="font-bold text-[20px] leading-snug text-text text-center">
                     {r.title}

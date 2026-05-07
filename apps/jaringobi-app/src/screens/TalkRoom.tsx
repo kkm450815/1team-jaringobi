@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { TALK_ROOMS } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
 import { useTalkPosts } from '../lib/useTalkPosts';
+import { useTalkRooms } from '../lib/useTalkRooms';
 import { useUser } from '../lib/userState';
 import { newId } from '../lib/ids';
 import { playClickSfx, playSuccessSfx, playDeniedSfx } from '../lib/feedback';
@@ -32,7 +32,16 @@ function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number })
 
 export default function TalkRoom() {
   const { id } = useParams();
-  const room = TALK_ROOMS.find((r) => r.id === id) ?? TALK_ROOMS[0];
+  const { rooms } = useTalkRooms();
+  // rooms 가 null(로딩)이면 우선 fallback room 으로 렌더 — useTalkPosts 가 hook
+  // 순서를 깨뜨리지 않도록 항상 호출.
+  const room = (rooms ?? []).find((r) => r.id === id) ?? {
+    id: id ?? '',
+    title: '수다방',
+    icon: '',
+    bg: '#EEEEEE',
+    sortOrder: 0,
+  };
 
   const { posts, addPost } = useTalkPosts(room.id);
   const [input, setInput] = useState('');
