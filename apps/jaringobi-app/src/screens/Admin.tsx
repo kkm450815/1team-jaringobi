@@ -14,10 +14,11 @@ import { talkPostsRepo } from '../lib/talkPostsRepo';
 import { TalkRoom, talkRoomsRepo } from '../lib/talkRoomsRepo';
 import { useTalkRooms } from '../lib/useTalkRooms';
 import { Announcement, announcementsRepo } from '../lib/announcementsRepo';
+import { ShopItem, shopItemsRepo, ShopCategory as ShopCat, AccSubCat, RemodelSubCat } from '../lib/shopItemsRepo';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop';
 
 interface RawPost {
   id: string;
@@ -204,6 +205,7 @@ function AdminPanel({ email }: { email: string }) {
           <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>대시보드</TabButton>
           <TabButton active={tab === 'users'} onClick={() => setTab('users')}>가입자</TabButton>
           <TabButton active={tab === 'announcements'} onClick={() => setTab('announcements')}>공지/이벤트</TabButton>
+          <TabButton active={tab === 'shop'} onClick={() => setTab('shop')}>상점 관리</TabButton>
           <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
           <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
         </nav>
@@ -213,6 +215,7 @@ function AdminPanel({ email }: { email: string }) {
         {tab === 'dashboard' && <DashboardSection />}
         {tab === 'users' && <UsersSection />}
         {tab === 'announcements' && <AnnouncementsSection />}
+        {tab === 'shop' && <ShopItemsSection />}
         {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
       </div>
@@ -1154,6 +1157,389 @@ function AnnouncementsSection() {
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+
+/* ============================================================
+ * 상점 관리 — shop_items CRUD + Storage 이미지 업로드
+ * ============================================================ */
+
+const ACC_SUBS_LIST: AccSubCat[] = ['모자', '안경', '소지품'];
+const REMODEL_SUBS_LIST: RemodelSubCat[] = ['조명', '소품', '가구1', '가구2', '벽지'];
+
+const EMPTY_SHOP_ITEM: ShopItem = {
+  id: '',
+  category: '티셔츠',
+  subCategory: null,
+  shopImageUrl: '',
+  fitImageUrl: '',
+  price: 100,
+  sortOrder: 1,
+  active: true,
+  label: '',
+};
+
+function ShopItemsSection() {
+  const [items, setItems] = useState<ShopItem[] | null>(null);
+  const [editing, setEditing] = useState<ShopItem | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [uploadingShop, setUploadingShop] = useState(false);
+  const [uploadingFit, setUploadingFit] = useState(false);
+
+  async function load() {
+    setErr(null);
+    try {
+      const data = await shopItemsRepo.listAll();
+      setItems(data);
+    } catch (e) {
+      console.error('[ShopItemsSection.load] 실패', e);
+      setErr((e as Error).message ?? '불러오기 실패');
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function startNew() {
+    setErr(null);
+    const list = items ?? [];
+    const nextOrder = list.length > 0 ? Math.max(...list.map((i) => i.sortOrder)) + 1 : 1;
+    setEditing({ ...EMPTY_SHOP_ITEM, sortOrder: nextOrder });
+  }
+  function startEdit(i: ShopItem) {
+    setErr(null);
+    setEditing({ ...i });
+  }
+  function cancel() {
+    setEditing(null);
+    setErr(null);
+  }
+
+  async function handleUpload(file: File, kind: 'shop' | 'fit') {
+    if (!editing) return;
+    if (kind === 'shop') setUploadingShop(true); else setUploadingFit(true);
+    setErr(null);
+    try {
+      const url = await shopItemsRepo.uploadImage(file, kind);
+      setEditing((prev) =>
+        prev ? { ...prev, [kind === 'shop' ? 'shopImageUrl' : 'fitImageUrl']: url } : prev,
+      );
+    } catch (e) {
+      console.error('[ShopItemsSection.handleUpload] 실패', e);
+      setErr(`이미지 업로드 실패: ${(e as Error).message ?? String(e)}`);
+    } finally {
+      if (kind === 'shop') setUploadingShop(false); else setUploadingFit(false);
+    }
+  }
+
+  async function save() {
+    if (!editing) return;
+    if (!editing.shopImageUrl) { setErr('상점 이미지를 업로드해주세요.'); return; }
+    if (!editing.fitImageUrl) { setErr('fit 이미지를 업로드해주세요.'); return; }
+    if (editing.price < 0) { setErr('가격은 0 이상.'); return; }
+    if (editing.category !== '티셔츠' && !editing.subCategory) {
+      setErr('서브 카테고리를 선택해주세요.');
+      return;
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const saved = await shopItemsRepo.upsert(editing);
+      setEditing(null);
+      setItems((prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((i) => i.id === saved.id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = saved;
+          return next;
+        }
+        return [...list, saved];
+      });
+    } catch (e) {
+      console.error('[ShopItemsSection.save] 실패', e);
+      setErr((e as Error).message ?? '저장 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(i: ShopItem) {
+    if (!confirm(`"${i.label || i.shopImageUrl}" 아이템을 삭제하시겠습니까?\n(이미 구매한 사용자의 옷장엔 남아있을 수 있습니다)`)) return;
+    setBusy(true);
+    try {
+      await shopItemsRepo.remove(i.id);
+      setItems((prev) => (prev ?? []).filter((x) => x.id !== i.id));
+    } catch (e) {
+      console.error('[ShopItemsSection.remove] 실패', e);
+      setErr((e as Error).message ?? '삭제 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive(i: ShopItem) {
+    setBusy(true);
+    try {
+      const saved = await shopItemsRepo.upsert({ ...i, active: !i.active });
+      setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      console.error('[ShopItemsSection.toggleActive] 실패', e);
+      setErr((e as Error).message ?? '변경 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const list = items ?? [];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <div>
+          <h2 className="text-[18px] font-bold">상점 관리 ({list.length})</h2>
+          <p className="text-[11px] text-[#2a2723]/55 mt-1">
+            기존 하드코딩 아이템 + 여기 추가한 항목이 함께 노출됩니다.
+            추가 항목은 사용자 화면 상단에 우선 표시.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
+          >새로고침</button>
+          <button
+            onClick={startNew}
+            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+          >+ 새 아이템</button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+          {err}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-[14px] font-bold mb-3">
+            {editing.id ? '아이템 수정' : '새 아이템 추가'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="카테고리">
+              <select
+                value={editing.category}
+                onChange={(e) => {
+                  const c = e.target.value as ShopCat;
+                  setEditing({ ...editing, category: c, subCategory: c === '티셔츠' ? null : (c === '사치품' ? '모자' : '조명') });
+                }}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              >
+                <option value="티셔츠">티셔츠</option>
+                <option value="사치품">사치품</option>
+                <option value="리모델링">리모델링</option>
+              </select>
+            </Field>
+            {editing.category === '사치품' && (
+              <Field label="서브 카테고리">
+                <select
+                  value={editing.subCategory ?? ''}
+                  onChange={(e) => setEditing({ ...editing, subCategory: e.target.value })}
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+                >
+                  {ACC_SUBS_LIST.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+            )}
+            {editing.category === '리모델링' && (
+              <Field label="서브 카테고리">
+                <select
+                  value={editing.subCategory ?? ''}
+                  onChange={(e) => setEditing({ ...editing, subCategory: e.target.value })}
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+                >
+                  {REMODEL_SUBS_LIST.map((s) => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </Field>
+            )}
+            <Field label="표시명 (선택)">
+              <input
+                value={editing.label ?? ''}
+                onChange={(e) => setEditing({ ...editing, label: e.target.value })}
+                placeholder="기본 빨강 티셔츠 등"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="가격 (코인)">
+              <input
+                type="number"
+                min={0}
+                value={editing.price}
+                onChange={(e) => setEditing({ ...editing, price: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="정렬 순서 (작을수록 위)">
+              <input
+                type="number"
+                value={editing.sortOrder}
+                onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="활성 여부">
+              <label className="flex items-center gap-2 text-[13px] py-2">
+                <input
+                  type="checkbox"
+                  checked={editing.active}
+                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                />
+                활성 (체크 해제 시 사용자에게 안 보임)
+              </label>
+            </Field>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ImageUploadField
+              label="상점 이미지 (썸네일)"
+              hint="진열용. 약 200x200 px 권장. 투명 배경 PNG."
+              url={editing.shopImageUrl}
+              uploading={uploadingShop}
+              onUpload={(f) => handleUpload(f, 'shop')}
+              onClear={() => setEditing({ ...editing, shopImageUrl: '' })}
+            />
+            <ImageUploadField
+              label="Fit 이미지 (캐릭터 위)"
+              hint="캐릭터 좌표에 정렬된 이미지. 디자이너가 사전 제작한 PNG 업로드."
+              url={editing.fitImageUrl}
+              uploading={uploadingFit}
+              onUpload={(f) => handleUpload(f, 'fit')}
+              onClear={() => setEditing({ ...editing, fitImageUrl: '' })}
+            />
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-md"
+            >취소</button>
+            <button
+              onClick={save}
+              disabled={busy || uploadingShop || uploadingFit}
+              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-md disabled:opacity-40"
+            >{busy ? '저장 중…' : '저장'}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+              <th className="px-4 py-2 w-[80px]">순서</th>
+              <th className="px-4 py-2">미리보기</th>
+              <th className="px-4 py-2">카테고리</th>
+              <th className="px-4 py-2">표시명</th>
+              <th className="px-4 py-2 text-right">가격</th>
+              <th className="px-4 py-2">상태</th>
+              <th className="px-4 py-2 w-[200px]">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items === null && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+            )}
+            {items !== null && list.length === 0 && (
+              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#2a2723]/50">추가된 아이템이 없습니다.</td></tr>
+            )}
+            {list.map((i) => (
+              <tr key={i.id} className="border-b border-black/5">
+                <td className="px-4 py-2 tabular-nums">{i.sortOrder}</td>
+                <td className="px-4 py-2">
+                  <img src={i.shopImageUrl} alt="" className="w-12 h-12 object-contain bg-black/5 rounded" />
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  {i.category}
+                  {i.subCategory && <span className="text-[#2a2723]/55"> / {i.subCategory}</span>}
+                </td>
+                <td className="px-4 py-2">{i.label || <span className="text-[#2a2723]/45 italic">미지정</span>}</td>
+                <td className="px-4 py-2 text-right tabular-nums">{i.price.toLocaleString()}</td>
+                <td className="px-4 py-2">
+                  <span className={`inline-block px-2 py-0.5 rounded text-[11px] font-bold ${i.active ? 'bg-emerald-100 text-emerald-700' : 'bg-black/10 text-black/55'}`}>
+                    {i.active ? '활성' : '비활성'}
+                  </span>
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <button
+                    onClick={() => toggleActive(i)}
+                    disabled={busy}
+                    className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded mr-1 disabled:opacity-40"
+                  >{i.active ? '비활성화' : '활성화'}</button>
+                  <button
+                    onClick={() => startEdit(i)}
+                    className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded mr-1"
+                  >수정</button>
+                  <button
+                    onClick={() => remove(i)}
+                    disabled={busy}
+                    className="text-[12px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-40"
+                  >삭제</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ImageUploadField({
+  label, hint, url, uploading, onUpload, onClear,
+}: {
+  label: string;
+  hint: string;
+  url: string;
+  uploading: boolean;
+  onUpload: (file: File) => void;
+  onClear: () => void;
+}) {
+  return (
+    <div>
+      <p className="text-[11px] text-[#2a2723]/55 mb-1">{label}</p>
+      <p className="text-[10px] text-[#2a2723]/45 mb-2">{hint}</p>
+      {url ? (
+        <div className="relative inline-block">
+          <img src={url} alt="" className="w-32 h-32 object-contain bg-black/5 rounded border border-black/10" />
+          <button
+            type="button"
+            onClick={onClear}
+            className="absolute -top-2 -right-2 w-6 h-6 grid place-items-center bg-white rounded-full shadow border border-black/10 text-[14px] text-red-600 hover:bg-red-50"
+          >✕</button>
+        </div>
+      ) : (
+        <label className={`block w-full border-2 border-dashed border-black/15 rounded-lg p-6 text-center cursor-pointer hover:border-black/30 transition ${uploading ? 'opacity-50 cursor-wait' : ''}`}>
+          <input
+            type="file"
+            accept="image/png,image/jpeg,image/webp"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) onUpload(f);
+              e.currentTarget.value = '';
+            }}
+            disabled={uploading}
+            className="hidden"
+          />
+          <p className="text-[12px] text-[#2a2723]/65">
+            {uploading ? '업로드 중…' : '클릭해서 파일 선택'}
+          </p>
+          <p className="text-[10px] text-[#2a2723]/45 mt-1">PNG · JPG · WebP</p>
+        </label>
+      )}
     </div>
   );
 }
