@@ -77,6 +77,31 @@ export async function signInWithEmail(email: string, redirectPath = '/admin') {
   if (error) throw error;
 }
 
+/**
+ * Google OAuth 로그인. 성공 시 Supabase 가 콜백 URL 로 리다이렉트하고 세션을
+ * 자동 설정.
+ *
+ * 사전 설정 필요:
+ *  1) Google Cloud Console — OAuth 2.0 Client 생성, Authorized redirect URI 에
+ *     `https://<프로젝트>.supabase.co/auth/v1/callback` 등록
+ *  2) Supabase Dashboard — Authentication → Providers → Google ON, Client ID/
+ *     Secret 입력
+ *  3) Supabase Dashboard — Authentication → URL Configuration 에 앱 도메인 등록
+ */
+export async function signInWithGoogle(redirectPath = '/main') {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${redirectPath}`
+      : undefined;
+  const { error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: redirectTo ? { redirectTo } : undefined,
+  });
+  if (error) throw error;
+}
+
 export async function signOut() {
   const sb = getSupabase();
   if (!sb) return;

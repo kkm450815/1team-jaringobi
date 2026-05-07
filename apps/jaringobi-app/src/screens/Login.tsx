@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { signInWithGoogle } from '../lib/auth';
 
 function GoogleIcon() {
   return (
@@ -8,22 +9,6 @@ function GoogleIcon() {
       <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.8 16 19 13 24 13c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.2 6.1 29.4 4 24 4 16.3 4 9.6 8.3 6.3 14.7z"/>
       <path fill="#4CAF50" d="M24 44c5.2 0 10-2 13.6-5.3l-6.3-5.2C29.2 35 26.7 36 24 36c-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/>
       <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.3-2.3 4.3-4.3 5.7l6.3 5.2C40.9 36 44 30.5 44 24c0-1.2-.1-2.4-.4-3.5z"/>
-    </svg>
-  );
-}
-
-function KakaoIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#3C1E1E" d="M12 3C6.5 3 2 6.6 2 11.1c0 2.9 1.9 5.4 4.7 6.9-.2.7-.7 2.6-.8 3-.1.5.2.5.4.4.2-.1 2.5-1.7 3.5-2.4.7.1 1.5.2 2.2.2 5.5 0 10-3.6 10-8.1S17.5 3 12 3z"/>
-    </svg>
-  );
-}
-
-function AppleIcon() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
-      <path fill="#000" d="M16.4 12.5c0-2.3 1.9-3.4 2-3.4-1.1-1.6-2.7-1.8-3.3-1.8-1.4-.1-2.8.8-3.5.8-.7 0-1.8-.8-3-.8-1.5 0-3 .9-3.8 2.3-1.6 2.8-.4 6.9 1.2 9.2.8 1.1 1.7 2.3 2.9 2.3 1.2 0 1.6-.7 3-.7 1.4 0 1.8.7 3 .7 1.2 0 2-1.1 2.8-2.2.9-1.3 1.2-2.5 1.3-2.6-.1-.1-2.6-1-2.6-3.8zM14.2 5.7c.6-.8 1.1-1.9 1-3-.9.1-2 .6-2.7 1.4-.6.7-1.1 1.8-1 2.9 1 .1 2.1-.5 2.7-1.3z"/>
     </svg>
   );
 }
@@ -46,10 +31,27 @@ function SocialButton({
 export default function Login() {
   const nav = useNavigate();
   const [showPw, setShowPw] = useState(false);
+  const [oauthBusy, setOauthBusy] = useState(false);
+  const [oauthErr, setOauthErr] = useState<string | null>(null);
 
   function submit(e: FormEvent) {
     e.preventDefault();
     nav('/mode');
+  }
+
+  async function handleGoogle() {
+    if (oauthBusy) return;
+    setOauthBusy(true);
+    setOauthErr(null);
+    try {
+      // 성공 시 페이지가 Google → Supabase callback → /mode 로 자동 이동.
+      // 이 함수는 redirect 직전까지만 동작.
+      await signInWithGoogle('/mode');
+    } catch (e) {
+      console.error('[Login.handleGoogle] 실패', e);
+      setOauthErr((e as Error).message ?? '로그인에 실패했어요.');
+      setOauthBusy(false);
+    }
   }
 
   return (
@@ -131,16 +133,18 @@ export default function Login() {
           <hr className="flex-1 border-t border-text/20" />
         </div>
         <div className="mt-4 flex justify-center gap-5">
-          <SocialButton label="Google로 로그인" onClick={() => nav('/mode')}>
+          <SocialButton label="Google로 로그인" onClick={handleGoogle}>
             <GoogleIcon />
           </SocialButton>
-          <SocialButton label="카카오로 로그인" bg="bg-[#FEE500]" onClick={() => nav('/mode')}>
-            <KakaoIcon />
-          </SocialButton>
-          <SocialButton label="Apple로 로그인" onClick={() => nav('/mode')}>
-            <AppleIcon />
-          </SocialButton>
         </div>
+        {oauthBusy && (
+          <p className="mt-3 text-center text-[12px] text-text/55">로그인 중…</p>
+        )}
+        {oauthErr && (
+          <p className="mt-3 text-center text-[12px] text-pink font-bold" role="alert">
+            ⚠ {oauthErr}
+          </p>
+        )}
       </div>
     </main>
   );
