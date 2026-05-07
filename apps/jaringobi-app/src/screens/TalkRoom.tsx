@@ -9,6 +9,9 @@ import { newId } from '../lib/ids';
 import { playClickSfx, playSuccessSfx, playDeniedSfx } from '../lib/feedback';
 
 const AVATAR = '/jarin/main_mypage.png';
+// DB 제약(body_len: 1..500) 과 동일하게 클라이언트에서도 막아 사용자가
+// 알지 못한 채 insert 실패 토스트 받는 일 방지
+const MAX_BODY_LEN = 500;
 
 function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number }) {
   const w = size;
@@ -111,15 +114,26 @@ export default function TalkRoom() {
             className="flex items-start gap-3"
           >
             <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
-            <div className="flex-1">
+            <div className="flex-1 min-w-0">
               <p className="text-[15px] font-bold text-text">{u.nickname || '익명'}</p>
               <textarea
                 rows={1}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
+                maxLength={MAX_BODY_LEN}
                 placeholder="하고 싶은 말이 있나요?"
                 className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
               />
+              {input.length > 0 && (
+                <p
+                  className={`mt-0.5 text-[11px] text-right ${
+                    input.length >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
+                  }`}
+                  aria-live="polite"
+                >
+                  {input.length} / {MAX_BODY_LEN}
+                </p>
+              )}
             </div>
             {input.trim() && (
               <button
