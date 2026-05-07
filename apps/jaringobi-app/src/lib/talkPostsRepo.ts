@@ -70,6 +70,7 @@ interface TalkPostRow {
   room_id: string;
   nick: string;
   body: string;
+  user_id?: string | null;
   created_at?: string;
 }
 
@@ -115,7 +116,15 @@ const supabaseRepo: TalkPostsRepo = {
   async add(post) {
     const sb = getSupabase();
     if (!sb) throw new Error('Supabase not configured');
-    const row = postToRow(post);
+    // 인증 사용자만 INSERT 가능 (RLS) — 세션이 없으면 명확한 에러로 안내.
+    const { data: sessionData } = await sb.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) {
+      const e = new Error('인증 세션이 없어 글을 올릴 수 없어요. 페이지를 새로고침해 주세요.');
+      console.error('[talkPostsRepo.add] no auth session');
+      throw e;
+    }
+    const row: Partial<TalkPostRow> = { ...postToRow(post), user_id: userId };
     const { data, error } = await sb
       .from('talk_posts')
       .insert(row)

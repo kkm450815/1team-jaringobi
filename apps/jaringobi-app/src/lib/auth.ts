@@ -37,6 +37,28 @@ export function useSession(): Session | null | undefined {
   return session;
 }
 
+/**
+ * 일반 사용자용 — 세션이 없으면 익명 sign-in 으로 auth.uid() 를 확보.
+ *
+ * Supabase Dashboard 의 Authentication → Providers → Anonymous Sign-Ins 가
+ * ON 이어야 동작. 비활성화 상태이면 422 등 에러로 실패하고, 이 함수는 null 을
+ * 반환합니다 (앱은 계속 동작하되 INSERT/UPDATE 가 RLS 로 차단됨).
+ *
+ * 매직 링크로 이미 로그인된 관리자/유저 세션이 있으면 그대로 유지.
+ */
+export async function ensureAnonymousSession() {
+  const sb = getSupabase();
+  if (!sb) return null;
+  const { data: { session: existing } } = await sb.auth.getSession();
+  if (existing) return existing;
+  const { data, error } = await sb.auth.signInAnonymously();
+  if (error) {
+    console.error('[ensureAnonymousSession] signInAnonymously 실패 — Supabase Dashboard 의 Anonymous Sign-Ins 가 켜져 있는지 확인하세요.', error);
+    return null;
+  }
+  return data.session;
+}
+
 export async function signInWithEmail(email: string, redirectPath = '/admin') {
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');

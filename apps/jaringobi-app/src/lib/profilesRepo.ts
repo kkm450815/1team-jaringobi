@@ -101,6 +101,7 @@ interface ProfileRow {
   active_title_id: string;
   owned_titles: string[] | null;
   equipped: string[] | null;
+  user_id?: string | null;
 }
 
 function rowToProfile(r: ProfileRow): PublicProfile {
@@ -150,38 +151,39 @@ const supabaseRepo: ProfilesRepo = {
   async upsertMe(profile) {
     const sb = getSupabase();
     if (!sb) return;
-    const row = profileToRow(profile);
-    const { error } = await sb.from('profiles').upsert(row, { onConflict: 'nickname' });
+    const { data: sessionData } = await sb.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) {
+      console.warn('[profilesRepo.upsertMe] no auth session — skip');
+      return;
+    }
+    // user_id 기준 upsert. profiles.user_id 가 unique 인덱스인 전제.
+    const row: Partial<ProfileRow> = { ...profileToRow(profile), user_id: userId };
+    const { error } = await sb.from('profiles').upsert(row, { onConflict: 'user_id' });
     if (error) {
       console.error('[profilesRepo.upsertMe] upsert 실패', { row, error });
-      // 호출자에게 던지지 않음 — 사진 저장 등 메인 흐름이 막히지 않도록 best-effort
     }
   },
 
-  async tryRename(oldNick, profile) {
+  async tryRename(_oldNick, profile) {
     const sb = getSupabase();
     if (!sb) return { ok: true };
-    if (oldNick === profile.nickname) {
-      // 닉 미변경 — 그냥 upsert
-      await this.upsertMe(profile);
-      return { ok: true };
+    const { data: sessionData } = await sb.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) {
+      return { ok: false, reason: 'unknown', message: '로그인 세션이 없어요. 페이지를 새로고침해 주세요.' };
     }
-    // 새 닉으로 INSERT 시도 (PK 충돌이면 unique violation)
-    const row = profileToRow(profile);
-    const { error: insertErr } = await sb.from('profiles').insert(row);
-    if (insertErr) {
-      // Postgres unique_violation 코드: 23505
-      const code = (insertErr as { code?: string }).code;
+    // 본인 row 가 있으면 UPDATE, 없으면 INSERT — user_id 기준 upsert.
+    // 닉네임이 다른 사용자에게 이미 잡혀 있으면 nickname unique 제약(PK)에서 23505.
+    const row: Partial<ProfileRow> = { ...profileToRow(profile), user_id: userId };
+    const { error } = await sb.from('profiles').upsert(row, { onConflict: 'user_id' });
+    if (error) {
+      const code = (error as { code?: string }).code;
       if (code === '23505') {
         return { ok: false, reason: 'taken', message: '이미 사용 중인 닉네임이에요.' };
       }
-      console.error('[profilesRepo.tryRename] insert 실패', { row, insertErr });
-      return { ok: false, reason: 'unknown', message: insertErr.message ?? '닉네임 변경에 실패했어요.' };
-    }
-    // 새 row INSERT 성공 — 옛 row 삭제 시도 (실패해도 critical 아님)
-    if (oldNick) {
-      const { error: delErr } = await sb.from('profiles').delete().eq('nickname', oldNick);
-      if (delErr) console.warn('[profilesRepo.tryRename] 옛 닉 row 삭제 실패 (무시)', { oldNick, delErr });
+      console.error('[profilesRepo.tryRename] upsert 실패', { row, error });
+      return { ok: false, reason: 'unknown', message: error.message ?? '닉네임 변경에 실패했어요.' };
     }
     return { ok: true };
   },

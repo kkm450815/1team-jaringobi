@@ -106,6 +106,59 @@ Supabase Dashboard → Authentication → URL Configuration:
 
 미등록 시 매직 링크 클릭이 거부됩니다.
 
+### 3-3. Anonymous Sign-In + 본인-only 정책 (보안 강화)
+
+일반 사용자도 보이지 않게 Supabase 의 익명 인증을 사용해 `auth.uid()` 를
+확보하고, RLS 가 본인 row 만 변경 가능하게 강화합니다.
+
+**대시보드**: Authentication → Providers → **Anonymous Sign-Ins** 토글 ON
+
+**SQL 마이그레이션** (이미 만든 talk_posts/profiles 가 있을 때):
+
+```sql
+-- talk_posts.user_id 추가 + 정책 강화
+alter table public.talk_posts
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
+create index if not exists talk_posts_user_idx on public.talk_posts(user_id);
+
+drop policy if exists "talk_posts insert" on public.talk_posts;
+drop policy if exists "talk_posts write" on public.talk_posts;
+create policy "talk_posts insert" on public.talk_posts for insert
+  with check (auth.uid() is not null and user_id = auth.uid());
+
+drop policy if exists "talk_posts admin delete" on public.talk_posts;
+drop policy if exists "talk_posts delete" on public.talk_posts;
+create policy "talk_posts delete" on public.talk_posts for delete using (
+  exists (select 1 from public.admins where user_id = auth.uid())
+  or user_id = auth.uid()
+);
+
+-- profiles.user_id 추가 + 정책 강화
+alter table public.profiles
+  add column if not exists user_id uuid references auth.users(id) on delete cascade;
+create unique index if not exists profiles_user_id_unique on public.profiles(user_id);
+
+drop policy if exists "profiles insert" on public.profiles;
+create policy "profiles insert" on public.profiles for insert
+  with check (auth.uid() is not null and user_id = auth.uid());
+
+drop policy if exists "profiles update" on public.profiles;
+create policy "profiles update" on public.profiles for update
+  using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+drop policy if exists "profiles delete" on public.profiles;
+create policy "profiles delete" on public.profiles for delete
+  using (user_id = auth.uid());
+```
+
+**적용 순서 권장**:
+1. Anonymous Sign-In 토글 ON (Dashboard)
+2. 새 코드 prod 배포 (앱이 자동으로 익명 세션 발급)
+3. 위 SQL 실행 (정책 강화)
+
+순서를 바꾸면 잠시 INSERT 가 실패할 수 있음. 기존 NULL `user_id` row 는 사용자
+삭제 불가 (관리자만 가능).
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.
