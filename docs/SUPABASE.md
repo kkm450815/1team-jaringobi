@@ -159,6 +159,85 @@ create policy "profiles delete" on public.profiles for delete
 순서를 바꾸면 잠시 INSERT 가 실패할 수 있음. 기존 NULL `user_id` row 는 사용자
 삭제 불가 (관리자만 가능).
 
+### 3-4. 관리자 RPC 함수 (대시보드 / 가입자 목록)
+
+`/admin` 페이지의 대시보드와 가입자 목록은 `auth.users` 를 읽어야 하므로
+anon key 로는 접근 불가. **security definer 함수**로 admin 만 호출 가능하게
+래핑합니다.
+
+```sql
+-- 대시보드 통계
+create or replace function public.admin_dashboard_stats()
+returns table(
+  total_auth_users bigint,
+  total_profiles   bigint,
+  total_posts      bigint,
+  active_posters   bigint,
+  posts_24h        bigint,
+  posts_7d         bigint
+)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  return query
+  select
+    (select count(*) from auth.users)::bigint,
+    (select count(*) from public.profiles)::bigint,
+    (select count(*) from public.talk_posts)::bigint,
+    (select count(distinct user_id) from public.talk_posts where user_id is not null)::bigint,
+    (select count(*) from public.talk_posts where created_at >= now() - interval '24 hours')::bigint,
+    (select count(*) from public.talk_posts where created_at >= now() - interval '7 days')::bigint;
+end;
+$$;
+
+revoke all on function public.admin_dashboard_stats() from public, anon;
+grant execute on function public.admin_dashboard_stats() to authenticated;
+
+-- 가입자 목록
+create or replace function public.admin_list_users()
+returns table(
+  user_id      uuid,
+  email        text,
+  nickname     text,
+  cycle        int,
+  total_saved  bigint,
+  post_count   bigint,
+  signed_up_at timestamptz,
+  last_post_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+begin
+  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+    raise exception 'forbidden';
+  end if;
+  return query
+  select
+    au.id,
+    au.email,
+    p.nickname,
+    p.cycle,
+    p.total_saved,
+    coalesce((select count(*) from public.talk_posts tp where tp.user_id = au.id), 0)::bigint,
+    au.created_at,
+    (select max(tp.created_at) from public.talk_posts tp where tp.user_id = au.id)
+  from auth.users au
+  left join public.profiles p on p.user_id = au.id
+  order by au.created_at desc;
+end;
+$$;
+
+revoke all on function public.admin_list_users() from public, anon;
+grant execute on function public.admin_list_users() to authenticated;
+```
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.
