@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
-import { Route, Routes, Navigate } from 'react-router-dom';
+import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
+import Admin from './screens/Admin';
 import { unlockAudio } from './lib/audio';
 import { getBgm } from './lib/bgm';
 import { setSfxEnabled, setSfxVolume } from './lib/feedback';
@@ -81,7 +82,20 @@ function AudioUnlocker() {
   return null;
 }
 
-export default function App() {
+// /admin 은 데스크톱 풀스크린 레이아웃이 필요해 PhoneFrame 을 거치지 않는다.
+function AppShell() {
+  const loc = useLocation();
+  const isAdmin = loc.pathname.startsWith('/admin');
+
+  if (isAdmin) {
+    return (
+      <Routes>
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<Navigate to="/admin" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <PhoneFrame>
       <AudioUnlocker />
@@ -109,4 +123,8 @@ export default function App() {
       </Routes>
     </PhoneFrame>
   );
+}
+
+export default function App() {
+  return <AppShell />;
 }

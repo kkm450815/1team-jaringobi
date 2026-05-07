@@ -29,9 +29,15 @@ export default function NickSetup() {
       setError('닉네임은 2자 이상이어야 해요');
       return;
     }
+    // setNickname 이 localStorage 에 동기 write 한 뒤 React state 도 갱신.
     u.setNickname(trimmed);
     playSuccessSfx();
-    nav('/main', { replace: true });
+    // requestAnimationFrame 으로 한 프레임 양보 — 모바일에서 setState commit 보장
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => nav('/main', { replace: true }));
+    } else {
+      nav('/main', { replace: true });
+    }
   }
 
   return (
