@@ -318,6 +318,92 @@ alter publication supabase_realtime add table public.announcements;
 - `starts_at IS NULL OR starts_at <= now()`
 - `ends_at IS NULL OR ends_at > now()`
 
+### 3-7. 상점 아이템 (shop_items) + Storage 버킷
+
+기존 하드코딩 SHOP_GROUPS 와 별도로 관리자가 추가하는 아이템.
+
+#### Storage 버킷 (Dashboard 또는 SQL)
+
+**Dashboard 추천** — 좌측 메뉴 → **Storage** → **New bucket** → name: `shop-images`,
+**Public bucket** 체크 → Create.
+
+또는 SQL 로:
+```sql
+insert into storage.buckets (id, name, public)
+values ('shop-images', 'shop-images', true)
+on conflict (id) do nothing;
+```
+
+#### Storage RLS 정책 (관리자만 업로드/삭제, 누구나 read)
+
+```sql
+-- 모든 사용자 read (public 버킷이면 어차피 anonymous 접근 가능)
+drop policy if exists "shop-images public read" on storage.objects;
+create policy "shop-images public read" on storage.objects for select
+  using (bucket_id = 'shop-images');
+
+-- admin 만 업로드
+drop policy if exists "shop-images admin upload" on storage.objects;
+create policy "shop-images admin upload" on storage.objects for insert
+  with check (
+    bucket_id = 'shop-images' and
+    exists (select 1 from public.admins where user_id = auth.uid())
+  );
+
+-- admin 만 삭제
+drop policy if exists "shop-images admin delete" on storage.objects;
+create policy "shop-images admin delete" on storage.objects for delete
+  using (
+    bucket_id = 'shop-images' and
+    exists (select 1 from public.admins where user_id = auth.uid())
+  );
+```
+
+#### shop_items 테이블
+
+```sql
+create table if not exists public.shop_items (
+  id              uuid primary key default gen_random_uuid(),
+  category        text not null check (category in ('사치품','티셔츠','리모델링')),
+  sub_category    text,
+  shop_image_url  text not null,
+  fit_image_url   text not null,
+  price           int  not null check (price >= 0),
+  sort_order      int  not null default 0,
+  active          boolean not null default true,
+  label           text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+create index if not exists shop_items_active_idx
+  on public.shop_items (active, sort_order);
+
+alter table public.shop_items enable row level security;
+
+drop policy if exists "shop_items read" on public.shop_items;
+create policy "shop_items read" on public.shop_items for select using (true);
+
+drop policy if exists "shop_items admin write" on public.shop_items;
+create policy "shop_items admin write" on public.shop_items for all
+  using (exists(select 1 from public.admins where user_id = auth.uid()))
+  with check (exists(select 1 from public.admins where user_id = auth.uid()));
+
+alter publication supabase_realtime add table public.shop_items;
+```
+
+#### 동작
+- 관리자가 admin 페이지에서 새 아이템 추가 → 이미지 두 개 업로드 → DB 에 row
+- 사용자가 Shop 화면 진입 시 DB 활성 항목이 기존 하드코딩 위에 붙어 노출
+- 사용자 구매 시 `u.owned` 에 `shop_image_url` 추가됨 → 옷장에서도 보임
+- 캐릭터 위 입혀짐(`fitSrc`) 은 `customShopItems` 레지스트리가 `fit_image_url` 로
+  매핑
+
+#### Fit 이미지 제작 가이드
+- 캐릭터 PNG 와 같은 캔버스 크기 / 같은 포지션
+- 투명 배경
+- 캐릭터 위에 그대로 올렸을 때 정렬되는 위치로 직접 배치
+- 디자이너가 사전 제작 후 admin 이 업로드만
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

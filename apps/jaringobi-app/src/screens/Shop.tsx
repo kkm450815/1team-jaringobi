@@ -9,6 +9,7 @@ import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
+import { useCustomShopItems } from '../lib/useCustomShopItems';
 import { playClickSfx, playPurchaseSfx, vibrate } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -46,12 +47,30 @@ export default function Shop() {
   const showBuyCta = !!selected && !selectedOwned;
   const canAfford = u.coins >= selectedPrice;
 
+  const customItems = useCustomShopItems();
+
   const items = useMemo(() => {
-    if (cat === '전체') return SHOP_ALL;
-    if (cat === '리모델링') return REMODEL_FILES[remodelSub];
-    if (cat === '사치품') return ACC_FILES_BY_SUB[accSub];
-    return SHOP_GROUPS[cat];
-  }, [cat, remodelSub, accSub]);
+    // 기존 하드코딩 항목 + 같은 카테고리/서브의 DB 커스텀 항목
+    const customForView = customItems
+      .filter((i) => {
+        if (cat === '전체') return true;
+        if (i.category !== cat) return false;
+        if (cat === '리모델링') return i.subCategory === remodelSub;
+        if (cat === '사치품') return i.subCategory === accSub;
+        return true;
+      })
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((i) => i.shopImageUrl);
+
+    let base: string[];
+    if (cat === '전체') base = SHOP_ALL;
+    else if (cat === '리모델링') base = REMODEL_FILES[remodelSub];
+    else if (cat === '사치품') base = ACC_FILES_BY_SUB[accSub];
+    else base = SHOP_GROUPS[cat];
+
+    // 커스텀 신상은 위에 노출 (관리자가 의도적으로 추가한 거니)
+    return [...customForView, ...base];
+  }, [cat, remodelSub, accSub, customItems]);
 
   // 점진 로드: 카테고리/서브가 바뀔 때 30개부터, 스크롤이 하단 근처 도달하면 30개씩 추가
   const [visible, setVisible] = useState(CHUNK);

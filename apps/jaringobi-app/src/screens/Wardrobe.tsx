@@ -8,6 +8,7 @@ import {
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
+import { useCustomShopItems } from '../lib/useCustomShopItems';
 import { playClickSfx } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
@@ -33,16 +34,29 @@ export default function Wardrobe() {
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
   const equippedSet = useMemo(() => new Set(u.equipped), [u.equipped]);
+  const customItems = useCustomShopItems();
   const items = useMemo(() => {
+    // 카테고리/서브 필터에 맞는 커스텀 아이템 (관리자가 추가한 항목)
+    const customForView = customItems
+      .filter((i) => {
+        if (cat === '전체') return true;
+        if (i.category !== cat) return false;
+        if (cat === '리모델링') return i.subCategory === remodelSub;
+        if (cat === '사치품') return i.subCategory === accSub;
+        return true;
+      })
+      .map((i) => i.shopImageUrl);
+
     let pool: string[];
     if (cat === '전체') pool = [...SHOP_GROUPS.사치품, ...SHOP_GROUPS.티셔츠, ...SHOP_GROUPS.리모델링];
     else if (cat === '리모델링') pool = REMODEL_FILES[remodelSub];
     else if (cat === '사치품') pool = ACC_FILES_BY_SUB[accSub];
     else pool = SHOP_GROUPS[cat];
+    pool = [...customForView, ...pool];
     const owned = pool.filter((src) => ownedSet.has(src));
     // 즐겨찾기(별표 = 착용 중) 항목을 앞으로 정렬. 동률 내에서는 원래 순서 유지(stable sort)
     return owned.slice().sort((a, b) => Number(equippedSet.has(b)) - Number(equippedSet.has(a)));
-  }, [cat, remodelSub, accSub, ownedSet, equippedSet]);
+  }, [cat, remodelSub, accSub, ownedSet, equippedSet, customItems]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">

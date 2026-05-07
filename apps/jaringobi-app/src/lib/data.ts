@@ -544,6 +544,10 @@ export const ACC_FILES_BY_SUB: Record<AccSub, string[]> = {
 
 // 장착 시 동시 1개만 허용하기 위한 상위 카테고리 판별 (UI 그룹용)
 export function topCategoryOf(src: string): Exclude<ShopCategory, '전체'> {
+  // 커스텀 항목은 DB 의 category 사용
+  const reg = (globalThis as { __jaringobiCustomItems?: Map<string, { category: Exclude<ShopCategory, '전체'> }> }).__jaringobiCustomItems;
+  const custom = reg?.get(src);
+  if (custom) return custom.category;
   if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return '사치품';
   if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
   return '리모델링';
@@ -555,6 +559,13 @@ export type EquipSlot =
   | '티셔츠'
   | '조명' | '소품' | '가구1' | '가구2' | '벽지';
 export function equipSlotOf(src: string): EquipSlot {
+  // 커스텀 항목은 sub_category 또는 category 기준
+  const reg = (globalThis as { __jaringobiCustomItems?: Map<string, { category: Exclude<ShopCategory, '전체'>; subCategory: string | null }> }).__jaringobiCustomItems;
+  const custom = reg?.get(src);
+  if (custom) {
+    if (custom.subCategory) return custom.subCategory as EquipSlot;
+    if (custom.category === '티셔츠') return '티셔츠';
+  }
   if (src.startsWith('/shop/acc/') || src.startsWith('/fit/acc/')) return accSubOf(src);
   if (src.startsWith('/shop/clothes/') || src.startsWith('/fit/clothes/')) return '티셔츠';
   if (src.startsWith('/shop/lamp/') || src.startsWith('/fit/lamp/')) return '조명';
@@ -566,7 +577,18 @@ export function equipSlotOf(src: string): EquipSlot {
 
 // shop 경로의 표시용 PNG → 캐릭터 좌표계에 정렬된 fit 경로 PNG
 // 예) /shop/clothes/clo_shop_03.png → /fit/clothes/clo_fit_03.png
+//
+// 관리자가 추가한 커스텀 상점 아이템(임의 URL)은 위 패턴으로 변환 불가능 →
+// customShopItems 레지스트리에서 fitImageUrl 직접 조회.
+//
+// 동적 require 로 import cycle 회피 (customShopItems → shopItemsRepo →
+// supabase → ... 와 data.ts 가 서로 참조하지 않도록).
 export function fitSrc(shopSrc: string): string {
+  // 커스텀 항목은 dynamic import 로 안전하게 조회 (top-level cycle 회피)
+  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/no-var-requires
+  const reg = (globalThis as { __jaringobiCustomItems?: Map<string, { fitImageUrl: string }> }).__jaringobiCustomItems;
+  const custom = reg?.get(shopSrc);
+  if (custom) return custom.fitImageUrl;
   return shopSrc.replace('/shop/', '/fit/').replace('_shop_', '_fit_');
 }
 
@@ -603,6 +625,10 @@ function hashSrc(src: string): number {
 }
 
 export function priceFor(src: string): number {
+  // 커스텀 상점 아이템은 명시적 가격이 DB 에 저장돼 있음
+  const reg = (globalThis as { __jaringobiCustomItems?: Map<string, { price: number }> }).__jaringobiCustomItems;
+  const custom = reg?.get(src);
+  if (custom) return custom.price;
   if (src in PRICE_OVERRIDE) return PRICE_OVERRIDE[src];
   if (src.includes('/shop/wall_paper/')) {
     return WALL_PRICE_BUCKET[hashSrc(src) % WALL_PRICE_BUCKET.length];

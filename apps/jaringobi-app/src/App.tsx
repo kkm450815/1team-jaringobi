@@ -3,6 +3,7 @@ import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
 import { isLocalStorageAvailable } from './lib/storage';
 import { ensureAnonymousSession } from './lib/auth';
+import { loadCustomShopItems, startCustomShopItemsRealtime } from './lib/customShopItems';
 import Admin from './screens/Admin';
 import { unlockAudio } from './lib/audio';
 import { getBgm } from './lib/bgm';
@@ -94,6 +95,15 @@ function AuthBootstrap() {
   return null;
 }
 
+// 관리자가 추가한 상점 아이템을 1회 로드하고 Realtime 구독 시작.
+function ShopItemsBootstrap() {
+  useEffect(() => {
+    loadCustomShopItems();
+    startCustomShopItemsRealtime();
+  }, []);
+  return null;
+}
+
 // 앱 시작 시 1회 — iOS 프라이빗 모드/저장소 차단 환경 감지 후 사용자 안내.
 function StorageGuard() {
   const [warn, setWarn] = useState(false);
@@ -138,6 +148,7 @@ function AppShell() {
   return (
     <PhoneFrame>
       <AuthBootstrap />
+      <ShopItemsBootstrap />
       <StorageGuard />
       <AudioUnlocker />
       <BgmController />
