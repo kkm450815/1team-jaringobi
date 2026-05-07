@@ -238,6 +238,46 @@ revoke all on function public.admin_list_users() from public, anon;
 grant execute on function public.admin_list_users() to authenticated;
 ```
 
+### 3-5. 수다방 리스트 (talk_rooms)
+
+수다방 목록을 admin 페이지에서 관리할 수 있게 하는 테이블 + 시드.
+
+```sql
+create table if not exists public.talk_rooms (
+  id          text primary key,
+  title       text not null,
+  icon        text,
+  bg          text not null default '#EEEEEE',
+  sort_order  int  not null default 0,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+
+alter table public.talk_rooms enable row level security;
+
+drop policy if exists "talk_rooms read" on public.talk_rooms;
+create policy "talk_rooms read" on public.talk_rooms for select using (true);
+
+drop policy if exists "talk_rooms admin write" on public.talk_rooms;
+create policy "talk_rooms admin write" on public.talk_rooms for all
+  using (exists(select 1 from public.admins where user_id = auth.uid()))
+  with check (exists(select 1 from public.admins where user_id = auth.uid()));
+
+-- 시드 (기존 하드코딩 TALK_ROOMS 와 동일)
+insert into public.talk_rooms (id, title, icon, bg, sort_order) values
+  ('t1', '편의점 꿀조합',  '/jarin/talk_list_store.png',      '#CFE2EA', 1),
+  ('t2', '가성비 레시피',  '/jarin/talk_list_cook.png',       '#D8E6CF', 2),
+  ('t3', '체험단 꿀팁',    '/jarin/talk_list_experience.png', '#F3CFD2', 3),
+  ('t4', '혼놀 취미 공유', '/jarin/talk_list_solo.png',       '#D7D5EC', 4)
+on conflict (id) do nothing;
+```
+
+Realtime publication 에도 추가하면 admin 변경이 사용자 화면에 즉시 반영됨:
+
+```sql
+alter publication supabase_realtime add table public.talk_rooms;
+```
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

@@ -9,13 +9,14 @@
 // 클라이언트의 admin 체크는 UI 가드.
 
 import { useEffect, useMemo, useState } from 'react';
-import { TALK_ROOMS } from '../lib/data';
 import { getSupabase, isSupabaseEnabled } from '../lib/supabase';
 import { talkPostsRepo } from '../lib/talkPostsRepo';
+import { TalkRoom, talkRoomsRepo } from '../lib/talkRoomsRepo';
+import { useTalkRooms } from '../lib/useTalkRooms';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
-type Tab = 'dashboard' | 'users' | 'posts';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms';
 
 interface RawPost {
   id: string;
@@ -198,9 +199,10 @@ function AdminPanel({ email }: { email: string }) {
           </div>
           <LogoutButton />
         </div>
-        <nav className="max-w-6xl mx-auto px-6 flex gap-1 text-[13px]">
+        <nav className="max-w-6xl mx-auto px-6 flex gap-1 text-[13px] flex-wrap">
           <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>대시보드</TabButton>
           <TabButton active={tab === 'users'} onClick={() => setTab('users')}>가입자</TabButton>
+          <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
           <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
         </nav>
       </header>
@@ -208,6 +210,7 @@ function AdminPanel({ email }: { email: string }) {
       <div className="max-w-6xl mx-auto px-6 py-6">
         {tab === 'dashboard' && <DashboardSection />}
         {tab === 'users' && <UsersSection />}
+        {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
       </div>
     </main>
@@ -433,6 +436,8 @@ function PostsSection() {
   const [err, setErr] = useState<string | null>(null);
   const [filterRoom, setFilterRoom] = useState<string>('');
   const [search, setSearch] = useState('');
+  const { rooms: roomsList } = useTalkRooms();
+  const adminRooms = roomsList ?? [];
   const [busyId, setBusyId] = useState<string | null>(null);
 
   async function load() {
@@ -496,7 +501,7 @@ function PostsSection() {
         <div className="bg-white rounded-xl shadow-sm p-4">
           <h3 className="text-[13px] font-bold text-[#2a2723]/80">방별 필터</h3>
           <ul className="mt-2 space-y-1">
-            {TALK_ROOMS.map((r) => (
+            {adminRooms.map((r) => (
               <li key={r.id} className="flex items-center justify-between text-[13px]">
                 <button
                   onClick={() => setFilterRoom(filterRoom === r.id ? '' : r.id)}
@@ -560,7 +565,7 @@ function PostsSection() {
                   <tr><td colSpan={5} className="py-6 text-center text-[#2a2723]/50">표시할 글이 없습니다.</td></tr>
                 )}
                 {!loading && filtered.map((p) => {
-                  const room = TALK_ROOMS.find((r) => r.id === p.room_id);
+                  const room = adminRooms.find((r) => r.id === p.room_id);
                   return (
                     <tr key={p.id} className="border-b border-black/5 align-top">
                       <td className="py-2 pr-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
@@ -596,5 +601,236 @@ function PostsSection() {
         </div>
       </section>
     </div>
+  );
+}
+
+/* ============================================================
+ * 수다방 관리 — talk_rooms CRUD
+ * ============================================================ */
+
+const EMPTY_ROOM: TalkRoom = { id: '', title: '', icon: '', bg: '#FCE0BF', sortOrder: 99 };
+
+function RoomsSection() {
+  const { rooms, refresh } = useTalkRooms();
+  const [editing, setEditing] = useState<TalkRoom | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  const list = rooms ?? [];
+  const isEdit = editing && list.find((r) => r.id === editing.id);
+
+  function startNew() {
+    setErr(null);
+    const nextOrder = list.length > 0 ? Math.max(...list.map((r) => r.sortOrder)) + 1 : 1;
+    setEditing({ ...EMPTY_ROOM, sortOrder: nextOrder });
+  }
+  function startEdit(r: TalkRoom) {
+    setErr(null);
+    setEditing({ ...r });
+  }
+  function cancel() {
+    setEditing(null);
+    setErr(null);
+  }
+
+  async function save() {
+    if (!editing) return;
+    const id = editing.id.trim();
+    const title = editing.title.trim();
+    if (!id) { setErr('ID 를 입력하세요. (예: t5, snack 등 영숫자)'); return; }
+    if (!/^[a-zA-Z0-9_-]{1,32}$/.test(id)) { setErr('ID 는 영숫자, _, - 만 허용 (32자 이하).'); return; }
+    if (!title) { setErr('방 이름을 입력하세요.'); return; }
+    if (!/^#[0-9a-fA-F]{6}$/.test(editing.bg)) { setErr('배경색은 #FCE0BF 형식의 hex 6자리.'); return; }
+    setBusy(true);
+    setErr(null);
+    try {
+      await talkRoomsRepo.upsert({ ...editing, id, title });
+      setEditing(null);
+      refresh();
+    } catch (e) {
+      console.error('[RoomsSection.save] 실패', e);
+      setErr((e as Error).message ?? '저장 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(r: TalkRoom) {
+    if (!confirm(`"${r.title}" 방을 정말 삭제하시겠습니까?\n\n주의: 이 방의 글들은 데이터에 남지만 화면에서 안 보이게 됩니다.`)) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      await talkRoomsRepo.remove(r.id);
+      refresh();
+    } catch (e) {
+      console.error('[RoomsSection.remove] 실패', e);
+      setErr((e as Error).message ?? '삭제 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h2 className="text-[18px] font-bold">수다방 관리 ({list.length})</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={refresh}
+            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
+          >새로고침</button>
+          <button
+            onClick={startNew}
+            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+          >+ 새 방</button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+          {err}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-[14px] font-bold mb-3">{isEdit ? '방 수정' : '새 방 만들기'}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="ID (영숫자, 한 번 정하면 변경 권장 X)">
+              <input
+                value={editing.id}
+                onChange={(e) => setEditing({ ...editing, id: e.target.value })}
+                placeholder="t5, snack 등"
+                disabled={!!isEdit}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] disabled:opacity-50"
+              />
+            </Field>
+            <Field label="방 이름">
+              <input
+                value={editing.title}
+                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                placeholder="식비 절약, 도시락 등"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="아이콘 경로 (선택)">
+              <input
+                value={editing.icon}
+                onChange={(e) => setEditing({ ...editing, icon: e.target.value })}
+                placeholder="/jarin/talk_list_food.png"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+              />
+            </Field>
+            <Field label="배경색 (hex)">
+              <div className="flex gap-2 items-center">
+                <input
+                  value={editing.bg}
+                  onChange={(e) => setEditing({ ...editing, bg: e.target.value })}
+                  placeholder="#FCE0BF"
+                  className="flex-1 bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+                />
+                <span
+                  className="w-10 h-10 rounded border border-black/10 shrink-0"
+                  style={{ background: /^#[0-9a-fA-F]{6}$/.test(editing.bg) ? editing.bg : 'transparent' }}
+                />
+              </div>
+            </Field>
+            <Field label="정렬 순서 (작을수록 위)">
+              <input
+                type="number"
+                value={editing.sortOrder}
+                onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+          </div>
+
+          {/* 미리보기 */}
+          <div className="mt-4">
+            <p className="text-[11px] text-[#2a2723]/55 mb-1">미리보기</p>
+            <div
+              className="rounded-[16px] px-4 py-3 inline-flex items-center gap-3 max-w-md"
+              style={{ background: /^#[0-9a-fA-F]{6}$/.test(editing.bg) ? editing.bg : '#eee' }}
+            >
+              {editing.icon && (
+                <img src={editing.icon} alt="" className="w-12 h-12 object-contain" />
+              )}
+              <span className="font-bold text-[16px] text-[#2a2723]">{editing.title || '방 이름'}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-md"
+            >취소</button>
+            <button
+              onClick={save}
+              disabled={busy}
+              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-md disabled:opacity-40"
+            >{busy ? '저장 중…' : '저장'}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+              <th className="px-4 py-2 w-[80px]">순서</th>
+              <th className="px-4 py-2">ID</th>
+              <th className="px-4 py-2">방 이름</th>
+              <th className="px-4 py-2">미리보기</th>
+              <th className="px-4 py-2 w-[160px]">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rooms === null && (
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+            )}
+            {rooms !== null && list.length === 0 && (
+              <tr><td colSpan={5} className="px-4 py-6 text-center text-[#2a2723]/50">방이 없습니다. "+ 새 방" 으로 추가하세요.</td></tr>
+            )}
+            {list.map((r) => (
+              <tr key={r.id} className="border-b border-black/5">
+                <td className="px-4 py-2 tabular-nums">{r.sortOrder}</td>
+                <td className="px-4 py-2 font-mono text-[12px]">{r.id}</td>
+                <td className="px-4 py-2 font-bold">{r.title}</td>
+                <td className="px-4 py-2">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-bold"
+                    style={{ background: r.bg }}
+                  >
+                    {r.icon && <img src={r.icon} alt="" className="w-4 h-4 object-contain" />}
+                    # {r.title}
+                  </span>
+                </td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => startEdit(r)}
+                    className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded mr-1"
+                  >수정</button>
+                  <button
+                    onClick={() => remove(r)}
+                    disabled={busy}
+                    className="text-[12px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-40"
+                  >삭제</button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="block text-[11px] text-[#2a2723]/55 mb-1">{label}</span>
+      {children}
+    </label>
   );
 }
