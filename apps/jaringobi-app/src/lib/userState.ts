@@ -79,9 +79,9 @@ const DEFAULT: UserState = {
   day: 1,
   hearts: MAX_HEARTS,
   photos: {},
-  totalSaved: 10_000,
+  totalSaved: 0,
   goal: 300_000,
-  coins: 180,
+  coins: 0,
   owned: ['/shop/clothes/clo_shop_01.png', '/shop/clothes/clo_shop_51.png'],
   equipped: [],
   missionPicks: ['m2', 'm12', 'm13'],
@@ -251,8 +251,9 @@ export function useUser() {
 
   // 인증 사진 저장 → 보상(원/포인트) 계산해서 반환 (Camera 축하 팝업용).
   // 보상 규칙:
-  //  · 노말(goal=300_000): 일평균 = goal/30 = 1만원 고정
-  //  · 하드(goal>=1_000_000): 사용자가 확정한 missionConfirmed 미션 합계만큼 적립 (없으면 picks 합계)
+  //  · 노말(goal=300_000): 일평균 = goal/30 = 1만원 고정 → 100 포인트
+  //  · 하드(goal>=1_000_000): 미션 합계만큼 적립 + 포인트는 보상의 1/100
+  //    (노말 모드 비율 기준 — 1만원당 100포인트)
   // 회차 종료(day===30 인증):
   //  · cycle++, day=1, photos={}, hearts=3 복구
   //  · cycleEnded=true 반환해 호출자가 "회차 완료" 축하 표시 가능
@@ -265,7 +266,8 @@ export function useUser() {
       ? ids.reduce((sum, id) => sum + missionAmountOf(id), 0)
       : Math.round(s.goal / 30);
 
-    const coins = 100;
+    // 포인트는 보상에 비례 (1만원 = 100포인트). 노말 모드는 항상 100, 하드는 미션에 따라 달라짐.
+    const coins = Math.round(reward / 100);
     const isCycleEnd = s.day >= CYCLE_DAYS;
 
     setState((cur) => {
