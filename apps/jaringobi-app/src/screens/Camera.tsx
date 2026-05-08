@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MISSIONS } from '../lib/data';
 import { BackButton } from '../components/UI';
-import { downscaleImage, useUser } from '../lib/userState';
+import { downscaleImage, isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
@@ -41,6 +41,14 @@ export default function Camera() {
   // 오늘의 챌린지를 아직 확정하지 않은 채 카메라 진입(예: 탭바 직접 클릭) → 알림 모달 노출
   const needConfirm = u.missionConfirmed.length === 0 && !preview;
   useEscape(needConfirm, () => nav('/main', { replace: true }));
+
+  // 마지막 인증 후 다음 새벽 4시까지 잠김 — Main 에서 막지만 직접 url 진입 대비.
+  const locked = isMissionLocked(u.lastSavedAt) && !preview && !reward;
+  const unlockAt = nextMissionAvailableAt(u.lastSavedAt);
+  const unlockLabel = unlockAt
+    ? `${unlockAt.getMonth() + 1}월 ${unlockAt.getDate()}일 04:00`
+    : '';
+  useEscape(locked, () => nav('/main', { replace: true }));
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
@@ -251,8 +259,34 @@ export default function Camera() {
         </div>
       )}
 
+      {/* 잠김 상태로 카메라 진입 시 안내 모달 — needConfirm 보다 우선 */}
+      {locked && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={() => nav('/main', { replace: true })}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[18px] font-bold text-text">오늘 미션 인증 완료 ✓</p>
+            <p className="mt-3 text-[14px] text-text/80 leading-relaxed">
+              하루 한 번만 인증할 수 있어요.<br />
+              다음 미션은 <span className="font-bold text-text">{unlockLabel}</span> 에<br />
+              초기화돼요.
+            </p>
+            <button
+              onClick={() => nav('/main', { replace: true })}
+              className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+            >
+              메인으로 가기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 미션 확정 안 한 상태로 카메라 진입 시 안내 모달 */}
-      {needConfirm && (
+      {needConfirm && !locked && (
         <div
           className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
           onClick={() => nav('/main', { replace: true })}

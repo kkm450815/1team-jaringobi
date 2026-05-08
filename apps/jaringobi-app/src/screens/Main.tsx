@@ -5,7 +5,7 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MISSIONS, MissionCategory } from '../lib/data';
-import { useUser } from '../lib/userState';
+import { isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
@@ -106,6 +106,20 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const isConfirmed = confirmed.length > 0;
+
+  // 미션 lock — 마지막 인증 후 다음 새벽 4시까지 새 미션 시작 불가.
+  // 1분마다 재평가해서 4시 도래하면 자동 해제.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const locked = isMissionLocked(u.lastSavedAt, now);
+  const unlockAt = nextMissionAvailableAt(u.lastSavedAt);
+  const unlockLabel = unlockAt
+    ? `${unlockAt.getMonth() + 1}월 ${unlockAt.getDate()}일 04:00`
+    : '';
+  const [showLockInfo, setShowLockInfo] = useState(false);
   // D-day: 30일 챌린지의 남은 일수. day=1이면 D-30, day=30이면 D-1, 회차 종료 후 day=1로 리셋되며 다시 D-30
   const dDay = Math.max(0, 31 - u.day);
   const dailyGoal = 10_000;
@@ -162,6 +176,7 @@ export default function Main() {
   // ESC로 모달 닫기 (양심 / 미션)
   useEscape(showHeartModal, () => { setShowHeartModal(false); setPendingHeartIdx(null); });
   useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
+  useEscape(showLockInfo, () => setShowLockInfo(false));
 
   return (
     <main className="relative flex flex-col min-h-full pb-0">
@@ -203,18 +218,29 @@ export default function Main() {
       {/* 공지/이벤트 배너 — 활성 공지가 있을 때만 노출 */}
       <AnnouncementBanner />
 
-      {/* 오늘의 절약미션 버튼 */}
+      {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내 */}
       <section className="px-10 pt-8 pb-8">
         <button
-          onClick={openMissionModal}
+          onClick={locked ? () => setShowLockInfo(true) : openMissionModal}
           className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
-            isConfirmed
-              ? 'bg-accent text-accent-soft ring-2 ring-accent/40'
-              : 'bg-primary text-text'
+            locked
+              ? 'bg-accent/30 text-text/70 ring-2 ring-accent/30'
+              : isConfirmed
+                ? 'bg-accent text-accent-soft ring-2 ring-accent/40'
+                : 'bg-primary text-text'
           }`}
         >
-          {isConfirmed ? '✓ 오늘의 절약미션 (진행 중)' : '오늘의 절약미션'}
+          {locked
+            ? '✓ 오늘 미션 인증 완료'
+            : isConfirmed
+              ? '✓ 오늘의 절약미션 (진행 중)'
+              : '오늘의 절약미션'}
         </button>
+        {locked && (
+          <p className="mt-2 text-center text-[12px] text-text/55 leading-relaxed">
+            다음 미션은 <span className="font-bold text-text/75">{unlockLabel}</span> 에 초기화돼요
+          </p>
+        )}
       </section>
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
@@ -397,6 +423,32 @@ export default function Main() {
               className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
             >
               다시 시작하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 미션 잠김 안내 팝업 — '오늘 미션 인증 완료' 버튼 클릭 시 */}
+      {showLockInfo && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={() => setShowLockInfo(false)}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[18px] font-bold text-text">오늘 미션 인증 완료 ✓</p>
+            <p className="mt-3 text-[14px] text-text/80 leading-relaxed">
+              하루 한 번만 인증할 수 있어요.<br />
+              다음 미션은 <span className="font-bold text-text">{unlockLabel}</span> 에<br />
+              초기화돼요.
+            </p>
+            <button
+              onClick={() => setShowLockInfo(false)}
+              className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
+            >
+              확인
             </button>
           </div>
         </div>
