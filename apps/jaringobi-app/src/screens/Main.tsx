@@ -5,7 +5,7 @@ import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { MISSIONS, MissionCategory } from '../lib/data';
-import { useUser } from '../lib/userState';
+import { isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
@@ -106,6 +106,19 @@ export default function Main() {
   const [filter, setFilter] = useState<MissionCategory>('식비');
 
   const isConfirmed = confirmed.length > 0;
+
+  // 미션 lock — 마지막 인증 후 다음 새벽 4시까지 새 미션 시작 불가.
+  // 1분마다 재평가해서 4시 도래하면 자동 해제.
+  const [now, setNow] = useState(() => new Date());
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
+  const locked = isMissionLocked(u.lastSavedAt, now);
+  const unlockAt = nextMissionAvailableAt(u.lastSavedAt);
+  const unlockLabel = unlockAt
+    ? `${unlockAt.getMonth() + 1}월 ${unlockAt.getDate()}일 04:00 부터`
+    : '';
   // D-day: 30일 챌린지의 남은 일수. day=1이면 D-30, day=30이면 D-1, 회차 종료 후 day=1로 리셋되며 다시 D-30
   const dDay = Math.max(0, 31 - u.day);
   const dailyGoal = 10_000;
@@ -203,18 +216,30 @@ export default function Main() {
       {/* 공지/이벤트 배너 — 활성 공지가 있을 때만 노출 */}
       <AnnouncementBanner />
 
-      {/* 오늘의 절약미션 버튼 */}
+      {/* 오늘의 절약미션 버튼 (잠김 상태에선 lock 카드로 대체) */}
       <section className="px-10 pt-8 pb-8">
-        <button
-          onClick={openMissionModal}
-          className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
-            isConfirmed
-              ? 'bg-accent text-accent-soft ring-2 ring-accent/40'
-              : 'bg-primary text-text'
-          }`}
-        >
-          {isConfirmed ? '✓ 오늘의 절약미션 (진행 중)' : '오늘의 절약미션'}
-        </button>
+        {locked ? (
+          <div
+            aria-live="polite"
+            className="w-full rounded-full px-5 py-3.5 text-center bg-text/10 text-text/55 shadow-soft"
+          >
+            <p className="text-[15px] font-bold leading-snug">오늘 미션 완료 ✓</p>
+            <p className="mt-0.5 text-[12px] font-medium">
+              다음 미션은 {unlockLabel} 가능해요
+            </p>
+          </div>
+        ) : (
+          <button
+            onClick={openMissionModal}
+            className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
+              isConfirmed
+                ? 'bg-accent text-accent-soft ring-2 ring-accent/40'
+                : 'bg-primary text-text'
+            }`}
+          >
+            {isConfirmed ? '✓ 오늘의 절약미션 (진행 중)' : '오늘의 절약미션'}
+          </button>
+        )}
       </section>
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}

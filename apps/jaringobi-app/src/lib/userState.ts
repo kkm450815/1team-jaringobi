@@ -67,7 +67,37 @@ export interface UserState {
   // savePhoto 누적 횟수 (자린고비 칭호 등의 totalSaveCount 조건)
   totalSaveCount: number;
 
+  // 마지막으로 사진 인증을 마친 시각 (ISO). 다음 미션은 그 시각 이후의 첫 새벽 4시(local) 부터 가능.
+  // null = 아직 한 번도 인증 안 했거나 잠김 해제됨 → 즉시 가능.
+  lastSavedAt: string | null;
+
   settings: UserSettings;
+}
+
+const MISSION_UNLOCK_HOUR = 4; // 새벽 4시 (local)
+
+/** lastSavedAt 이후 처음 도래하는 새벽 4시 (잠김이 풀리는 시각). null → 잠김 없음. */
+export function nextMissionAvailableAt(lastSavedAt: string | null): Date | null {
+  if (!lastSavedAt) return null;
+  const last = new Date(lastSavedAt);
+  if (Number.isNaN(last.getTime())) return null;
+  const next = new Date(last);
+  if (last.getHours() < MISSION_UNLOCK_HOUR) {
+    // 새벽 4시 이전에 인증 → 같은 날 4시
+    next.setHours(MISSION_UNLOCK_HOUR, 0, 0, 0);
+  } else {
+    // 새벽 4시 이후 인증 → 다음 날 4시
+    next.setDate(next.getDate() + 1);
+    next.setHours(MISSION_UNLOCK_HOUR, 0, 0, 0);
+  }
+  return next;
+}
+
+/** 지금 미션을 새로 시작할 수 있는지. (lastSavedAt 이후 새벽 4시 미만이면 잠김) */
+export function isMissionLocked(lastSavedAt: string | null, now: Date = new Date()): boolean {
+  const next = nextMissionAvailableAt(lastSavedAt);
+  if (!next) return false;
+  return now < next;
 }
 
 const MAX_HEARTS = 3;
@@ -91,6 +121,7 @@ const DEFAULT: UserState = {
   ownedTitles: ['h0'],
   missionWinDays: {},
   totalSaveCount: 0,
+  lastSavedAt: null,
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -144,6 +175,7 @@ function read(): UserState {
         : 'h0',
       missionWinDays,
       totalSaveCount,
+      lastSavedAt: typeof parsed.lastSavedAt === 'string' ? parsed.lastSavedAt : DEFAULT.lastSavedAt,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
@@ -311,6 +343,8 @@ export function useUser() {
         missionWinDays: nextWinDays,
         totalSaveCount: nextTotalSaveCount,
         ownedTitles,
+        // 인증 완료 시각 기록 — 다음 미션은 이 시각 이후 첫 새벽 4시부터 가능 (lock)
+        lastSavedAt: new Date().toISOString(),
       };
       const next: UserState = isCycleEnd
         ? {
