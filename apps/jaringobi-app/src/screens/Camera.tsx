@@ -269,10 +269,11 @@ export default function Camera() {
             className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[18px] font-bold text-text">오늘 미션 완료 ✓</p>
+            <p className="text-[18px] font-bold text-text">오늘 미션 인증 완료 ✓</p>
             <p className="mt-3 text-[14px] text-text/80 leading-relaxed">
-              다음 미션은<br />
-              <span className="font-bold text-text">{unlockLabel}</span> 부터 가능해요
+              하루 한 번만 인증할 수 있어요.<br />
+              다음 미션은 <span className="font-bold text-text">{unlockLabel}</span> 에<br />
+              초기화돼요.
             </p>
             <button
               onClick={() => nav('/main', { replace: true })}
