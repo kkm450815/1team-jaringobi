@@ -410,6 +410,288 @@ alter publication supabase_realtime add table public.shop_items;
 - 캐릭터 위에 그대로 올렸을 때 정렬되는 위치로 직접 배치
 - 디자이너가 사전 제작 후 admin 이 업로드만
 
+### 3-8. 챌린지/미션 (missions)
+
+기존 `lib/data.ts` 의 `MISSIONS` 상수 (m1~m20) 를 DB 로 이관. ID 는 텍스트
+PK 그대로 유지하여 사용자 localStorage 의 `missionWinDays['m1']` 호환.
+
+```sql
+create table if not exists public.missions (
+  id            text primary key,                    -- 'm1', 'm2', ...
+  category      text not null check (category in ('식비','여가','충동','통장')),
+  title         text not null,
+  amount        int  not null,                       -- 원 (양수)
+  difficulty    text not null check (difficulty in ('쉬움','보통','어려움')),
+  icon_key      text not null,                       -- /chall/icon/chall_list_<key>.png
+  intro         text not null default '',
+  tips          jsonb not null default '[]'::jsonb,  -- string[]
+  auth_method   text not null default '',
+  sort_order    int  not null default 0,
+  active        boolean not null default true,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index if not exists missions_active_idx
+  on public.missions (active, sort_order);
+
+alter table public.missions enable row level security;
+
+drop policy if exists "missions read" on public.missions;
+create policy "missions read" on public.missions for select using (true);
+
+drop policy if exists "missions admin write" on public.missions;
+create policy "missions admin write" on public.missions for all
+  using (exists(select 1 from public.admins where user_id = auth.uid()))
+  with check (exists(select 1 from public.admins where user_id = auth.uid()));
+
+do $$ begin
+  alter publication supabase_realtime add table public.missions;
+exception when duplicate_object then null;
+end $$;
+```
+
+#### Seed (m1~m20) — `lib/data.ts` 의 `MISSIONS` 와 동기화
+
+`on conflict (id) do nothing` 이라 이미 행이 있으면 건너뜀.
+
+```sql
+insert into public.missions (id, category, title, amount, difficulty, icon_key, intro, tips, auth_method, sort_order) values
+  ('m1','식비','편의점 최고의 조합',5000,'쉬움','cvs',
+   '편의점에서도 **영양 챙기면서 저렴하게** 먹을 수 있어요.',
+   '["든든한 한 끼 — 삼각김밥 2개 + 컵라면/국 = **3,500원 이하**","단백질 조합 — 닭가슴살 + 삶은 계란 + 두유 = **4,000원 이하**","PB 상품 활용 — CU 헤이루, GS25 유어스, 세븐셀렉트는 **20~30% 저렴**","**1+1·2+1 행사**는 매주 화요일 변경, 행사 상품 위주로"]'::jsonb,
+   '편의점 영수증 또는 조합 사진 업로드',1),
+  ('m2','식비','커피 참기',4000,'쉬움','coffee',
+   '매일 **4,000원**짜리 카페 대신 **집에서 만들어** 보세요.',
+   '["**텀블러**에 일회용 커피 스틱을 들고 나가기","드립백·캡슐 한 박스(약 5,000원)로 일주일치 — **하루 700원**","밖에서 꼭 마셔야 한다면 편의점 아이스커피(**1,800원**)"]'::jsonb,
+   '텀블러 사진 또는 집에서 만든 커피 사진',2),
+  ('m3','식비','배달 금지',15000,'어려움','delivery',
+   '배달앱 켜는 순간 최소 **15,000원**이 나가요.',
+   '["배달앱을 **홈화면 폴더 안에 숨기기** — 충동 주문 줄이기","방문 포장으로 대체 — **배달비 4,000~6,000원 절약**","주 1회 냉장고 사진 찍어두고 “이걸로 뭘 해먹지?” 먼저 생각하기","마감 할인 플랫폼 — **라스트오더, 요기요 라스트콜**"]'::jsonb,
+   '직접 요리한 음식 사진 또는 포장 영수증 업로드',3),
+  ('m4','식비','싼 레시피 챌린지',30000,'보통','receipe',
+   '**1인분 3,000원 이하** 레시피로 도전해요.',
+   '["계란 한 판(약 6,000원)으로 **5일 반찬** 해결","두부 한 모(**1,500원**) — 두부조림·된장찌개·순두부","**냉동 야채** 활용 — 신선보다 저렴하고 오래감"]'::jsonb,
+   '완성된 요리 사진 + 재료비 영수증 업로드',4),
+  ('m5','식비','저녁 줄이기',20000,'쉬움','dinner',
+   '저녁만 바꿔도 일주일에 **4만원**이 남아요.',
+   '["**비빔밥 데이** — 냉장고 남은 반찬 모아 비비기","마트 PB 상품 공략 — 노브랜드, 시그니처 등 **30~40% 저렴**","저녁 **8~9시 마감 할인** — 당일 식품 30~50% 할인"]'::jsonb,
+   '저녁 식사 사진 또는 마트 영수증 업로드',5),
+  ('m6','여가','무료 문화생활 루틴',30000,'쉬움','culture',
+   '매달 문화생활에 쓰던 돈, 이번 달은 **0원**으로.',
+   '["네이버·카카오 무료 웹툰·웹소설 — **기다리면 무료**","유튜브로 **클래식·뮤지컬 넘버·스탠드업 코미디** 시청","**서울문화포털**(culture.seoul.go.kr)에서 주말 무료 행사 확인"]'::jsonb,
+   '관람 인증 사진 또는 행사 참여 캡처',6),
+  ('m7','여가','혼술 챌린지',20000,'보통','drink',
+   '술집 한 번 **4만원**, 집에서는 **4,000원**.',
+   '["편의점 혼술 세팅 — 맥주 2캔 + 안주 = **5,000원 이하**","약속 전 **막차 시간** 미리 확인 — 자연스럽게 2·3차 컷","홈파티로 전환 — 1인당 **5,000~10,000원**","월별 술자리 횟수·지출 기록 → **보이면 줄게 됨**"]'::jsonb,
+   '집 혼술 사진 또는 막차 전 귀가 지하철 인증',7),
+  ('m8','여가','미용실 체험단',20000,'보통','hair',
+   '체험단으로 **무료 또는 저렴하게** 시술받기.',
+   '["**네이버 엑스퍼트·인플루언서 체험단**에서 미용실 모집 글 찾기","**강남·홍대 신규 오픈** 미용실은 포트폴리오용 모델 모집","인스타·블로그 후기 조건이 대부분, **팔로워 적어도** 성실하면 OK","카카오헤어샵·네이버 예약 **신규 고객 50% 할인** 노리기"]'::jsonb,
+   '체험단 선정 화면 또는 시술 후기 게시 캡처',8),
+  ('m9','여가','도서관·무료 콘텐츠',30000,'쉬움','library',
+   '돈 내고 배우던 것을 **무료로 대체**해요.',
+   '["**국립도서관·서울도서관** 전자책 앱 — 신간 포함 수만 권 무료","구청 평생학습관 — 영어·요가·요리 강좌 **1만원 이하**","시립·구립 박물관 **상설전 무료** (월 1회 방문 루틴)"]'::jsonb,
+   '도서관 대출 기록 또는 강좌 수강 인증 사진',9),
+  ('m10','충동','쇼핑 참기',100000,'어려움','shopping',
+   '담아둔 건 **48시간 뒤** 다시 봐요. 대부분 안 사도 돼요.',
+   '["**장바구니 삭제 인증** — 쿠팡·무신사·지그재그 비운 화면 캡처","**48시간 룰** — 사고 싶은 게 생기면 담아두고 48시간 뒤 재확인","**알림 차단** — 쇼핑앱 푸시 끄거나 홈화면 뒤 페이지로","대신할 행동 찾기 — **산책·유튜브**로 욕구 전환"]'::jsonb,
+   '장바구니 삭제 전/후 화면 캡처 업로드',10),
+  ('m11','충동','통신비 절약',20000,'보통','phone',
+   '통신비는 **한 번만 바꿔도 매달 절약**돼요.',
+   '["**알뜰폰허브**(mvno.kr)에서 데이터 사용량 기반 비교 — 월 **8,000~15,000원** 요금제","가족 결합 해지 검토 — 알뜰폰으로도 결합 유지 가능 여부 확인","번호 이동 이벤트 — 분기별 **공시지원금**/추가 할인"]'::jsonb,
+   '새 요금제 가입 완료 화면 캡처',11),
+  ('m12','충동','택시 금지 (2주)',30000,'보통','taxi',
+   '심야 택시 한 번 **3만원**, **막차**만 챙겨도 절약.',
+   '["약속 장소 기준 **막차 시간을 캘린더 알람**으로 등록","**카풀 앱**으로 비용 분담","약속 장소를 대중교통 편한 곳으로 잡기","택시 부르기 전 “**이게 정말 필요한가?**” 5초만 생각"]'::jsonb,
+   '대중교통 탑승 기록 또는 막차 귀가 인증 사진',12),
+  ('m13','통장','기프티콘 팔기',10000,'쉬움','gifticon',
+   '**유효기간 지나기 전에** 현금으로 바꿔요.',
+   '["**카카오톡 선물함**의 잊고 있던 기프티콘부터 정리","**니콘내콘·기프티스타**에서 **80~95% 시세**로 현금화","**부분 사용 후 잔액 판매**도 가능","캐시워크·토스 행운복권 같은 **앱테크 병행**"]'::jsonb,
+   '기프티콘 판매 완료 화면 캡처',13),
+  ('m14','통장','갑자기 5만원 저금',50000,'쉬움','save',
+   '지금 당장 **5만원을 봉투에 넣어두는** 챌린지.',
+   '["**현금 바인더** 만들기 — 봉투에 금액별 보관, 줄어드는 감각이 강함","월급 다음 날 **자동이체**로 5만원 → 저축 통장","안 쓰는 **OTT·구독 하나만 끊어도** 6개월에 10만원"]'::jsonb,
+   '현금 봉투 또는 저축 이체 완료 화면 캡처',14),
+  ('m15','통장','당근마켓 챌린지',50000,'쉬움','carrot',
+   '안 쓰는 물건 **5개만 팔아도 5만원**은 쉽게 나와요.',
+   '["**1년 넘게 안 쓴 것·후회한 것·사이즈 안 맞는 옷**부터 뒤지기","**밝은 곳·흰 배경 사진**은 판매 속도 2배","같은 물건 시세 확인 후 **살짝 낮게** 부르면 당일 판매","매월 **11일 나눔의 날** 이벤트 활용"]'::jsonb,
+   '판매 완료된 거래 후기 캡처',15),
+  ('m16','통장','단기 알바',50000,'어려움','alba',
+   '짜투리 시간 단기 알바로 **추가 수입**.',
+   '["알바몬·알바천국 당일 알바 — 행사·서빙·포장 **6~8만원**","**크몽·숨고**로 재능 판매 — 번역·디자인·과외","쿠팡이츠·배민 라이더 주말 2~3시간 = **3~5만원**","마크로밀 엠브레인·오픈서베이 패널 — 설문 1건당 **500~3,000P**"]'::jsonb,
+   '급여 입금 내역 또는 플랫폼 수익 화면 캡처',16),
+  ('m17','통장','무지출 데이',30000,'보통','zero',
+   '하루를 **완전히 0원**으로 보내는 챌린지.',
+   '["**전날 밤 결정** + 식재료 미리 준비 (즉흥 어렵)","동네 공원·하천 산책 + **팟캐스트** = 2시간 거뜬","유튜브 요리 영상·도서관 전자책·밀린 드라마 등 = **0원**"]'::jsonb,
+   '당일 카드·계좌 지출 내역 캡처',17),
+  ('m18','통장','물건 고치기',20000,'보통','repair',
+   '버리고 새로 사기 전에 **고치면 꽤 아껴요**.',
+   '["**유튜브 수리 영상** 먼저 검색 — 이어폰 단선·지퍼·밑창 다 나와요","수선집 활용 — 옷 수선 **3,000~8,000원**","**다이소 수리 용품** — 접착제·보수 테이프·복원제 1,000~2,000원","못 고칠 것 같으면 “부품용”으로 **당근에 올려보기**"]'::jsonb,
+   '수리 전/후 사진 업로드',18),
+  ('m19','여가','친구 금지',100000,'어려움','friend',
+   '약속을 줄이면 **교통비·식비·술값이 한꺼번에** 줄어요.',
+   '["약속 잡기 전 **이번 달 여가비 잔액**부터 확인","혼자 즐기는 취미 개발 — **독서·러닝·요리**","주말 계획을 **무지출 데이·도서관 방문**으로 미리 채우기"]'::jsonb,
+   '주간 지출 내역 캡처',19),
+  ('m20','여가','한 달 여가비 5만원 쓰기',50000,'어려움','leisure',
+   '놀건 놀아야지. 근데 한 달에 **딱 5만원 안에서**.',
+   '["**여가비 전용 봉투** 만들기 — 봉투에서만 꺼내 쓰기","이번 달 “꼭” 하고 싶은 활동 **1가지만**, 나머지는 무료 대체","**인터파크·티켓베이**로 50% 이하 할인 티켓 노리기","**통신사 여가생활 쿠폰** — 수요 적어 상대적으로 받기 쉬움"]'::jsonb,
+   '월말 여가 지출 내역 캡처 + 무료/할인 여가 인증 사진',20)
+on conflict (id) do nothing;
+```
+
+### 3-9. 칭호 (titles) + Storage 버킷 `title-images`
+
+조건(`reqs`) 은 다양한 형태라 **`jsonb` 한 컬럼**으로 직렬화. 평가 로직은
+클라이언트의 `getTitleProgress` 가 그대로 담당.
+
+#### Storage 버킷 (Dashboard 또는 SQL)
+
+**Dashboard 추천** — Storage → New bucket → name: `title-images`,
+**Public bucket** 체크 → Create.
+
+또는 SQL:
+```sql
+insert into storage.buckets (id, name, public)
+values ('title-images', 'title-images', true)
+on conflict (id) do nothing;
+```
+
+#### Storage RLS 정책 (`shop-images` 와 동일 패턴)
+
+```sql
+drop policy if exists "title-images public read" on storage.objects;
+create policy "title-images public read" on storage.objects for select
+  using (bucket_id = 'title-images');
+
+drop policy if exists "title-images admin upload" on storage.objects;
+create policy "title-images admin upload" on storage.objects for insert
+  with check (
+    bucket_id = 'title-images' and
+    exists (select 1 from public.admins where user_id = auth.uid())
+  );
+
+drop policy if exists "title-images admin delete" on storage.objects;
+create policy "title-images admin delete" on storage.objects for delete
+  using (
+    bucket_id = 'title-images' and
+    exists (select 1 from public.admins where user_id = auth.uid())
+  );
+```
+
+#### titles 테이블
+
+```sql
+create table if not exists public.titles (
+  id            text primary key,                    -- 'h0', 'h1', ...
+  name          text not null,
+  difficulty    text not null check (difficulty in ('쉬움','보통','어려움')),
+  tagline       text not null default '',
+  tip           text not null default '',
+  icon_key      text not null,
+  img           text not null,                       -- '/title/title_NN.png' or storage URL
+  reqs          jsonb not null default '[]'::jsonb,
+  sort_order    int  not null default 0,
+  active        boolean not null default true,
+  created_at    timestamptz not null default now(),
+  updated_at    timestamptz not null default now()
+);
+create index if not exists titles_active_idx
+  on public.titles (active, sort_order);
+
+alter table public.titles enable row level security;
+
+drop policy if exists "titles read" on public.titles;
+create policy "titles read" on public.titles for select using (true);
+
+drop policy if exists "titles admin write" on public.titles;
+create policy "titles admin write" on public.titles for all
+  using (exists(select 1 from public.admins where user_id = auth.uid()))
+  with check (exists(select 1 from public.admins where user_id = auth.uid()));
+
+do $$ begin
+  alter publication supabase_realtime add table public.titles;
+exception when duplicate_object then null;
+end $$;
+```
+
+#### reqs JSON 형식
+
+```ts
+type TitleReq =
+  | { type: 'mission'; missionId: string; count: number }
+  | { type: 'totalSaveCount'; count: number }
+  | { type: 'cycleComplete' };
+```
+
+#### Seed (h0~h11) — `lib/data.ts` 의 `TITLES` 와 동기화
+
+```sql
+insert into public.titles (id, name, difficulty, tagline, tip, icon_key, img, reqs, sort_order) values
+  ('h0','초보 절약가','쉬움',
+   '절약의 첫 발을 내딛다',
+   '하루에 한 가지씩만 줄여봐도 한 달이 다르게 느껴져요',
+   'sprout','/title/title_00.png',
+   '[]'::jsonb, 0),
+  ('h1','홈 바리스타','쉬움',
+   '오늘도 커피 값을 아꼈다',
+   '텀블러를 들고 다니면 더 쉽게 성공할 수 있어요',
+   'coffee','/title/title_01.png',
+   '[{"type":"mission","missionId":"m2","count":5}]'::jsonb, 1),
+  ('h2','편의점 미식가','쉬움',
+   '배달 대신 편의점 각',
+   '배달 앱을 열기 전에 편의점을 떠올려보세요',
+   'cvs','/title/title_02.png',
+   '[{"type":"mission","missionId":"m1","count":5}]'::jsonb, 2),
+  ('h3','방구석 선비','보통',
+   '오늘은 집이 최고다',
+   '미리 약속을 줄여두면 자연스럽게 지출도 줄일 수 있어요',
+   'friend','/title/title_03.png',
+   '[{"type":"mission","missionId":"m19","count":10}]'::jsonb, 3),
+  ('h5','문화 한량','보통',
+   '돈 없이도 잘 놀았다',
+   '무료 전시나 행사를 미리 찾아두면 더 자주 즐길 수 있어요',
+   'culture','/title/title_04.png',
+   '[{"type":"mission","missionId":"m6","count":10}]'::jsonb, 5),
+  ('h6','연금술사','어려움',
+   '오늘도 하나 살렸다',
+   '안 쓰는 물건을 정리해보면 생각보다 쉽게 현금으로 바꿀 수 있어요',
+   'repair','/title/title_05.png',
+   '[{"type":"mission","missionId":"m18","count":10},{"type":"mission","missionId":"m13","count":5}]'::jsonb, 6),
+  ('h7','현금술사','어려움',
+   '수입 한 스푼 추가',
+   '작은 수입이라도 꾸준히 만들면 점점 차이가 커져요',
+   'save','/title/title_06.png',
+   '[{"type":"mission","missionId":"m14","count":5},{"type":"mission","missionId":"m16","count":5}]'::jsonb, 7),
+  ('h8','디지털 폐지왕','어려움',
+   '티끌 모아 디지털 부자',
+   '매일 조금씩 참여하면 부담 없이 포인트를 모을 수 있어요',
+   'phone','/title/title_07.png',
+   '[{"type":"mission","missionId":"m11","count":15}]'::jsonb, 8),
+  ('h9','배달 킬러','쉬움',
+   '배달 끊으면 돈이 쌓인다',
+   '배달 앱 대신 다른 선택지를 먼저 떠올리면 도움이 돼요',
+   'delivery','/title/title_08.png',
+   '[{"type":"mission","missionId":"m3","count":5}]'::jsonb, 9),
+  ('h10','인내의 화신','어려움',
+   '참을 수 있는 자가 이긴다',
+   '잠깐만 참아도 대부분의 소비 욕구는 금방 사라져요',
+   'shopping','/title/title_09.png',
+   '[{"type":"mission","missionId":"m10","count":10},{"type":"mission","missionId":"m12","count":10},{"type":"mission","missionId":"m5","count":10}]'::jsonb, 10),
+  ('h11','자린고비','어려움',
+   '진짜 절약의 끝판왕',
+   '하루 한 번 무지출을 목표로 하면 점점 익숙해질 수 있어요',
+   'zero','/title/title_10.png',
+   '[{"type":"totalSaveCount","count":30},{"type":"mission","missionId":"m17","count":10},{"type":"cycleComplete"}]'::jsonb, 11)
+on conflict (id) do nothing;
+```
+
+#### 동작 / 통합
+
+- 사용자 화면 (`useMissions()`, `useTitles()`) 는 listActive() 로 DB 항목 로드 → 0개면 코드의 `MISSION_SEED`/`TITLE_SEED` fallback
+- admin 페이지에서 미션/칭호 추가·수정·삭제·`active` 토글
+- 칭호 이미지(`img`): 신규 칭호는 `title-images` 버킷 업로드 → public URL 저장. 기존 11개는 정적 경로(`/title/title_NN.png`) 유지
+- 미션 삭제 시 admin UI 가 칭호 reqs 참조 검사 + 2단계 confirm
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

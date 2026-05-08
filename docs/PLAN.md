@@ -214,9 +214,16 @@ type TitleReq =
 
 ---
 
-## 5. 미정 / 사용자 결정 필요
+## 5. 결정 사항 (확정)
 
-- [ ] **칭호 이미지 업로드 — 이번 PR 에 포함?** (현재안: 텍스트 경로만, Storage 는 다음 PR)
-- [ ] **미션 삭제 정책** — 칭호가 참조하는 미션 삭제 시 막을지 / 경고만 띄울지
-- [ ] **seed 자동 import 시점** — admin 버튼 / 첫 admin 로그인 시 자동 / 마이그레이션 SQL 에 INSERT 포함 (가장 간단)
-  - **추천**: SUPABASE.md 의 SQL 마지막에 `insert ... on conflict (id) do nothing` 으로 m1~m20 / h0~h11 일괄 INSERT. 클라이언트엔 fallback 만 남기고 admin seed 버튼은 생략
+- [x] **칭호 이미지 업로드 — 이번 PR 포함.** Storage 버킷 `title-images` 신설.
+  - 미션 아이콘은 현재처럼 정적 경로(`iconKey` → `/chall/icon/chall_list_<key>.png`) 유지
+  - 칭호 `img` 만 업로드형으로 — 신규 칭호는 업로드, 기존 11개는 정적 경로 그대로
+  - shop_items 의 Storage 패턴(`docs/SUPABASE.md` 3-7) 그대로 답습
+- [x] **미션 삭제 정책 — 경고 두 번** (confirm 두 번 확인).
+  - 1차: "정말 삭제하시겠어요? 이 미션을 참조하는 칭호: …"
+  - 2차: "되돌릴 수 없어요. 진짜 삭제할까요?"
+  - 사용자 `missionWinDays` 의 잔존 데이터는 손대지 않음 (없는 ID 는 자연 무시됨)
+- [x] **seed import 시점 — SQL 마이그레이션에 INSERT 포함** (옵션 c).
+  - SUPABASE.md 의 missions/titles 섹션 마지막에 `insert ... on conflict (id) do nothing`
+  - 코드의 `MISSION_SEED`/`TITLE_SEED` 는 fallback (Supabase 미설정·빈 DB 환경) 으로만 유지
