@@ -1,4 +1,8 @@
-// 정적 데이터 (실제로는 Supabase에서 로드 — UI_HANDOFF.md 참고)
+// 정적 데이터 + DB 캐시.
+//
+// MISSIONS / TITLES 는 부팅 시 Supabase 에서 로드해서 채워진다 (main.tsx 의 boot()).
+// DB 가 비어있거나 미설정이면 아래 *_SEED 가 그대로 fallback.
+// 호출처는 import { MISSIONS } 처럼 그대로 사용 — boot 가 끝난 후 렌더된다고 가정.
 
 export type MissionCategory = '식비' | '여가' | '충동' | '통장';
 export type Difficulty = '쉬움' | '보통' | '어려움';
@@ -15,7 +19,7 @@ export interface Mission {
   authMethod: string; // 인증 방법
 }
 
-export const MISSIONS: Mission[] = [
+const MISSION_SEED: Mission[] = [
   {
     id: 'm1', category: '식비', title: '편의점 최고의 조합', amount: 5000, difficulty: '쉬움', iconKey: 'cvs',
     intro: '편의점에서도 **영양 챙기면서 저렴하게** 먹을 수 있어요.',
@@ -229,6 +233,17 @@ export const MISSIONS: Mission[] = [
   },
 ];
 
+// 부팅 후 DB 로드 결과로 교체되는 mutable cache.
+// 절대 array 자체를 reassign 하지 말 것 (importer 가 캡처한 reference 깨짐).
+// 항상 length=0 + push(...) 로 in-place 갱신.
+export const MISSIONS: Mission[] = [...MISSION_SEED];
+
+/** missionsRepo.listActive() 결과를 캐시에 반영. 빈 배열이면 seed fallback. */
+export function applyMissionsFromDb(fromDb: Mission[]): void {
+  MISSIONS.length = 0;
+  MISSIONS.push(...(fromDb.length > 0 ? fromDb : MISSION_SEED));
+}
+
 export const TALK_ROOMS = [
   { id: 't1', title: '편의점 꿀조합',     icon: '/jarin/talk_list_store.png',      bg: '#CFE2EA' },
   { id: 't2', title: '가성비 레시피',     icon: '/jarin/talk_list_cook.png',       bg: '#D8E6CF' },
@@ -279,7 +294,7 @@ export interface Title {
   reqs: TitleReq[];
 }
 
-export const TITLES: Title[] = [
+const TITLE_SEED: Title[] = [
   {
     id: 'h0', name: '초보 절약가', difficulty: '쉬움',
     tagline: '절약의 첫 발을 내딛다',
@@ -383,6 +398,15 @@ export const TITLES: Title[] = [
     ],
   },
 ];
+
+// MISSIONS 와 동일 패턴 — in-place 갱신용 mutable cache.
+export const TITLES: Title[] = [...TITLE_SEED];
+
+/** titlesRepo.listActive() 결과를 캐시에 반영. 빈 배열이면 seed fallback. */
+export function applyTitlesFromDb(fromDb: Title[]): void {
+  TITLES.length = 0;
+  TITLES.push(...(fromDb.length > 0 ? fromDb : TITLE_SEED));
+}
 
 export interface TitleProgress {
   cur: number;

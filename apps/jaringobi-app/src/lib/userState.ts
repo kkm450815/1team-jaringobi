@@ -17,10 +17,11 @@ function userToProfile(s: UserState): PublicProfile {
   };
 }
 
-// 미션 ID → 보상 금액 룩업 (savePhoto 보상 계산용)
-const MISSION_AMOUNTS: Record<string, number> = Object.fromEntries(
-  MISSIONS.map((m) => [m.id, m.amount]),
-);
+// 미션 ID → 보상 금액 룩업 (savePhoto 보상 계산용).
+// MISSIONS 는 부팅 시 DB 에서 채워지는 mutable cache 라 함수로 동적 조회.
+function missionAmountOf(id: string): number {
+  return MISSIONS.find((m) => m.id === id)?.amount ?? 0;
+}
 
 const KEY = 'jaringobi.user.v1';
 
@@ -261,7 +262,7 @@ export function useUser() {
     const ids = s.missionConfirmed.length > 0 ? s.missionConfirmed : s.missionPicks;
 
     const reward = isHard
-      ? ids.reduce((sum, id) => sum + (MISSION_AMOUNTS[id] ?? 0), 0)
+      ? ids.reduce((sum, id) => sum + missionAmountOf(id), 0)
       : Math.round(s.goal / 30);
 
     const coins = 100;
