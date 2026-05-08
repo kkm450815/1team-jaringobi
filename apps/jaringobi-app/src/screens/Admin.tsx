@@ -15,10 +15,12 @@ import { TalkRoom, talkRoomsRepo } from '../lib/talkRoomsRepo';
 import { useTalkRooms } from '../lib/useTalkRooms';
 import { Announcement, announcementsRepo } from '../lib/announcementsRepo';
 import { ShopItem, shopItemsRepo, ShopCategory as ShopCat, AccSubCat, RemodelSubCat } from '../lib/shopItemsRepo';
+import { missionsRepo, MissionWithMeta } from '../lib/missionsRepo';
+import { TITLES, MissionCategory, Difficulty } from '../lib/data';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions';
 
 interface RawPost {
   id: string;
@@ -206,6 +208,7 @@ function AdminPanel({ email }: { email: string }) {
           <TabButton active={tab === 'users'} onClick={() => setTab('users')}>가입자</TabButton>
           <TabButton active={tab === 'announcements'} onClick={() => setTab('announcements')}>공지/이벤트</TabButton>
           <TabButton active={tab === 'shop'} onClick={() => setTab('shop')}>상점 관리</TabButton>
+          <TabButton active={tab === 'missions'} onClick={() => setTab('missions')}>챌린지/미션</TabButton>
           <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
           <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
         </nav>
@@ -216,6 +219,7 @@ function AdminPanel({ email }: { email: string }) {
         {tab === 'users' && <UsersSection />}
         {tab === 'announcements' && <AnnouncementsSection />}
         {tab === 'shop' && <ShopItemsSection />}
+        {tab === 'missions' && <MissionsSection />}
         {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
       </div>
@@ -1540,6 +1544,364 @@ function ImageUploadField({
           <p className="text-[10px] text-[#2a2723]/45 mt-1">PNG · JPG · WebP</p>
         </label>
       )}
+    </div>
+  );
+}
+
+/* ============================================================
+ * 챌린지/미션 관리 — missions CRUD
+ * ============================================================ */
+
+const MISSION_CATEGORIES: MissionCategory[] = ['식비', '여가', '충동', '통장'];
+const DIFFICULTIES: Difficulty[] = ['쉬움', '보통', '어려움'];
+
+const EMPTY_MISSION: MissionWithMeta = {
+  id: '',
+  category: '식비',
+  title: '',
+  amount: 0,
+  difficulty: '쉬움',
+  iconKey: '',
+  intro: '',
+  tips: [],
+  authMethod: '',
+  sortOrder: 0,
+  active: true,
+};
+
+// 칭호 reqs 에서 이 미션을 참조하는 항목 추출. 미션 삭제 경고용.
+function findTitlesReferencingMission(missionId: string): string[] {
+  return TITLES
+    .filter((t) => t.reqs.some((r) => r.type === 'mission' && r.missionId === missionId))
+    .map((t) => `${t.id} ${t.name}`);
+}
+
+function MissionsSection() {
+  const [items, setItems] = useState<MissionWithMeta[] | null>(null);
+  const [editing, setEditing] = useState<MissionWithMeta | null>(null);
+  const [tipsText, setTipsText] = useState(''); // textarea 한 줄 = 한 tip
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function load() {
+    setErr(null);
+    try {
+      const data = await missionsRepo.listAll();
+      setItems(data);
+    } catch (e) {
+      console.error('[MissionsSection.load] 실패', e);
+      setErr((e as Error).message ?? '불러오기 실패');
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function startNew() {
+    setErr(null);
+    const list = items ?? [];
+    const nextOrder = list.length > 0 ? Math.max(...list.map((m) => m.sortOrder)) + 1 : 1;
+    // 신규 ID 자동 추천 — m + (현재 max 번호 + 1)
+    const usedNums = list
+      .map((m) => /^m(\d+)$/.exec(m.id)?.[1])
+      .filter((s): s is string => !!s)
+      .map((s) => parseInt(s, 10));
+    const nextNum = usedNums.length > 0 ? Math.max(...usedNums) + 1 : list.length + 1;
+    setEditing({ ...EMPTY_MISSION, id: `m${nextNum}`, sortOrder: nextOrder });
+    setTipsText('');
+  }
+  function startEdit(m: MissionWithMeta) {
+    setErr(null);
+    setEditing({ ...m });
+    setTipsText(m.tips.join('\n'));
+  }
+  function cancel() {
+    setEditing(null);
+    setErr(null);
+  }
+
+  async function save() {
+    if (!editing) return;
+    const id = editing.id.trim();
+    const title = editing.title.trim();
+    if (!id) { setErr('ID 를 입력하세요. (예: m21)'); return; }
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) { setErr('ID 는 영문/숫자/_/- 만 사용하세요.'); return; }
+    if (!title) { setErr('제목을 입력하세요.'); return; }
+    if (!editing.iconKey.trim()) { setErr('아이콘 키를 입력하세요.'); return; }
+    const tips = tipsText.split('\n').map((s) => s.trim()).filter((s) => s.length > 0);
+    setBusy(true);
+    setErr(null);
+    try {
+      const saved = await missionsRepo.upsert({ ...editing, id, title, tips });
+      setEditing(null);
+      setTipsText('');
+      setItems((prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((m) => m.id === saved.id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = saved;
+          return next.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
+        return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
+      });
+    } catch (e) {
+      console.error('[MissionsSection.save] 실패', e);
+      setErr((e as Error).message ?? '저장 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // 미션 삭제: 2단계 confirm + 칭호 참조 검사 (PLAN.md §5)
+  async function remove(m: MissionWithMeta) {
+    const refs = findTitlesReferencingMission(m.id);
+    const refsMsg = refs.length > 0
+      ? `\n\n⚠ 이 미션을 참조하는 칭호: ${refs.join(', ')}\n해당 칭호는 삭제 후 영구 미달성 상태가 됩니다.`
+      : '';
+    if (!confirm(`"${m.id} ${m.title}" 미션을 삭제하시겠어요?${refsMsg}`)) return;
+    if (!confirm('되돌릴 수 없어요. 진짜 삭제할까요?')) return;
+    setBusy(true);
+    try {
+      await missionsRepo.remove(m.id);
+      setItems((prev) => (prev ?? []).filter((x) => x.id !== m.id));
+    } catch (e) {
+      console.error('[MissionsSection.remove] 실패', e);
+      setErr((e as Error).message ?? '삭제 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive(m: MissionWithMeta) {
+    setBusy(true);
+    try {
+      const saved = await missionsRepo.upsert({ ...m, active: !m.active });
+      setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      console.error('[MissionsSection.toggleActive] 실패', e);
+      setErr((e as Error).message ?? '변경 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const list = items ?? [];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h2 className="text-[18px] font-bold">챌린지/미션 ({list.length})</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
+          >새로고침</button>
+          <button
+            onClick={startNew}
+            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+          >+ 새 미션</button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+          {err}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-[14px] font-bold mb-3">
+            {items?.some((m) => m.id === editing.id) ? `미션 수정 — ${editing.id}` : '새 미션 만들기'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="ID (필수, m21 처럼 고유 식별자)">
+              <input
+                value={editing.id}
+                onChange={(e) => setEditing({ ...editing, id: e.target.value })}
+                disabled={items?.some((m) => m.id === editing.id)}
+                placeholder="m21"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono disabled:opacity-60"
+              />
+            </Field>
+            <Field label="정렬 순서 (작을수록 위)">
+              <input
+                type="number"
+                value={editing.sortOrder}
+                onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="제목 (필수)">
+              <input
+                value={editing.title}
+                onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                placeholder="편의점 최고의 조합"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="카테고리">
+              <select
+                value={editing.category}
+                onChange={(e) => setEditing({ ...editing, category: e.target.value as MissionCategory })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              >
+                {MISSION_CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </Field>
+            <Field label="난이도">
+              <select
+                value={editing.difficulty}
+                onChange={(e) => setEditing({ ...editing, difficulty: e.target.value as Difficulty })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              >
+                {DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+            <Field label="보상 금액 (원)">
+              <input
+                type="number"
+                value={editing.amount}
+                onChange={(e) => setEditing({ ...editing, amount: Number(e.target.value) })}
+                placeholder="5000"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="아이콘 키 (/chall/icon/chall_list_<key>.png)">
+              <div className="flex gap-2 items-center">
+                <input
+                  value={editing.iconKey}
+                  onChange={(e) => setEditing({ ...editing, iconKey: e.target.value })}
+                  placeholder="cvs"
+                  className="flex-1 bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+                />
+                {editing.iconKey && (
+                  <img
+                    src={`/chall/icon/chall_list_${editing.iconKey}.png`}
+                    alt=""
+                    className="w-10 h-10 rounded border border-black/10 shrink-0 object-contain bg-white"
+                    onError={(e) => { (e.currentTarget.style.opacity = '0.3'); }}
+                  />
+                )}
+              </div>
+            </Field>
+            <Field label="활성 여부">
+              <label className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={editing.active}
+                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                />
+                활성 (체크 해제 시 사용자 챌린지 리스트에서 안 보임)
+              </label>
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="한 줄 소개 (intro)">
+                <textarea
+                  value={editing.intro}
+                  onChange={(e) => setEditing({ ...editing, intro: e.target.value })}
+                  rows={2}
+                  placeholder="편의점에서도 **영양 챙기면서 저렴하게** 먹을 수 있어요."
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] resize-y"
+                />
+              </Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="실천 팁 (한 줄에 하나)">
+                <textarea
+                  value={tipsText}
+                  onChange={(e) => setTipsText(e.target.value)}
+                  rows={5}
+                  placeholder={'든든한 한 끼 — 삼각김밥 2개 + 컵라면\n단백질 조합 — 닭가슴살 + 삶은 계란\n…'}
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] resize-y font-mono"
+                />
+              </Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="인증 방법">
+                <input
+                  value={editing.authMethod}
+                  onChange={(e) => setEditing({ ...editing, authMethod: e.target.value })}
+                  placeholder="편의점 영수증 또는 조합 사진 업로드"
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+                />
+              </Field>
+            </div>
+          </div>
+
+          <div className="mt-4 flex gap-2 justify-end">
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-md"
+            >취소</button>
+            <button
+              onClick={save}
+              disabled={busy}
+              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-md disabled:opacity-40"
+            >{busy ? '저장 중…' : '저장'}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+              <th className="px-4 py-2 w-[60px]">순서</th>
+              <th className="px-4 py-2 w-[80px]">ID</th>
+              <th className="px-4 py-2 w-[80px]">상태</th>
+              <th className="px-4 py-2 w-[80px]">카테고리</th>
+              <th className="px-4 py-2">제목</th>
+              <th className="px-4 py-2 w-[80px] text-right">금액</th>
+              <th className="px-4 py-2 w-[80px]">난이도</th>
+              <th className="px-4 py-2 w-[200px]">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items === null && (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+            )}
+            {items !== null && list.length === 0 && (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-[#2a2723]/50">미션이 없습니다. SUPABASE.md 의 seed SQL 을 실행했는지 확인해 주세요.</td></tr>
+            )}
+            {list.map((m) => (
+              <tr key={m.id} className="border-b border-black/5">
+                <td className="px-4 py-2 tabular-nums">{m.sortOrder}</td>
+                <td className="px-4 py-2 font-mono text-[11px]">{m.id}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${m.active ? 'bg-emerald-100 text-emerald-700' : 'bg-black/10 text-black/55'}`}>
+                    {m.active ? '활성' : '비활성'}
+                  </span>
+                </td>
+                <td className="px-4 py-2">{m.category}</td>
+                <td className="px-4 py-2">{m.title}</td>
+                <td className="px-4 py-2 tabular-nums text-right">{m.amount.toLocaleString()}원</td>
+                <td className="px-4 py-2">{m.difficulty}</td>
+                <td className="px-4 py-2">
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => startEdit(m)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                    >수정</button>
+                    <button
+                      onClick={() => toggleActive(m)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                    >{m.active ? '숨기기' : '게시'}</button>
+                    <button
+                      onClick={() => remove(m)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded"
+                    >삭제</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
