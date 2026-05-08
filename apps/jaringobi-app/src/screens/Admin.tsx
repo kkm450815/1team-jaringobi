@@ -16,11 +16,12 @@ import { useTalkRooms } from '../lib/useTalkRooms';
 import { Announcement, announcementsRepo } from '../lib/announcementsRepo';
 import { ShopItem, shopItemsRepo, ShopCategory as ShopCat, AccSubCat, RemodelSubCat } from '../lib/shopItemsRepo';
 import { missionsRepo, MissionWithMeta } from '../lib/missionsRepo';
-import { TITLES, MissionCategory, Difficulty } from '../lib/data';
+import { titlesRepo, TitleWithMeta } from '../lib/titlesRepo';
+import { TITLES, MISSIONS, MissionCategory, Difficulty, TitleReq, TitleDifficulty } from '../lib/data';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions' | 'titles';
 
 interface RawPost {
   id: string;
@@ -209,6 +210,7 @@ function AdminPanel({ email }: { email: string }) {
           <TabButton active={tab === 'announcements'} onClick={() => setTab('announcements')}>공지/이벤트</TabButton>
           <TabButton active={tab === 'shop'} onClick={() => setTab('shop')}>상점 관리</TabButton>
           <TabButton active={tab === 'missions'} onClick={() => setTab('missions')}>챌린지/미션</TabButton>
+          <TabButton active={tab === 'titles'} onClick={() => setTab('titles')}>칭호</TabButton>
           <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
           <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
         </nav>
@@ -220,6 +222,7 @@ function AdminPanel({ email }: { email: string }) {
         {tab === 'announcements' && <AnnouncementsSection />}
         {tab === 'shop' && <ShopItemsSection />}
         {tab === 'missions' && <MissionsSection />}
+        {tab === 'titles' && <TitlesSection />}
         {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
       </div>
@@ -1892,6 +1895,478 @@ function MissionsSection() {
                     >{m.active ? '숨기기' : '게시'}</button>
                     <button
                       onClick={() => remove(m)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded"
+                    >삭제</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+ * 칭호 관리 — titles CRUD (이미지 업로드 + reqs 동적 편집)
+ * ============================================================ */
+
+const TITLE_DIFFICULTIES: TitleDifficulty[] = ['쉬움', '보통', '어려움'];
+
+const EMPTY_TITLE: TitleWithMeta = {
+  id: '',
+  name: '',
+  difficulty: '쉬움',
+  tagline: '',
+  tip: '',
+  iconKey: '',
+  img: '',
+  reqs: [],
+  sortOrder: 0,
+  active: true,
+};
+
+function reqLabel(r: TitleReq): string {
+  if (r.type === 'mission') {
+    const m = MISSIONS.find((x) => x.id === r.missionId);
+    return `${m?.title ?? r.missionId} ${r.count}회`;
+  }
+  if (r.type === 'totalSaveCount') return `총 절약 ${r.count}회`;
+  return '챌린지 1회 완주';
+}
+
+function TitlesSection() {
+  const [items, setItems] = useState<TitleWithMeta[] | null>(null);
+  const [editing, setEditing] = useState<TitleWithMeta | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function load() {
+    setErr(null);
+    try {
+      const data = await titlesRepo.listAll();
+      setItems(data);
+    } catch (e) {
+      console.error('[TitlesSection.load] 실패', e);
+      setErr((e as Error).message ?? '불러오기 실패');
+    }
+  }
+
+  useEffect(() => { load(); }, []);
+
+  function startNew() {
+    setErr(null);
+    const list = items ?? [];
+    const nextOrder = list.length > 0 ? Math.max(...list.map((t) => t.sortOrder)) + 1 : 1;
+    const usedNums = list
+      .map((t) => /^h(\d+)$/.exec(t.id)?.[1])
+      .filter((s): s is string => !!s)
+      .map((s) => parseInt(s, 10));
+    const nextNum = usedNums.length > 0 ? Math.max(...usedNums) + 1 : list.length + 1;
+    setEditing({ ...EMPTY_TITLE, id: `h${nextNum}`, sortOrder: nextOrder });
+  }
+  function startEdit(t: TitleWithMeta) {
+    setErr(null);
+    setEditing({ ...t, reqs: [...t.reqs] });
+  }
+  function cancel() {
+    setEditing(null);
+    setErr(null);
+  }
+
+  async function handleUploadImage(file: File) {
+    if (!editing) return;
+    setUploading(true);
+    setErr(null);
+    try {
+      const url = await titlesRepo.uploadImage(file);
+      setEditing({ ...editing, img: url });
+    } catch (e) {
+      console.error('[TitlesSection.handleUploadImage] 실패', e);
+      setErr((e as Error).message ?? '업로드 실패');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  function setReq(idx: number, next: TitleReq) {
+    if (!editing) return;
+    const reqs = [...editing.reqs];
+    reqs[idx] = next;
+    setEditing({ ...editing, reqs });
+  }
+  function removeReq(idx: number) {
+    if (!editing) return;
+    setEditing({ ...editing, reqs: editing.reqs.filter((_, i) => i !== idx) });
+  }
+  function addReq(type: TitleReq['type']) {
+    if (!editing) return;
+    let req: TitleReq;
+    if (type === 'mission') {
+      req = { type: 'mission', missionId: MISSIONS[0]?.id ?? 'm1', count: 5 };
+    } else if (type === 'totalSaveCount') {
+      req = { type: 'totalSaveCount', count: 10 };
+    } else {
+      req = { type: 'cycleComplete' };
+    }
+    setEditing({ ...editing, reqs: [...editing.reqs, req] });
+  }
+
+  async function save() {
+    if (!editing) return;
+    const id = editing.id.trim();
+    const name = editing.name.trim();
+    if (!id) { setErr('ID 를 입력하세요. (예: h12)'); return; }
+    if (!/^[a-zA-Z0-9_-]+$/.test(id)) { setErr('ID 는 영문/숫자/_/- 만 사용하세요.'); return; }
+    if (!name) { setErr('이름을 입력하세요.'); return; }
+    if (!editing.img.trim()) { setErr('칭호 이미지를 업로드하거나 경로를 입력하세요.'); return; }
+    if (!editing.iconKey.trim()) { setErr('아이콘 키를 입력하세요.'); return; }
+    for (const r of editing.reqs) {
+      if (r.type === 'mission' && !MISSIONS.some((m) => m.id === r.missionId)) {
+        setErr(`존재하지 않는 미션 ID: ${r.missionId}`);
+        return;
+      }
+    }
+    setBusy(true);
+    setErr(null);
+    try {
+      const saved = await titlesRepo.upsert({ ...editing, id, name });
+      setEditing(null);
+      setItems((prev) => {
+        const list = prev ?? [];
+        const idx = list.findIndex((t) => t.id === saved.id);
+        if (idx >= 0) {
+          const next = [...list];
+          next[idx] = saved;
+          return next.sort((a, b) => a.sortOrder - b.sortOrder);
+        }
+        return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
+      });
+    } catch (e) {
+      console.error('[TitlesSection.save] 실패', e);
+      setErr((e as Error).message ?? '저장 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(t: TitleWithMeta) {
+    if (!confirm(`"${t.id} ${t.name}" 칭호를 삭제하시겠어요?\n\n사용자가 이미 획득한 칭호 ID 는 ownedTitles 에 남지만 표시 시 unknown 처리됩니다.`)) return;
+    if (!confirm('되돌릴 수 없어요. 진짜 삭제할까요?')) return;
+    setBusy(true);
+    try {
+      await titlesRepo.remove(t.id);
+      setItems((prev) => (prev ?? []).filter((x) => x.id !== t.id));
+    } catch (e) {
+      console.error('[TitlesSection.remove] 실패', e);
+      setErr((e as Error).message ?? '삭제 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function toggleActive(t: TitleWithMeta) {
+    setBusy(true);
+    try {
+      const saved = await titlesRepo.upsert({ ...t, active: !t.active });
+      setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+    } catch (e) {
+      console.error('[TitlesSection.toggleActive] 실패', e);
+      setErr((e as Error).message ?? '변경 실패');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const list = items ?? [];
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+        <h2 className="text-[18px] font-bold">칭호 ({list.length})</h2>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={load}
+            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
+          >새로고침</button>
+          <button
+            onClick={startNew}
+            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+          >+ 새 칭호</button>
+        </div>
+      </div>
+
+      {err && (
+        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+          {err}
+        </div>
+      )}
+
+      {editing && (
+        <div className="mb-4 bg-white rounded-xl shadow-sm p-4">
+          <h3 className="text-[14px] font-bold mb-3">
+            {items?.some((t) => t.id === editing.id) ? `칭호 수정 — ${editing.id}` : '새 칭호 만들기'}
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Field label="ID (필수, h12 처럼 고유)">
+              <input
+                value={editing.id}
+                onChange={(e) => setEditing({ ...editing, id: e.target.value })}
+                disabled={items?.some((t) => t.id === editing.id)}
+                placeholder="h12"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono disabled:opacity-60"
+              />
+            </Field>
+            <Field label="정렬 순서">
+              <input
+                type="number"
+                value={editing.sortOrder}
+                onChange={(e) => setEditing({ ...editing, sortOrder: Number(e.target.value) })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="이름 (필수)">
+              <input
+                value={editing.name}
+                onChange={(e) => setEditing({ ...editing, name: e.target.value })}
+                placeholder="홈 바리스타"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              />
+            </Field>
+            <Field label="난이도">
+              <select
+                value={editing.difficulty}
+                onChange={(e) => setEditing({ ...editing, difficulty: e.target.value as TitleDifficulty })}
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+              >
+                {TITLE_DIFFICULTIES.map((d) => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </Field>
+            <div className="md:col-span-2">
+              <Field label="태그라인 (한 줄 설명)">
+                <input
+                  value={editing.tagline}
+                  onChange={(e) => setEditing({ ...editing, tagline: e.target.value })}
+                  placeholder="오늘도 커피 값을 아꼈다"
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+                />
+              </Field>
+            </div>
+            <div className="md:col-span-2">
+              <Field label="팁 (하단 안내)">
+                <input
+                  value={editing.tip}
+                  onChange={(e) => setEditing({ ...editing, tip: e.target.value })}
+                  placeholder="텀블러를 들고 다니면 더 쉽게 성공할 수 있어요"
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px]"
+                />
+              </Field>
+            </div>
+            <Field label="아이콘 키 (레거시 SVG)">
+              <input
+                value={editing.iconKey}
+                onChange={(e) => setEditing({ ...editing, iconKey: e.target.value })}
+                placeholder="coffee"
+                className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+              />
+            </Field>
+            <Field label="활성 여부">
+              <label className="flex items-center gap-2 text-[13px]">
+                <input
+                  type="checkbox"
+                  checked={editing.active}
+                  onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                />
+                활성
+              </label>
+            </Field>
+          </div>
+
+          <div className="mt-4">
+            <p className="text-[12px] font-bold mb-2">칭호 이미지</p>
+            <div className="flex gap-3 items-start flex-wrap">
+              <ImageUploadField
+                label="업로드"
+                hint="title-images 버킷 (public)"
+                url={editing.img && !editing.img.startsWith('/') ? editing.img : ''}
+                uploading={uploading}
+                onUpload={handleUploadImage}
+                onClear={() => setEditing({ ...editing, img: '' })}
+              />
+              <div className="flex-1 min-w-[240px]">
+                <p className="text-[11px] text-[#2a2723]/55 mb-1">또는 정적 경로 (/title/title_NN.png)</p>
+                <input
+                  value={editing.img}
+                  onChange={(e) => setEditing({ ...editing, img: e.target.value })}
+                  placeholder="/title/title_12.png"
+                  className="w-full bg-black/5 rounded px-3 py-2 outline-none text-[13px] font-mono"
+                />
+                {editing.img && (
+                  <img
+                    src={editing.img}
+                    alt=""
+                    className="mt-2 w-32 h-32 object-contain bg-black/5 rounded border border-black/10"
+                    onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+              <p className="text-[12px] font-bold">획득 조건 (모두 만족 시 획득)</p>
+              <div className="flex gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => addReq('mission')}
+                  className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                >+ 미션</button>
+                <button
+                  type="button"
+                  onClick={() => addReq('totalSaveCount')}
+                  className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                >+ 총 절약 횟수</button>
+                <button
+                  type="button"
+                  onClick={() => addReq('cycleComplete')}
+                  className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                >+ 챌린지 완주</button>
+              </div>
+            </div>
+            {editing.reqs.length === 0 && (
+              <p className="text-[11px] text-[#2a2723]/45 bg-black/5 rounded px-3 py-2">
+                조건 없음 — 모든 사용자에게 자동 획득되는 칭호 (h0 처럼)
+              </p>
+            )}
+            <div className="space-y-2">
+              {editing.reqs.map((r, idx) => (
+                <div key={idx} className="flex gap-2 items-center bg-black/5 rounded px-3 py-2 flex-wrap">
+                  {r.type === 'mission' ? (
+                    <>
+                      <span className="text-[11px] text-[#2a2723]/55 w-12">미션</span>
+                      <select
+                        value={r.missionId}
+                        onChange={(e) => setReq(idx, { ...r, missionId: e.target.value })}
+                        className="flex-1 bg-white rounded px-2 py-1 text-[12px] min-w-[200px]"
+                      >
+                        {MISSIONS.map((m) => (
+                          <option key={m.id} value={m.id}>{m.id} — {m.title}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        value={r.count}
+                        onChange={(e) => setReq(idx, { ...r, count: Number(e.target.value) })}
+                        className="w-20 bg-white rounded px-2 py-1 text-[12px]"
+                      />
+                      <span className="text-[11px] text-[#2a2723]/55">회</span>
+                    </>
+                  ) : r.type === 'totalSaveCount' ? (
+                    <>
+                      <span className="text-[11px] text-[#2a2723]/55 w-24">총 절약 횟수</span>
+                      <input
+                        type="number"
+                        value={r.count}
+                        onChange={(e) => setReq(idx, { ...r, count: Number(e.target.value) })}
+                        className="w-20 bg-white rounded px-2 py-1 text-[12px]"
+                      />
+                      <span className="text-[11px] text-[#2a2723]/55">회 이상</span>
+                      <span className="flex-1" />
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[11px] text-[#2a2723]/55 w-24">챌린지 완주</span>
+                      <span className="flex-1 text-[11px] text-[#2a2723]/45">cycle ≥ 2</span>
+                    </>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeReq(idx)}
+                    className="text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded"
+                  >제거</button>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5 flex gap-2 justify-end">
+            <button
+              onClick={cancel}
+              disabled={busy}
+              className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-md"
+            >취소</button>
+            <button
+              onClick={save}
+              disabled={busy || uploading}
+              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-md disabled:opacity-40"
+            >{busy ? '저장 중…' : '저장'}</button>
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
+        <table className="w-full text-[13px]">
+          <thead>
+            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+              <th className="px-4 py-2 w-[60px]">순서</th>
+              <th className="px-4 py-2 w-[60px]">이미지</th>
+              <th className="px-4 py-2 w-[80px]">ID</th>
+              <th className="px-4 py-2 w-[80px]">상태</th>
+              <th className="px-4 py-2">이름</th>
+              <th className="px-4 py-2 w-[80px]">난이도</th>
+              <th className="px-4 py-2">획득 조건</th>
+              <th className="px-4 py-2 w-[200px]">작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items === null && (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+            )}
+            {items !== null && list.length === 0 && (
+              <tr><td colSpan={8} className="px-4 py-6 text-center text-[#2a2723]/50">칭호가 없습니다. SUPABASE.md 의 seed SQL 을 실행했는지 확인해 주세요.</td></tr>
+            )}
+            {list.map((t) => (
+              <tr key={t.id} className="border-b border-black/5">
+                <td className="px-4 py-2 tabular-nums">{t.sortOrder}</td>
+                <td className="px-4 py-2">
+                  {t.img && (
+                    <img
+                      src={t.img}
+                      alt=""
+                      className="w-10 h-10 object-contain bg-black/5 rounded"
+                      onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                    />
+                  )}
+                </td>
+                <td className="px-4 py-2 font-mono text-[11px]">{t.id}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-0.5 rounded text-[11px] font-medium ${t.active ? 'bg-emerald-100 text-emerald-700' : 'bg-black/10 text-black/55'}`}>
+                    {t.active ? '활성' : '비활성'}
+                  </span>
+                </td>
+                <td className="px-4 py-2">{t.name}</td>
+                <td className="px-4 py-2">{t.difficulty}</td>
+                <td className="px-4 py-2 text-[11px] text-[#2a2723]/65">
+                  {t.reqs.length === 0 ? '— (자동 획득)' : t.reqs.map(reqLabel).join(', ')}
+                </td>
+                <td className="px-4 py-2">
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={() => startEdit(t)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                    >수정</button>
+                    <button
+                      onClick={() => toggleActive(t)}
+                      disabled={busy}
+                      className="text-[11px] font-bold bg-black/5 hover:bg-black/10 px-2 py-1 rounded"
+                    >{t.active ? '숨기기' : '게시'}</button>
+                    <button
+                      onClick={() => remove(t)}
                       disabled={busy}
                       className="text-[11px] font-bold bg-red-50 hover:bg-red-100 text-red-700 px-2 py-1 rounded"
                     >삭제</button>
