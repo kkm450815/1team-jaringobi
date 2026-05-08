@@ -180,8 +180,9 @@ language plpgsql
 security definer
 set search_path = public, auth
 as $$
+#variable_conflict use_column
 begin
-  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+  if not exists(select 1 from public.admins a where a.user_id = auth.uid()) then
     raise exception 'forbidden';
   end if;
   return query
@@ -189,7 +190,7 @@ begin
     (select count(*) from auth.users)::bigint,
     (select count(*) from public.profiles)::bigint,
     (select count(*) from public.talk_posts)::bigint,
-    (select count(distinct user_id) from public.talk_posts where user_id is not null)::bigint,
+    (select count(distinct tp.user_id) from public.talk_posts tp where tp.user_id is not null)::bigint,
     (select count(*) from public.talk_posts where created_at >= now() - interval '24 hours')::bigint,
     (select count(*) from public.talk_posts where created_at >= now() - interval '7 days')::bigint;
 end;
@@ -214,8 +215,9 @@ language plpgsql
 security definer
 set search_path = public, auth
 as $$
+#variable_conflict use_column
 begin
-  if not exists(select 1 from public.admins where user_id = auth.uid()) then
+  if not exists(select 1 from public.admins a where a.user_id = auth.uid()) then
     raise exception 'forbidden';
   end if;
   return query
@@ -237,6 +239,10 @@ $$;
 revoke all on function public.admin_list_users() from public, anon;
 grant execute on function public.admin_list_users() to authenticated;
 ```
+
+> ⚠️ `#variable_conflict use_column` 지시자가 핵심 — RETURNS TABLE 의 OUT
+> 파라미터(`user_id` 등) 와 동명의 컬럼이 있을 때 컬럼 우선으로 해결.
+> 빠뜨리면 `column reference "user_id" is ambiguous` 에러.
 
 ### 3-5. 수다방 리스트 (talk_rooms)
 
