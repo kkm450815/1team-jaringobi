@@ -4,6 +4,7 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { CloseButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
+import { TutorialOverlay, TutorialStep } from '../components/TutorialOverlay';
 import { MISSIONS, MissionCategory } from '../lib/data';
 import { isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
@@ -15,6 +16,36 @@ const CATEGORY_LABEL: Record<MissionCategory, string> = {
   충동: '충동차단',
   통장: '통장사수',
 };
+
+// 첫 진입 코치마크 — 5스텝. 각 step 의 targetSelector 와 매칭되는 element 가
+// Main.tsx / BottomTabBar.tsx 안에 data-tutorial 어트리뷰트로 표시돼 있음.
+const MAIN_TUTORIAL_STEPS: TutorialStep[] = [
+  {
+    targetSelector: '[data-tutorial="hearts"]',
+    text: '양심 ♥ 3개. 미션을 안 지키면 깎이고, 0이 되면 모은 포인트의 절반이 차감돼요.',
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tutorial="totalSaved"]',
+    text: '30일간 모은 절약 금액. 매일 미션 인증할 때마다 늘어나요.',
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tutorial="room"]',
+    text: '여기가 내 방. 모은 포인트로 사치품·옷·인테리어를 사서 캐릭터를 꾸밀 수 있어요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="missionButton"]',
+    text: '매일 절약 미션을 1개 골라서 인증 사진을 올리면 보상이 적립돼요. 미션은 새벽 4시에 초기화돼요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="tabbar"]',
+    text: '아래 탭으로 이동해요. 가운데 [챌린지] 가 메인, [카메라] 에서 인증 사진, [수다방] 에서 다른 사용자와 소통.',
+    placement: 'top',
+  },
+];
 
 type MissionModal = null | 'recommend' | 'change' | 'review';
 
@@ -178,12 +209,23 @@ export default function Main() {
   useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
   useEscape(showLockInfo, () => setShowLockInfo(false));
 
+  // 튜토리얼 — 첫 진입 시 1회 노출. tutorialSeen 플래그로 재진입 차단.
+  // Settings 에서 "다시 보기" 누르면 false 로 리셋되어 다음 /main 진입 시 재실행.
+  const [showTutorial, setShowTutorial] = useState(false);
+  useEffect(() => {
+    if (!u.tutorialSeen) setShowTutorial(true);
+  }, [u.tutorialSeen]);
+  function finishTutorial() {
+    u.update({ tutorialSeen: true });
+    setShowTutorial(false);
+  }
+
   return (
     <main className="relative flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
         <div className="flex flex-col items-center gap-1">
-          <div className="flex gap-0">
+          <div data-tutorial="hearts" className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
               <button
                 key={i}
@@ -200,6 +242,7 @@ export default function Main() {
         </div>
 
         <p
+          data-tutorial="totalSaved"
           aria-label="누적 저축액"
           style={{ top: 'calc(36px + (100% - 36px) / 2)' }}
           className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
@@ -221,6 +264,7 @@ export default function Main() {
       {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내 */}
       <section className="px-10 pt-8 pb-8">
         <button
+          data-tutorial="missionButton"
           onClick={locked ? () => setShowLockInfo(true) : openMissionModal}
           className={`w-full rounded-full px-5 py-3.5 text-[19px] font-bold shadow-soft active:scale-[.98] transition ${
             locked
@@ -244,7 +288,7 @@ export default function Main() {
       </section>
 
       {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
-      <div ref={roomRef} className="relative w-full mt-2">
+      <div ref={roomRef} data-tutorial="room" className="relative w-full mt-2">
         <RoomPreview
           equipped={u.equipped}
           framed={false}
@@ -426,6 +470,14 @@ export default function Main() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 코치마크 튜토리얼 — 첫 진입 시 1회. 다른 모달들 위에 표시 */}
+      {showTutorial && (
+        <TutorialOverlay
+          steps={MAIN_TUTORIAL_STEPS}
+          onFinish={finishTutorial}
+        />
       )}
 
       {/* 미션 잠김 안내 팝업 — '오늘 미션 인증 완료' 버튼 클릭 시 */}

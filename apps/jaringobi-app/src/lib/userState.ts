@@ -71,6 +71,9 @@ export interface UserState {
   // null = 아직 한 번도 인증 안 했거나 잠김 해제됨 → 즉시 가능.
   lastSavedAt: string | null;
 
+  // /main 첫 진입 시 코치마크 튜토리얼을 1회 노출. Settings 에서 다시 보기 가능.
+  tutorialSeen: boolean;
+
   settings: UserSettings;
 }
 
@@ -122,6 +125,7 @@ const DEFAULT: UserState = {
   missionWinDays: {},
   totalSaveCount: 0,
   lastSavedAt: null,
+  tutorialSeen: false,
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -176,6 +180,7 @@ function read(): UserState {
       missionWinDays,
       totalSaveCount,
       lastSavedAt: typeof parsed.lastSavedAt === 'string' ? parsed.lastSavedAt : DEFAULT.lastSavedAt,
+      tutorialSeen: typeof parsed.tutorialSeen === 'boolean' ? parsed.tutorialSeen : DEFAULT.tutorialSeen,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
