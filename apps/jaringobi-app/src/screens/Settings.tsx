@@ -254,6 +254,18 @@ export default function Settings() {
         />
       </Section>
 
+      <Section title="도움말">
+        <Row
+          label="튜토리얼 다시 보기"
+          sub="메인 화면 사용법을 단계별로 다시 안내받아요"
+          right={<span className="text-accent text-[13px] font-bold">시작</span>}
+          onClick={() => {
+            u.update({ tutorialSeen: false });
+            nav('/main');
+          }}
+        />
+      </Section>
+
       <Section title="데이터">
         <Row
           label="데이터 내보내기"

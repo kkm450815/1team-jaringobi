@@ -71,6 +71,9 @@ export interface UserState {
   // null = 아직 한 번도 인증 안 했거나 잠김 해제됨 → 즉시 가능.
   lastSavedAt: string | null;
 
+  // /main 첫 진입 시 코치마크 튜토리얼을 1회 노출. Settings 에서 다시 보기 가능.
+  tutorialSeen: boolean;
+
   settings: UserSettings;
 }
 
@@ -122,6 +125,7 @@ const DEFAULT: UserState = {
   missionWinDays: {},
   totalSaveCount: 0,
   lastSavedAt: null,
+  tutorialSeen: false,
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -176,6 +180,7 @@ function read(): UserState {
       missionWinDays,
       totalSaveCount,
       lastSavedAt: typeof parsed.lastSavedAt === 'string' ? parsed.lastSavedAt : DEFAULT.lastSavedAt,
+      tutorialSeen: typeof parsed.tutorialSeen === 'boolean' ? parsed.tutorialSeen : DEFAULT.tutorialSeen,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
@@ -246,6 +251,7 @@ export function useUser() {
 
   // 닉네임 변경 시 profiles 테이블에 새 row INSERT 시도. unique 위반(=다른 사용자
   // 사용 중) 이면 변경 거부하고 reason='taken' 반환.
+  // 세션 미준비 등 환경 이슈는 로컬 저장만 진행 (Supabase 동기화는 best-effort).
   // 기본 닉('자린이') → 다른 닉으로 처음 설정할 때도 이 함수 사용.
   const tryRenameNickname = useCallback(
     async (newNick: string): Promise<{ ok: true } | { ok: false; reason: 'taken' | 'unknown'; message: string }> => {
@@ -260,7 +266,14 @@ export function useUser() {
       const oldForRename = oldNick === DEFAULT_NICK ? '' : oldNick;
       const profile: PublicProfile = { ...userToProfile(fresh), nickname: trimmed };
       const result = await profilesRepo.tryRename(oldForRename, profile);
-      if (!result.ok) return result;
+      if (!result.ok) {
+        // 'taken' = 다른 사용자가 이미 사용 중 → 정말 거부
+        if (result.reason === 'taken') return result;
+        // 그 외(세션 없음 등) = Supabase 환경 이슈. 로컬은 저장하고 진행.
+        // 사용자 흐름이 끊기지 않도록 — anonymous session 이 늦게 잡히는
+        // 경우 등에 대한 fallback. 추후 설정 변경 시 자동 동기화됨.
+        console.warn('[tryRenameNickname] Supabase 동기화 실패, 로컬만 저장:', result.message);
+      }
       // 로컬 상태 갱신
       const next: UserState = { ...fresh, nickname: trimmed };
       write(next);
