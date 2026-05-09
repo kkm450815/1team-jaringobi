@@ -170,6 +170,32 @@ export default function Settings() {
         <h1 className="text-center font-bold text-[18px] tracking-[4px] text-text">설정</h1>
       </header>
 
+      {/* 공식 인스타 — 문의 & 팔로우 유도 */}
+      <a
+        href="https://www.instagram.com/4poor_project?igsh=emJ1YjR3eGk5Z2tr&utm_source=qr"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 mx-4 block bg-gradient-to-tr from-[#FDE7BD] via-[#F8B6CF] to-[#A8B5F2] rounded-2xl shadow-soft p-4 active:scale-[.99] transition"
+      >
+        <div className="flex items-center gap-3">
+          <span className="w-12 h-12 rounded-2xl bg-white/90 grid place-items-center shrink-0">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#1f1d1a" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" />
+              <circle cx="12" cy="12" r="4" />
+              <circle cx="17.5" cy="6.5" r="0.7" fill="#1f1d1a" stroke="none" />
+            </svg>
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className="text-[15px] font-bold text-text leading-tight">@4poor_project</p>
+            <p className="text-[12px] text-text/75 mt-1 leading-relaxed">
+              문의·피드백은 인스타 DM 으로!<br />
+              팔로우 해주시면 큰 힘이 돼요 🐟
+            </p>
+          </div>
+          <span className="shrink-0 text-text/55 text-[18px]" aria-hidden>›</span>
+        </div>
+      </a>
+
       <Section title="프로필">
         {editingNick ? (
           <div className="px-4 py-3 flex items-center gap-2">

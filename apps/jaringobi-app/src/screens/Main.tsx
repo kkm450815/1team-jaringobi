@@ -17,12 +17,12 @@ const CATEGORY_LABEL: Record<MissionCategory, string> = {
   통장: '통장사수',
 };
 
-// 첫 진입 코치마크 — 5스텝. 각 step 의 targetSelector 와 매칭되는 element 가
-// Main.tsx / BottomTabBar.tsx 안에 data-tutorial 어트리뷰트로 표시돼 있음.
+// 첫 진입 코치마크. 각 step 의 targetSelector 는 Main.tsx / BottomTabBar.tsx
+// 의 data-tutorial 어트리뷰트와 매칭. 단계 추가/순서 변경 시 자유.
 const MAIN_TUTORIAL_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tutorial="hearts"]',
-    text: '양심 ♥ 3개. 미션을 안 지키면 깎이고, 0이 되면 모은 포인트의 절반이 차감돼요.',
+    text: '양심 ♥ 은 본인이 직접 깎는 거예요. 다 깎으면 모은 포인트가 절반이 되지만 챌린지는 계속 진행할 수 있어요. 당신의 양심에 맡깁니다!',
     placement: 'bottom',
   },
   {
@@ -31,18 +31,38 @@ const MAIN_TUTORIAL_STEPS: TutorialStep[] = [
     placement: 'bottom',
   },
   {
+    targetSelector: '[data-tutorial="mypage"]',
+    text: '마이페이지에서 이름·칭호·인증샷 캘린더를 확인할 수 있어요. 수다방의 프로필을 통해 다른 사용자들도 내 페이지를 볼 수 있어요.',
+    placement: 'bottom',
+  },
+  {
     targetSelector: '[data-tutorial="room"]',
-    text: '여기가 내 방. 모은 포인트로 사치품·옷·인테리어를 사서 캐릭터를 꾸밀 수 있어요.',
+    text: '여기가 내 방. 모은 포인트로 자린이의 옷을 사거나 방을 꾸밀 수 있어요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="shop"]',
+    text: '상점에서는 인게임 포인트로 자린이의 옷이나 방을 꾸밀 상품을 구매할 수 있어요. 산 아이템은 옷장에서 착용하면 캐릭터에 적용돼요.',
     placement: 'top',
   },
   {
     targetSelector: '[data-tutorial="missionButton"]',
     text: '매일 절약 미션을 1개 골라서 인증 사진을 올리면 보상이 적립돼요. 미션은 새벽 4시에 초기화돼요.',
+    placement: 'bottom',
+  },
+  {
+    targetSelector: '[data-tutorial="tab-challenges"]',
+    text: '가운데 [챌린지] 탭이 메인 화면이에요. 챌린지 목록과 인증샷 가이드를 확인할 수 있어요.',
     placement: 'top',
   },
   {
-    targetSelector: '[data-tutorial="tabbar"]',
-    text: '아래 탭으로 이동해요. 가운데 [챌린지] 가 메인, [카메라] 에서 인증 사진, [수다방] 에서 다른 사용자와 소통.',
+    targetSelector: '[data-tutorial="tab-talk"]',
+    text: '[수다방] 에서는 다른 사용자들과 짠테크 정보를 자유롭게 나눌 수 있어요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="tab-camera"]',
+    text: '[카메라] 탭에서 매일 챌린지 인증샷을 올려요. 인증해야 보상이 적립돼요.',
     placement: 'top',
   },
 ];
@@ -250,7 +270,7 @@ export default function Main() {
           {u.totalSaved.toLocaleString()}
         </p>
 
-        <Link to="/mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
+        <Link to="/mypage" data-tutorial="mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
           <span className="w-11 h-11 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
             <img src="/jarin/main_mypage.png" alt="" className="w-9 h-9 object-contain" />
           </span>
@@ -321,6 +341,7 @@ export default function Main() {
         )}
         <Link
           to="/shop"
+          data-tutorial="shop"
           aria-label="상점"
           className="absolute right-4 bottom-4 w-14 h-14 rounded-2xl grid place-items-center bg-bg shadow-soft"
         >

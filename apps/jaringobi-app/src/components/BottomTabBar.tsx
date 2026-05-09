@@ -3,16 +3,16 @@ import { playClickSfx } from '../lib/feedback';
 import { useUser } from '../lib/userState';
 
 const tabs = [
-  { to: '/talk',       label: '수다방' },
-  { to: '/challenges', label: '챌린지' },
-  { to: '/camera',     label: '카메라' },
+  { to: '/talk',       label: '수다방', tutorialKey: 'tab-talk' },
+  { to: '/challenges', label: '챌린지', tutorialKey: 'tab-challenges' },
+  { to: '/camera',     label: '카메라', tutorialKey: 'tab-camera' },
 ];
 
 export function BottomTabBar() {
   const { pathname } = useLocation();
   const u = useUser();
   return (
-    <nav data-tutorial="tabbar" className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-4 pb-6 grid grid-cols-[0.8fr_2fr_0.8fr] gap-3 items-stretch">
+    <nav className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-4 pb-6 grid grid-cols-[0.8fr_2fr_0.8fr] gap-3 items-stretch">
       {tabs.map((t) => {
         const active = pathname.startsWith(t.to)
           || (t.to === '/challenges' && (pathname === '/main' || pathname === '/'));
@@ -21,6 +21,7 @@ export function BottomTabBar() {
           <Link
             key={t.to}
             to={t.to}
+            data-tutorial={t.tutorialKey}
             onClick={() => { playClickSfx(); }}
             className={`tap-pill flex items-center justify-center text-center py-5 rounded-2xl font-bold transition-colors ${
               isChallenge ? 'text-[20px]' : 'text-[14px]'
