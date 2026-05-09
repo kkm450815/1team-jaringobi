@@ -98,10 +98,10 @@ class Bgm {
       this.note(ROOT + PENTA[idx] + oct, 0.18, 'square', 0.16);
     }
 
-    // 가끔 비뚤거리는 추가 음 (15% 확률)
-    if (Math.random() < 0.12) {
+    // 가끔 비뚤거리는 추가 음 — 5% 로 낮춰서 됍됍거림 줄임
+    if (Math.random() < 0.05) {
       const idx = Math.floor(Math.random() * PENTA.length);
-      this.note(ROOT + PENTA[idx] + 12, 0.09, 'square', 0.10);
+      this.note(ROOT + PENTA[idx] + 12, 0.09, 'square', 0.08);
     }
 
     this.step++;
@@ -115,8 +115,8 @@ class Bgm {
       const g = ctx.createGain();
       osc.type = type;
       osc.frequency.value = midiToHz(midi);
-      // 꼬질꼬질 — 살짝 음정 흔들림 (±15 cent)
-      osc.detune.value = (Math.random() - 0.5) * 30;
+      // 꼬질꼬질 — 살짝 음정 흔들림 (±8 cent, 너무 멀미나지 않게)
+      osc.detune.value = (Math.random() - 0.5) * 16;
       const t = ctx.currentTime;
       g.gain.setValueAtTime(0, t);
       g.gain.linearRampToValueAtTime(gain, t + 0.005);
