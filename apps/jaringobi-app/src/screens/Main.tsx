@@ -41,8 +41,18 @@ const MAIN_TUTORIAL_STEPS: TutorialStep[] = [
     placement: 'bottom',
   },
   {
-    targetSelector: '[data-tutorial="tabbar"]',
-    text: '아래 탭으로 이동해요. 가운데 [챌린지] 가 메인, [카메라] 에서 인증 사진, [수다방] 에서 다른 사용자와 소통.',
+    targetSelector: '[data-tutorial="tab-challenges"]',
+    text: '가운데 [챌린지] 탭이 메인 화면이에요. 챌린지 목록과 인증샷 가이드를 확인할 수 있어요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="tab-talk"]',
+    text: '[수다방] 에서는 다른 사용자들과 짠테크 정보를 자유롭게 나눌 수 있어요.',
+    placement: 'top',
+  },
+  {
+    targetSelector: '[data-tutorial="tab-camera"]',
+    text: '[카메라] 탭에서 매일 챌린지 인증샷을 올려요. 인증해야 보상이 적립돼요.',
     placement: 'top',
   },
 ];
