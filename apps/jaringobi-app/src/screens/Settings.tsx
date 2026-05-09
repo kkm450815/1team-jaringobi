@@ -228,7 +228,6 @@ export default function Settings() {
 
       <Section title="알림">
         {settingItem('notifyChallenge', '챌린지 알림', '인증 시간을 매일 알려드려요')}
-        {settingItem('notifyHeart', '양심 알림', '양심이 깎이려 할 때 알려드려요')}
       </Section>
 
       <Section title="피드백">

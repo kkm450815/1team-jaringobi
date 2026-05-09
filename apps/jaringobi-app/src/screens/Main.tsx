@@ -230,13 +230,16 @@ export default function Main() {
   useEscape(showLockInfo, () => setShowLockInfo(false));
 
   // 튜토리얼 — 첫 진입 시 1회 노출. tutorialSeen 플래그로 재진입 차단.
+  // 노출되는 즉시 tutorialSeen=true 저장 (중간에 닫아도 다음 방문엔 안 뜸).
   // Settings 에서 "다시 보기" 누르면 false 로 리셋되어 다음 /main 진입 시 재실행.
   const [showTutorial, setShowTutorial] = useState(false);
   useEffect(() => {
-    if (!u.tutorialSeen) setShowTutorial(true);
+    if (!u.tutorialSeen) {
+      setShowTutorial(true);
+      u.update({ tutorialSeen: true });
+    }
   }, [u.tutorialSeen]);
   function finishTutorial() {
-    u.update({ tutorialSeen: true });
     setShowTutorial(false);
   }
 
