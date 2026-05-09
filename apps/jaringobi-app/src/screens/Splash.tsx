@@ -1,10 +1,29 @@
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const USER_KEY = 'jaringobi.user.v1';
+const DEFAULT_NICK = '자린이';
+
+/** localStorage 에 닉네임이 저장된 사용자(=가입 완료) 인지 검사. */
+function hasSavedAccount(): boolean {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { nickname?: unknown };
+    return typeof parsed.nickname === 'string'
+      && parsed.nickname.length > 0
+      && parsed.nickname !== DEFAULT_NICK;
+  } catch {
+    return false;
+  }
+}
+
 export default function Splash() {
   const nav = useNavigate();
   useEffect(() => {
-    const t = setTimeout(() => nav('/login'), 1400);
+    // 저장된 사용자 → /main 으로 직행. 신규 → /login.
+    const target = hasSavedAccount() ? '/main' : '/login';
+    const t = setTimeout(() => nav(target, { replace: true }), 1400);
     return () => clearTimeout(t);
   }, [nav]);
 
