@@ -38,7 +38,7 @@ const MAIN_TUTORIAL_STEPS: TutorialStep[] = [
   {
     targetSelector: '[data-tutorial="missionButton"]',
     text: '매일 절약 미션을 1개 골라서 인증 사진을 올리면 보상이 적립돼요. 미션은 새벽 4시에 초기화돼요.',
-    placement: 'top',
+    placement: 'bottom',
   },
   {
     targetSelector: '[data-tutorial="tabbar"]',

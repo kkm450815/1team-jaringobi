@@ -104,12 +104,25 @@ export function TutorialOverlay({ steps, onFinish }: Props) {
   const hw = rect.width + pad * 2;
   const hh = rect.height + pad * 2;
 
-  // 말풍선 위치 — 강조 영역 위 또는 아래
+  // 말풍선 위치 — 강조 영역 위 또는 아래. 자동선택 시 화면 절반 기준.
   const placement = step.placement ?? (rect.top > window.innerHeight / 2 ? 'top' : 'bottom');
+  // viewport 안에 들어오게 clamp + 길어지면 스크롤. 12px = 안전 여백.
   const tooltipStyle: React.CSSProperties =
     placement === 'top'
-      ? { left: 12, right: 12, bottom: window.innerHeight - hy + 12 }
-      : { left: 12, right: 12, top: hy + hh + 12 };
+      ? {
+          left: 12,
+          right: 12,
+          bottom: Math.max(12, window.innerHeight - hy + 12),
+          maxHeight: Math.max(120, hy - 24),
+          overflowY: 'auto',
+        }
+      : {
+          left: 12,
+          right: 12,
+          top: Math.min(window.innerHeight - 120, hy + hh + 12),
+          maxHeight: Math.max(120, window.innerHeight - (hy + hh) - 24),
+          overflowY: 'auto',
+        };
 
   return (
     <div
