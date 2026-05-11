@@ -55,7 +55,7 @@ interface UserRow {
 export default function Admin() {
   if (!isSupabaseEnabled()) {
     return (
-      <main className="min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
+      <main className="font-pretendard min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
         <div className="max-w-md text-center">
           <h1 className="text-[20px] font-bold tracking-[2px]">자린고비 ADMIN</h1>
           <p className="mt-3 text-[13px] text-white/70">
@@ -66,7 +66,11 @@ export default function Admin() {
       </main>
     );
   }
-  return <AdminInner />;
+  return (
+    <div className="font-pretendard">
+      <AdminInner />
+    </div>
+  );
 }
 
 function AdminInner() {
