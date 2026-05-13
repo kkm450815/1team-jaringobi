@@ -3,3 +3,19 @@ dist
 .DS_Store
 *.local
 .vite
+
+# Capacitor / Android signing — 서명 키와 비번은 절대 commit 금지
+android/keystore.properties
+android/app/release.keystore
+android/app/release.jks
+android/app/*.keystore
+android/app/*.jks
+android/.gradle/
+android/app/build/
+android/build/
+android/.idea/
+android/local.properties
+android/captures/
+android/app/release/
+*.aab
+*.apk
