@@ -1,6 +1,7 @@
 import { FormEvent, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { signInWithGoogle, signInWithPassword, signUpWithPassword } from '../lib/auth';
+import { playSuccessSfx } from '../lib/feedback';
 
 function GoogleIcon() {
   return (
@@ -55,11 +56,13 @@ export default function Login() {
       } else {
         const { needsEmailConfirm } = await signUpWithPassword(email, password);
         if (needsEmailConfirm) {
-          // 메일 확인 대기 — 세션 없음. 사용자에게 안내만 표시.
+          // Supabase 콘솔의 "Confirm email" 이 ON 인 경우. 정책상 즉시 로그인 불가.
+          // 베타·데모 단계엔 콘솔에서 끄는 걸 권장. (docs/SUPABASE.md 참고)
           setInfo(`${email.trim()} 로 인증 메일을 보냈어요. 메일의 링크를 눌러 확인 후 로그인해 주세요.`);
           setMode('login');
         } else {
-          // 즉시 가입 + 세션 생성 (이메일 확인 OFF 정책)
+          // Confirm email OFF — 가입 즉시 세션 발급, 바로 /mode 로
+          playSuccessSfx();
           nav('/mode', { replace: true });
         }
       }
@@ -182,6 +185,17 @@ export default function Login() {
         >
           {busy ? (mode === 'login' ? '로그인 중…' : '가입 중…') : mode === 'login' ? '로그인' : '회원가입'}
         </button>
+
+        {mode === 'login' && (
+          <div className="text-center pt-1">
+            <Link
+              to="/forgot-password"
+              className="text-[12px] text-text/55 underline underline-offset-2"
+            >
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
+        )}
       </form>
 
       {/* TODO: 임시 데모 접속 — 출시 전 제거 */}

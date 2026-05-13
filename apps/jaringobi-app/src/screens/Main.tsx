@@ -343,21 +343,27 @@ export default function Main() {
           onCharacterClick={hitCharacter}
         />
         {hit && (
+          // 위치 잡는 wrapper(translate -50%,-50%) 와 애니메이션 wrapper(scale/rotate)
+          // 를 분리. 단일 element 로 두면 animate-hit-pop 의 transform 이 inline
+          // translate 를 override 해서 폭발이 좌상단 기준으로 그려져 살짝 우-하단
+          // 으로 밀려 보이는 버그가 있었음. 이중 wrapper 로 두 transform 이 충돌 X.
           <div
             key={hit.tick}
-            className="absolute z-20 pointer-events-none animate-hit-pop"
+            className="absolute z-20 pointer-events-none"
             style={{ left: hit.x, top: hit.y, transform: 'translate(-50%, -50%)' }}
             aria-hidden
           >
-            <svg width="56" height="56" viewBox="0 0 120 120">
-              <polygon
-                points="60,4 70,30 96,18 84,44 116,52 88,64 108,90 78,82 84,114 60,92 36,114 42,82 12,90 32,64 4,52 36,44 24,18 50,30"
-                fill={hit.color}
-                stroke="#3D3833"
-                strokeWidth="3"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <div className="animate-hit-pop">
+              <svg width="56" height="56" viewBox="0 0 120 120">
+                <polygon
+                  points="60,4 70,30 96,18 84,44 116,52 88,64 108,90 78,82 84,114 60,92 36,114 42,82 12,90 32,64 4,52 36,44 24,18 50,30"
+                  fill={hit.color}
+                  stroke="#3D3833"
+                  strokeWidth="3"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
           </div>
         )}
         <Link

@@ -23,7 +23,11 @@ export default function MyPage() {
 
   // 노트 카드 영역 — 공유 시 이 영역만 이미지로 캡쳐
   const noteRef = useRef<HTMLElement>(null);
-  const [sharing, setSharing] = useState(false);
+  const [capturing, setCapturing] = useState(false);
+  // 캡쳐 결과 미리보기 모달 — { dataUrl(미리보기용), blob(공유용 File 변환용) }
+  const [sharePreview, setSharePreview] = useState<{ dataUrl: string; blob: Blob } | null>(null);
+  const [shareSending, setShareSending] = useState(false);
+  useEscape(sharePreview !== null, () => setSharePreview(null));
 
   // 사진 줌 모달 — RECORD 그리드에서 사진 클릭 시
   const [zoomPhoto, setZoomPhoto] = useState<{ day: number; src: string } | null>(null);
@@ -75,61 +79,80 @@ export default function MyPage() {
     ? TITLES.find((t) => t.id === detailTitleId) ?? null
     : null;
 
-  async function handleShare() {
-    if (sharing || !noteRef.current) return;
-    setSharing(true);
-    const text = `자린고비 ${u.cycle}회차 ${u.day}일차 · 누적 절약 ${u.totalSaved.toLocaleString()}원`;
-    const fileName = `jaringobi_${u.nickname}_${u.cycle}회차.png`;
+  // 공유 텍스트 + 파일명 — 미리보기 모달 / 실제 share 단계 모두에서 동일하게 사용
+  const shareText = `자린고비 ${u.cycle}회차 ${u.day}일차 · 누적 절약 ${u.totalSaved.toLocaleString()}원`;
+  const shareFileName = `jaringobi_${u.nickname}_${u.cycle}회차.png`;
 
+  // 공유 버튼 → 노트 카드 캡쳐만 수행 → 미리보기 모달 띄움
+  async function prepareShare() {
+    if (capturing || !noteRef.current) return;
+    setCapturing(true);
     try {
-      // html-to-image 로 노트 카드 DOM 을 PNG 로 변환. devicePixelRatio 2배로 해상도 보존.
       const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
       const opts = {
         pixelRatio,
         backgroundColor: '#FAF5E9', // 노트 종이색 (bg-grid-paper)
         cacheBust: true,
       };
-
-      // 가능하면 Blob → File 로 navigator.share (iOS/Android 모두 지원)
-      const blob = await toBlob(noteRef.current, opts);
-      if (blob) {
-        const file = new File([blob], fileName, { type: 'image/png' });
-        const shareData: ShareData = { title: '자린고비', text, files: [file] };
-        if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
-          try {
-            await navigator.share(shareData);
-            playSuccessSfx();
-            return;
-          } catch {
-            // 사용자 취소 — 폴백 안 거치고 종료
-            return;
-          }
-        }
-      }
-
-      // 폴백 — files share 미지원 환경: PNG dataURL 을 새 탭에서 열어 사용자가 저장
-      const dataUrl = await toPng(noteRef.current, opts);
-      const win = window.open();
-      if (win) {
-        win.document.write(`<title>${fileName}</title><img src="${dataUrl}" style="width:100%;max-width:480px" />`);
-      } else {
-        // 팝업 차단 — 다운로드 링크로
-        const a = document.createElement('a');
-        a.href = dataUrl;
-        a.download = fileName;
-        a.click();
-      }
+      // dataUrl(미리보기) + blob(공유) 둘 다 만듦. 한 번 캡쳐 ≈ 비교적 비싸므로 같이 처리.
+      const [dataUrl, blob] = await Promise.all([
+        toPng(noteRef.current, opts),
+        toBlob(noteRef.current, opts),
+      ]);
+      if (!blob) throw new Error('blob 변환 실패');
+      setSharePreview({ dataUrl, blob });
     } catch (e) {
-      console.error('[MyPage.handleShare] 캡쳐 실패', e);
-      // 최후 폴백 — 텍스트 share
+      console.error('[MyPage.prepareShare] 캡쳐 실패', e);
+      // 캡쳐 실패 시 텍스트 share 폴백
       if (typeof navigator !== 'undefined' && navigator.share) {
-        try { await navigator.share({ title: '자린고비', text }); } catch { /* ignore */ }
+        try { await navigator.share({ title: '자린고비', text: shareText }); } catch { /* ignore */ }
       } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        try { await navigator.clipboard.writeText(text); alert('내용이 클립보드에 복사됐어요'); } catch { /* ignore */ }
+        try {
+          await navigator.clipboard.writeText(shareText);
+          alert('이미지 캡쳐에 실패했어요. 대신 텍스트를 클립보드에 복사했어요.');
+        } catch { /* ignore */ }
       }
     } finally {
-      setSharing(false);
+      setCapturing(false);
     }
+  }
+
+  // 미리보기 모달에서 "공유하기" 클릭 — 실제 navigator.share 호출
+  async function doShare() {
+    if (!sharePreview || shareSending) return;
+    setShareSending(true);
+    try {
+      const file = new File([sharePreview.blob], shareFileName, { type: 'image/png' });
+      const shareData: ShareData = { title: '자린고비', text: shareText, files: [file] };
+      if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+        try {
+          await navigator.share(shareData);
+          playSuccessSfx();
+          setSharePreview(null);
+          return;
+        } catch {
+          // 사용자 취소 — 모달 유지
+          return;
+        }
+      }
+      // files share 미지원 — 다운로드 폴백
+      const a = document.createElement('a');
+      a.href = sharePreview.dataUrl;
+      a.download = shareFileName;
+      a.click();
+      playSuccessSfx();
+    } finally {
+      setShareSending(false);
+    }
+  }
+
+  // 이미지 길게 눌러 저장 / 다운로드만 받고 싶을 때
+  function downloadShareImage() {
+    if (!sharePreview) return;
+    const a = document.createElement('a');
+    a.href = sharePreview.dataUrl;
+    a.download = shareFileName;
+    a.click();
   }
 
   return (
@@ -189,12 +212,12 @@ export default function MyPage() {
         {/* 공유 */}
         <div className="flex justify-end pt-2">
           <button
-            onClick={handleShare}
-            disabled={sharing}
-            aria-label={sharing ? '이미지 만드는 중' : '공유'}
+            onClick={prepareShare}
+            disabled={capturing}
+            aria-label={capturing ? '이미지 만드는 중' : '공유'}
             className="w-7 h-7 grid place-items-center text-text/70 active:scale-[.95] transition disabled:opacity-50"
           >
-            {sharing ? (
+            {capturing ? (
               <svg width="20" height="20" viewBox="0 0 24 24" className="animate-spin">
                 <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
                 <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -349,6 +372,16 @@ export default function MyPage() {
             })}
           </ul>
         </div>
+
+        {/* 워터마크 — 공유 이미지 캡쳐 시 같이 잡히도록 노트 카드 안에 배치.
+            평소 화면에서도 작게 보이지만 디자인을 해치진 않는 톤. */}
+        <div className="mt-5 pt-3 border-t border-text/10 flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <img src="/jarin/logo_nobg.png" alt="" className="w-5 h-5 object-contain" draggable={false} />
+            <span className="text-[11px] font-bold text-text/55 tracking-[1px]">자 린 고 비</span>
+          </div>
+          <span className="text-[10px] text-text/40">@4poor_project</span>
+        </div>
       </section>
 
       {/* 칭호 모달 — 그리드 / 상세 두 화면 */}
@@ -384,6 +417,79 @@ export default function MyPage() {
               onClose={closeTitleModal}
             />
           )}
+        </div>
+      )}
+
+      {/* 공유 미리보기 모달 — 캡쳐된 노트 카드 이미지를 보여주고 사용자에게
+          "공유하기" / "이미지 저장" / "닫기" 액션 선택지를 줌. 인스타그램으로
+          바로 공유하려면 navigator.share files 가 시스템 share sheet 를 띄워
+          거기서 인스타·카톡 등 앱 선택. */}
+      {sharePreview && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/70 grid place-items-center px-5 py-6"
+          onClick={() => !shareSending && setSharePreview(null)}
+        >
+          <div
+            className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <p className="text-center font-bold text-[16px] text-text">공유 미리보기</p>
+              <button
+                onClick={() => setSharePreview(null)}
+                disabled={shareSending}
+                aria-label="닫기"
+                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[22px] leading-none text-text/70 font-bold disabled:opacity-50"
+              >×</button>
+            </div>
+
+            <div className="mt-3 bg-text/5 rounded-2xl p-2.5 max-h-[60vh] overflow-y-auto no-scrollbar">
+              <img
+                src={sharePreview.dataUrl}
+                alt="공유 미리보기"
+                className="w-full rounded-xl bg-white shadow-soft block"
+              />
+            </div>
+
+            <p className="mt-3 text-center text-[12px] text-text/70 leading-relaxed">
+              <span className="font-bold text-text">공유하기</span> 버튼을 누르면 인스타·카톡 등<br />
+              앱을 골라 이미지를 그대로 올릴 수 있어요.
+            </p>
+
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <button
+                onClick={downloadShareImage}
+                disabled={shareSending}
+                className="rounded-full py-3 text-[14px] font-bold bg-text/10 text-text active:scale-[.98] disabled:opacity-50"
+              >
+                이미지 저장
+              </button>
+              <button
+                onClick={doShare}
+                disabled={shareSending}
+                className="rounded-full py-3 text-[14px] font-bold bg-accent text-white active:scale-[.98] disabled:opacity-50 inline-flex items-center justify-center gap-1.5"
+              >
+                {shareSending ? (
+                  <>여는 중…</>
+                ) : (
+                  <>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                      <path d="M12 4v12" />
+                      <path d="M7 9l5-5 5 5" />
+                      <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+                    </svg>
+                    공유하기
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* 인스타 안내 — files share 미지원 환경(데스크톱 Safari 등) 사용자는 이미지 저장 후 직접 업로드 */}
+            <p className="mt-3 text-[11px] text-text/45 text-center leading-relaxed">
+              팁: 인스타그램 스토리에 올리고 싶다면 공유하기 → Instagram → 스토리 선택하세요.
+              미지원 브라우저면 '이미지 저장' 후 갤러리에서 직접 업로드해 주세요.
+            </p>
+          </div>
         </div>
       )}
 

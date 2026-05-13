@@ -226,7 +226,7 @@ const supabaseRepo: ProfilesRepo = {
     const { data: sess } = await sb.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) {
-      console.warn('[profilesRepo.syncRecordPhoto] no auth session — skip');
+      console.warn('[profilesRepo.syncRecordPhoto] no auth session — skip (사용자 로그인 후 동작)');
       return;
     }
     // dataURL → Blob
@@ -234,42 +234,52 @@ const supabaseRepo: ProfilesRepo = {
     try {
       blob = await (await fetch(dataUrl)).blob();
     } catch (e) {
-      console.warn('[profilesRepo.syncRecordPhoto] dataURL parse 실패', e);
+      console.error('[profilesRepo.syncRecordPhoto] dataURL parse 실패', e);
       return;
     }
-    // 같은 day 재인증 가능성 대비 upsert. 캐시 헷갈림 방지 위해 timestamp 부여 안 함 (한 day = 한 파일)
+    // 같은 day 재인증 가능성 대비 upsert. cache busting 은 클라가 URL 에 ?t= 붙이지 않고
+    // Storage 의 cacheControl 만 짧게 둠.
     const path = `${uid}/${day}.jpg`;
     const { error: upErr } = await sb.storage.from('record-photos').upload(path, blob, {
       upsert: true,
       contentType: 'image/jpeg',
-      cacheControl: '3600',
+      cacheControl: '60',
     });
     if (upErr) {
-      console.warn('[profilesRepo.syncRecordPhoto] upload 실패', upErr);
+      console.error('[profilesRepo.syncRecordPhoto] storage upload 실패 — record-photos 버킷이 있는지, RLS 가 설정됐는지 확인하세요. (docs/SUPABASE.md 3-11)', upErr);
       return;
     }
     const { data: pub } = sb.storage.from('record-photos').getPublicUrl(path);
     const url = pub?.publicUrl;
     if (!url) return;
 
-    // profiles.photos[day] = url 패치 — 현재 photos 읽고 merge 후 update
-    const { data: row, error: readErr } = await sb
-      .from('profiles')
-      .select('photos')
-      .eq('user_id', uid)
-      .maybeSingle();
-    if (readErr) {
-      console.warn('[profilesRepo.syncRecordPhoto] photos read 실패', readErr);
-      return;
-    }
-    const prev = (row?.photos as Record<string, string> | null) ?? {};
-    const next = { ...prev, [String(day)]: url };
-    const { error: updErr } = await sb
-      .from('profiles')
-      .update({ photos: next, updated_at: new Date().toISOString() })
-      .eq('user_id', uid);
-    if (updErr) {
-      console.warn('[profilesRepo.syncRecordPhoto] photos update 실패', updErr);
+    // RPC 로 atomic merge — read+update race condition 방지.
+    // RPC 가 없는 환경(setup 안된 곳) 폴백으로 client-side read+update.
+    const { error: rpcErr } = await sb.rpc('profiles_photo_set', {
+      p_day: String(day),
+      p_url: url,
+    });
+    if (rpcErr) {
+      // RPC 미설치 등 fallback. 단일 사용자 환경에선 race 안 일어남.
+      console.warn('[profilesRepo.syncRecordPhoto] RPC 실패 → 클라이언트 merge 폴백. RPC 함수 설치 권장.', rpcErr);
+      const { data: row, error: readErr } = await sb
+        .from('profiles')
+        .select('photos')
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (readErr) {
+        console.error('[profilesRepo.syncRecordPhoto] photos read 실패 — profiles.photos 컬럼이 있는지 확인 (docs/SUPABASE.md 3-11)', readErr);
+        return;
+      }
+      const prev = (row?.photos as Record<string, string> | null) ?? {};
+      const next = { ...prev, [String(day)]: url };
+      const { error: updErr } = await sb
+        .from('profiles')
+        .update({ photos: next, updated_at: new Date().toISOString() })
+        .eq('user_id', uid);
+      if (updErr) {
+        console.error('[profilesRepo.syncRecordPhoto] photos update 실패', updErr);
+      }
     }
   },
 
@@ -279,14 +289,16 @@ const supabaseRepo: ProfilesRepo = {
     const { data: sess } = await sb.auth.getSession();
     const uid = sess.session?.user?.id;
     if (!uid) return;
-    // 회차 종료 시 photos jsonb 비우기. Storage 파일은 다음 회차 day 같은 키로 upsert 되니
-    // 별도 삭제는 불필요 (덮어쓰기). 굳이 정리하려면 list + remove 호출.
-    const { error } = await sb
-      .from('profiles')
-      .update({ photos: {}, updated_at: new Date().toISOString() })
-      .eq('user_id', uid);
-    if (error) {
-      console.warn('[profilesRepo.clearRecordPhotos] 실패', error);
+    // 회차 종료 시 photos jsonb 비우기. Storage 파일은 다음 회차 day 같은 키로 upsert
+    // 되니 별도 삭제 불필요 (덮어쓰기).
+    const { error: rpcErr } = await sb.rpc('profiles_photo_clear');
+    if (rpcErr) {
+      // RPC 미설치 폴백
+      const { error } = await sb
+        .from('profiles')
+        .update({ photos: {}, updated_at: new Date().toISOString() })
+        .eq('user_id', uid);
+      if (error) console.error('[profilesRepo.clearRecordPhotos] 실패', error);
     }
   },
 };
