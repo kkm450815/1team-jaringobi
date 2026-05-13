@@ -254,13 +254,15 @@ export default function Main() {
     <main className="relative flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
-        {/* 우측 상단 도움말 (?) 버튼 — 튜토리얼 재시작 */}
-        <button
-          type="button"
-          onClick={openHelp}
-          aria-label="도움말 — 튜토리얼 다시 보기"
-          className="absolute top-2 right-3 w-7 h-7 grid place-items-center rounded-full bg-white/70 text-text/55 text-[13px] font-bold shadow-soft active:scale-[.95]"
-        >?</button>
+        {/* 우측 상단 도움말 (?) 버튼 — 튜토리얼 재시작. settings.showHelpButton 으로 토글 */}
+        {(u.settings.showHelpButton ?? true) && (
+          <button
+            type="button"
+            onClick={openHelp}
+            aria-label="도움말 — 튜토리얼 다시 보기"
+            className="absolute top-2 right-3 w-7 h-7 grid place-items-center rounded-full bg-white/70 text-text/55 text-[13px] font-bold shadow-soft active:scale-[.95]"
+          >?</button>
+        )}
 
         <div className="flex flex-col items-center gap-1">
           <div data-tutorial="hearts" className="flex gap-0">
