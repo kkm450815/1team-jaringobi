@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { toPng, toBlob } from 'html-to-image';
+import { toBlob } from 'html-to-image';
 import { getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
@@ -25,10 +25,17 @@ export default function MyPage() {
   // 노트 카드 영역 — 공유 시 이 영역만 이미지로 캡쳐
   const noteRef = useRef<HTMLElement>(null);
   const [capturing, setCapturing] = useState(false);
-  // 캡쳐 결과 미리보기 모달 — { dataUrl(미리보기용), blob(공유용 File 변환용) }
+  // 캡쳐 결과 미리보기 모달 — { dataUrl(미리보기용 blob URL), blob(공유용 File 변환용) }
   const [sharePreview, setSharePreview] = useState<{ dataUrl: string; blob: Blob } | null>(null);
   const [shareSending, setShareSending] = useState(false);
-  useEscape(sharePreview !== null, () => setSharePreview(null));
+  // 모달 닫을 때 ObjectURL 메모리 해제까지 같이.
+  const closeSharePreview = () => {
+    if (sharePreview?.dataUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(sharePreview.dataUrl);
+    }
+    setSharePreview(null);
+  };
+  useEscape(sharePreview !== null, closeSharePreview);
 
   // 사진 줌 모달 — RECORD 그리드에서 사진 클릭 시
   const [zoomPhoto, setZoomPhoto] = useState<{ day: number; src: string } | null>(null);
@@ -89,18 +96,28 @@ export default function MyPage() {
     if (capturing || !noteRef.current) return;
     setCapturing(true);
     try {
-      const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
-      const opts = {
+      const el = noteRef.current;
+      // 이전 미리보기의 ObjectURL 메모리 누수 방지
+      if (sharePreview?.dataUrl?.startsWith('blob:')) {
+        URL.revokeObjectURL(sharePreview.dataUrl);
+      }
+      // pixelRatio 2 면 인스타용으로 충분. 그 이상은 캡쳐만 느려지고 결과는 비슷.
+      const pixelRatio = 2;
+      const blob = await toBlob(el, {
         pixelRatio,
-        backgroundColor: '#FAF5E9', // 노트 종이색 (bg-grid-paper)
-        cacheBust: true,
-      };
-      // dataUrl(미리보기) + blob(공유) 둘 다 만듦. 한 번 캡쳐 ≈ 비교적 비싸므로 같이 처리.
-      const [dataUrl, blob] = await Promise.all([
-        toPng(noteRef.current, opts),
-        toBlob(noteRef.current, opts),
-      ]);
+        backgroundColor: '#FAF5E9', // 노트 종이색
+        // cacheBust: true 는 dataURL 끝에 ?t= 를 붙여 RECORD 사진을 망가뜨림 → 끔
+        cacheBust: false,
+        // 외부 폰트 인라인 임베드 스킵 → 캡쳐 시간 70% 단축. 워터마크 텍스트는
+        // 시스템 폰트로도 깨지지 않음
+        skipFonts: true,
+        // 명시적 width/height 로 오른쪽 잘림 방지
+        width: el.offsetWidth,
+        height: el.offsetHeight,
+      });
       if (!blob) throw new Error('blob 변환 실패');
+      // 미리보기는 ObjectURL — base64 dataURL 대비 즉시·메모리 효율적
+      const dataUrl = URL.createObjectURL(blob);
       setSharePreview({ dataUrl, blob });
     } catch (e) {
       console.error('[MyPage.prepareShare] 캡쳐 실패', e);
@@ -129,7 +146,7 @@ export default function MyPage() {
         try {
           await navigator.share(shareData);
           playSuccessSfx();
-          setSharePreview(null);
+          closeSharePreview();
           return;
         } catch {
           // 사용자 취소 — 모달 유지
@@ -417,7 +434,7 @@ export default function MyPage() {
       {sharePreview && (
         <div
           className="fixed inset-0 z-[60] bg-black/70 grid place-items-center px-5 py-6"
-          onClick={() => !shareSending && setSharePreview(null)}
+          onClick={() => !shareSending && closeSharePreview()}
         >
           <div
             className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl"
@@ -426,7 +443,7 @@ export default function MyPage() {
             <div className="relative">
               <p className="text-center font-bold text-[16px] text-text">공유 미리보기</p>
               <button
-                onClick={() => setSharePreview(null)}
+                onClick={closeSharePreview}
                 disabled={shareSending}
                 aria-label="닫기"
                 className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[22px] leading-none text-text/70 font-bold disabled:opacity-50"
