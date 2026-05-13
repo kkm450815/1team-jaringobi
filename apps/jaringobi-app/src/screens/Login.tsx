@@ -1,6 +1,6 @@
 import { FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { signInWithGoogle } from '../lib/auth';
+import { signInWithGoogle, signInWithPassword, signUpWithPassword } from '../lib/auth';
 
 function GoogleIcon() {
   return (
@@ -28,30 +28,68 @@ function SocialButton({
   );
 }
 
+type Mode = 'login' | 'signup';
+
 export default function Login() {
   const nav = useNavigate();
+  const [mode, setMode] = useState<Mode>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
   const [oauthBusy, setOauthBusy] = useState(false);
-  const [oauthErr, setOauthErr] = useState<string | null>(null);
 
-  function submit(e: FormEvent) {
+  async function submit(e: FormEvent) {
     e.preventDefault();
-    nav('/mode');
+    if (busy) return;
+    setBusy(true);
+    setErr(null);
+    setInfo(null);
+    try {
+      if (mode === 'login') {
+        await signInWithPassword(email, password);
+        // 세션 OK → /mode 로 (신규는 거기서 닉네임 단계까지)
+        nav('/mode', { replace: true });
+      } else {
+        const { needsEmailConfirm } = await signUpWithPassword(email, password);
+        if (needsEmailConfirm) {
+          // 메일 확인 대기 — 세션 없음. 사용자에게 안내만 표시.
+          setInfo(`${email.trim()} 로 인증 메일을 보냈어요. 메일의 링크를 눌러 확인 후 로그인해 주세요.`);
+          setMode('login');
+        } else {
+          // 즉시 가입 + 세션 생성 (이메일 확인 OFF 정책)
+          nav('/mode', { replace: true });
+        }
+      }
+    } catch (e) {
+      const raw = (e as Error).message ?? '실패했어요.';
+      // Supabase 에러 메시지를 한국어로 가볍게 매핑
+      const friendly = friendlyAuthError(raw);
+      setErr(friendly);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleGoogle() {
     if (oauthBusy) return;
     setOauthBusy(true);
-    setOauthErr(null);
+    setErr(null);
     try {
-      // 성공 시 페이지가 Google → Supabase callback → /mode 로 자동 이동.
-      // 이 함수는 redirect 직전까지만 동작.
       await signInWithGoogle('/mode');
     } catch (e) {
       console.error('[Login.handleGoogle] 실패', e);
-      setOauthErr((e as Error).message ?? '로그인에 실패했어요.');
+      setErr((e as Error).message ?? '로그인에 실패했어요.');
       setOauthBusy(false);
     }
+  }
+
+  function switchMode(next: Mode) {
+    setMode(next);
+    setErr(null);
+    setInfo(null);
   }
 
   return (
@@ -62,19 +100,44 @@ export default function Login() {
         <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[68%] h-[68%] object-contain" />
       </div>
 
-      <form className="mt-12 space-y-3" onSubmit={submit}>
+      {/* 로그인 / 회원가입 토글 */}
+      <div className="mt-10 flex items-center gap-0 bg-white/40 rounded-full p-1 shadow-soft">
+        <button
+          type="button"
+          onClick={() => switchMode('login')}
+          className={`flex-1 py-2 rounded-full text-[14px] font-bold transition ${
+            mode === 'login' ? 'bg-primary text-text shadow-soft' : 'text-text/55'
+          }`}
+        >로그인</button>
+        <button
+          type="button"
+          onClick={() => switchMode('signup')}
+          className={`flex-1 py-2 rounded-full text-[14px] font-bold transition ${
+            mode === 'signup' ? 'bg-primary text-text shadow-soft' : 'text-text/55'
+          }`}
+        >회원가입</button>
+      </div>
+
+      <form className="mt-5 space-y-3" onSubmit={submit}>
         <input
-          type="text"
-          placeholder="아이디"
+          type="email"
+          autoComplete="email"
+          placeholder="이메일"
           required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
           className="w-full bg-white/70 rounded-full px-5 py-4 outline-none text-[14px] text-text placeholder:text-text/70 placeholder:font-medium text-center"
         />
 
         <div className="relative">
           <input
             type={showPw ? 'text' : 'password'}
-            placeholder="비밀번호"
+            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+            placeholder={mode === 'signup' ? '비밀번호 (6자 이상)' : '비밀번호'}
             required
+            minLength={6}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-white/70 rounded-full py-4 outline-none text-[14px] text-text placeholder:text-text/70 placeholder:font-medium pl-12 pr-12 text-center"
           />
           <button
@@ -101,21 +164,25 @@ export default function Login() {
           </button>
         </div>
 
+        {err && (
+          <p className="text-[12px] text-pink font-bold text-center px-2" role="alert">
+            ⚠ {err}
+          </p>
+        )}
+        {info && (
+          <p className="text-[12px] text-text/70 text-center px-2 leading-relaxed bg-amber-100/60 rounded-2xl py-2">
+            📩 {info}
+          </p>
+        )}
+
         <button
           type="submit"
-          className="w-full bg-primary text-text/80 rounded-full px-5 py-4 text-[15px] font-bold transition active:scale-[.98]"
+          disabled={busy}
+          className="w-full bg-primary text-text/80 rounded-full px-5 py-4 text-[15px] font-bold transition active:scale-[.98] disabled:opacity-50"
         >
-          로그인
+          {busy ? (mode === 'login' ? '로그인 중…' : '가입 중…') : mode === 'login' ? '로그인' : '회원가입'}
         </button>
       </form>
-
-      <button
-        type="button"
-        onClick={() => alert('비밀번호 재설정은 곧 지원 예정입니다.')}
-        className="mt-5 text-center text-[13px] text-text/70 underline-offset-2 hover:underline"
-      >
-        비밀번호를 잊으셨나요?
-      </button>
 
       {/* TODO: 임시 데모 접속 — 출시 전 제거 */}
       <button
@@ -140,12 +207,28 @@ export default function Login() {
         {oauthBusy && (
           <p className="mt-3 text-center text-[12px] text-text/55">로그인 중…</p>
         )}
-        {oauthErr && (
-          <p className="mt-3 text-center text-[12px] text-pink font-bold" role="alert">
-            ⚠ {oauthErr}
-          </p>
-        )}
       </div>
     </main>
   );
+}
+
+/** Supabase 에러 메시지를 사용자 친화적 한국어로 변환 */
+function friendlyAuthError(raw: string): string {
+  const m = raw.toLowerCase();
+  if (m.includes('invalid login') || m.includes('invalid credentials')) {
+    return '이메일 또는 비밀번호가 올바르지 않아요.';
+  }
+  if (m.includes('user already registered') || m.includes('already been registered')) {
+    return '이미 가입된 이메일이에요. 로그인 탭으로 진행해 주세요.';
+  }
+  if (m.includes('email not confirmed')) {
+    return '메일 인증이 필요해요. 받은 메일의 링크를 눌러 확인해 주세요.';
+  }
+  if (m.includes('password should be')) {
+    return '비밀번호는 6자 이상이어야 해요.';
+  }
+  if (m.includes('rate limit')) {
+    return '너무 자주 시도했어요. 잠시 후 다시 시도해 주세요.';
+  }
+  return raw;
 }

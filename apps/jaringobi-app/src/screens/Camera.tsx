@@ -31,9 +31,12 @@ export default function Camera() {
   } | null>(null);
   const u = useUser();
 
-  // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30
+  // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30.
+  // savePhoto 의 폴백과 일치: confirmed 비어 있으면 picks 합산 (사용자에게 0원 표시 후
+  // 실제 보상은 다르게 들어가던 불일치 방지).
+  const rewardIds = u.missionConfirmed.length > 0 ? u.missionConfirmed : u.missionPicks;
   const expectedReward = u.goal >= 1_000_000
-    ? u.missionConfirmed.reduce(
+    ? rewardIds.reduce(
         (sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0),
         0,
       )
@@ -364,6 +367,10 @@ export default function Camera() {
             <p className="mt-2 text-center text-[12px] text-text/65 leading-relaxed">
               다음 회차가 시작되면 사진들이 초기화돼요.<br />
               <span className="font-bold text-text">화면을 캡처해 저장</span>해주세요!
+            </p>
+            <p className="mt-2 text-center text-[11px] text-text/55 leading-relaxed bg-amber-100/60 rounded-lg py-2 px-3">
+              💾 잊지 않게 <Link to="/settings" className="font-bold underline text-text/80">설정 → 데이터 백업</Link> 도
+              한 번 받아두세요. 다른 기기로 옮기거나 브라우저 캐시가 지워져도 복원 가능해요.
             </p>
 
             {/* 노트 카드 — 마이페이지와 비슷한 레이아웃 */}
