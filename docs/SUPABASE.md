@@ -102,9 +102,26 @@ values ('<your-user-uuid>', 'you@example.com');
 
 Supabase Dashboard → Authentication → URL Configuration:
 - **Site URL**: `https://<배포-도메인>` (Vercel prod)
-- **Additional Redirect URLs**: `https://<배포-도메인>/admin`, 프리뷰 URL 도 등록 가능
+- **Additional Redirect URLs**:
+  - `https://<배포-도메인>/admin` (어드민 매직 링크)
+  - `https://<배포-도메인>/reset-password` (비밀번호 재설정)
+  - 프리뷰 URL 도 같이 등록 가능
 
-미등록 시 매직 링크 클릭이 거부됩니다.
+미등록 시 매직 링크 / 재설정 링크 클릭이 거부됩니다.
+
+### 3-2-1. 일반 사용자 회원가입 — 이메일 인증 끄기
+
+기본값은 회원가입 후 인증 메일 확인을 요구함. 베타·데모 단계엔 끄는 게 편함.
+**어드민 매직 링크 / 비번 찾기 메일은 이 설정과 무관** — 그쪽은 항상 작동.
+
+대시보드 위치 (Supabase 버전에 따라 두 가지 UI):
+- **Authentication → Providers → Email** 클릭 → **"Confirm email"** 토글 **OFF** → Save
+- 또는: **Authentication → Sign In / Up → Email** 카드 → **"Confirm email"** OFF
+
+이게 OFF 되면:
+- 회원가입 시 메일 발송 없이 즉시 세션 발급 → 앱에서 바로 /mode 로 이동
+- 이메일은 단순 ID 역할 (고유 키), 비번 찾기 / OAuth 에는 그대로 사용
+- 단점: 누구나 가입 가능 (스팸 가능성). 베타 끝나고 운영 단계에선 다시 켜는 걸 추천.
 
 ### 3-3. Anonymous Sign-In + 본인-only 정책 (보안 강화)
 
@@ -739,6 +756,38 @@ update public.profiles set cycle=1, day=5,  total_saved=40000  where nickname='�
 > 잔존. 운영 중 시드를 빼고 싶으면 `delete from public.profiles where user_id is null;`
 > 로 정리 가능.
 
+#### 시드 5명에게 챌린지 예시 사진 박아두기 (선택 — 다른 사람 프로필이 비어보이지 않게)
+
+`profiles.photos jsonb` 컬럼이 추가된 후(아래 3-11) 실행:
+
+```sql
+-- 헬퍼 함수: num_days 만큼 day(1..N) → 챌린지 예시 사진 경로 매핑한 jsonb 반환
+create or replace function _gen_demo_photos(num_days int)
+returns jsonb language sql as $$
+  select coalesce(jsonb_object_agg(d::text, '/jarin/chall/ex/' || imgs.path), '{}'::jsonb)
+  from generate_series(1, greatest(num_days, 0)) d
+  cross join lateral (
+    select (array[
+      'chall_eximg_alba.png','chall_eximg_carrot.png','chall_eximg_coffee.png',
+      'chall_eximg_culture.png','chall_eximg_cvs.png','chall_eximg_delivery.png',
+      'chall_eximg_dinner.png','chall_eximg_friend.png','chall_eximg_gifticon.png',
+      'chall_eximg_hair.png','chall_eximg_leisure.png','chall_eximg_library.png',
+      'chall_eximg_phone.png','chall_eximg_receipe.png','chall_eximg_repair.png',
+      'chall_eximg_save.png','chall_eximg_shopping.png','chall_eximg_taxi.png',
+      'chall_eximg_zero.png'
+    ])[((d - 1) % 19) + 1] as path
+  ) imgs;
+$$;
+
+update public.profiles set photos = _gen_demo_photos(22) where nickname='절약왕민지' and user_id is null;
+update public.profiles set photos = _gen_demo_photos(14) where nickname='짠돌이서준' and user_id is null;
+update public.profiles set photos = _gen_demo_photos(10) where nickname='알뜰이수아' and user_id is null;
+update public.profiles set photos = _gen_demo_photos(25) where nickname='무지출지호' and user_id is null;
+update public.profiles set photos = _gen_demo_photos(5)  where nickname='신참자린이' and user_id is null;
+
+drop function _gen_demo_photos(int);
+```
+
 ### 3-11. 인증샷 동기화 (`record-photos` 버킷 + `profiles.photos`)
 
 마이페이지·다른 사람 프로필의 RECORD 캘린더에 인증 사진을 노출하려면
@@ -804,6 +853,46 @@ create policy "record-photos own delete" on storage.objects for delete
   (실패해도 로컬 인증·보상 흐름은 정상 진행)
 - 본인 마이페이지는 로컬 dataURL 사용 (빠름), 다른 사람 프로필은 DB 의 URL 사용
 - 회차 종료(`isCycleEnd`) 시 profiles.photos 도 빈 객체로 리셋
+
+#### RPC `profiles_photo_set` — atomic merge
+
+클라이언트가 photos jsonb 를 read → 합쳐서 update 하면 동시 인증 시 race
+condition 가능 (한쪽이 다른쪽 덮어씀). 서버 측 함수로 한 줄에 처리.
+
+```sql
+create or replace function public.profiles_photo_set(p_day text, p_url text)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.profiles
+  set photos = coalesce(photos, '{}'::jsonb) || jsonb_build_object(p_day, p_url),
+      updated_at = now()
+  where user_id = auth.uid();
+$$;
+
+revoke all on function public.profiles_photo_set(text, text) from public;
+grant execute on function public.profiles_photo_set(text, text) to anon, authenticated;
+```
+
+회차 종료 리셋:
+```sql
+create or replace function public.profiles_photo_clear()
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  update public.profiles
+  set photos = '{}'::jsonb,
+      updated_at = now()
+  where user_id = auth.uid();
+$$;
+
+revoke all on function public.profiles_photo_clear() from public;
+grant execute on function public.profiles_photo_clear() to anon, authenticated;
+```
 
 ## 4. Realtime 설정
 

@@ -11,6 +11,8 @@ import { setSfxEnabled, setSfxVolume } from './lib/feedback';
 import { useUser } from './lib/userState';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
+import ForgotPassword from './screens/ForgotPassword';
+import ResetPassword from './screens/ResetPassword';
 import ModeSelect from './screens/ModeSelect';
 import NickSetup from './screens/NickSetup';
 import Main from './screens/Main';
@@ -155,6 +157,8 @@ function AppShell() {
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/mode" element={<ModeSelect />} />
         <Route path="/nickname" element={<NickSetup />} />
         <Route path="/main" element={<Main />} />

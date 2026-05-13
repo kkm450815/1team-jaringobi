@@ -148,3 +148,39 @@ export async function signOut() {
   if (!sb) return;
   await sb.auth.signOut();
 }
+
+/**
+ * 비밀번호 재설정 메일 발송 — Supabase 가 이메일에 magic link 보냄.
+ * 사용자가 링크 클릭 시 `redirectPath` 로 이동하며 URL 에 recovery 토큰 포함.
+ * Login 와 별개로 메일 인증은 비번 찾기에서만 사용 (가입 시엔 confirm OFF 권장).
+ */
+export async function requestPasswordReset(email: string, redirectPath = '/reset-password') {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
+    throw new Error('올바른 이메일 형식이 아닙니다.');
+  }
+  const redirectTo =
+    typeof window !== 'undefined'
+      ? `${window.location.origin}${redirectPath}`
+      : undefined;
+  const { error } = await sb.auth.resetPasswordForEmail(trimmed, {
+    redirectTo,
+  });
+  if (error) throw error;
+}
+
+/**
+ * 비밀번호 변경 — recovery 토큰으로 세션이 임시 부여된 상태에서만 호출.
+ * (recovery 링크 클릭 → Supabase JS 가 자동으로 임시 세션 set)
+ */
+export async function updatePassword(newPassword: string) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  if (!newPassword || newPassword.length < 6) {
+    throw new Error('비밀번호는 6자 이상이어야 합니다.');
+  }
+  const { error } = await sb.auth.updateUser({ password: newPassword });
+  if (error) throw error;
+}
