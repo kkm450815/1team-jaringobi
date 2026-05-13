@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MISSIONS } from '../lib/data';
+import { MISSIONS, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { downscaleImage, isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playSuccessSfx, vibrate } from '../lib/feedback';
@@ -17,7 +17,12 @@ export default function Camera() {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
-  const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
+  const [reward, setReward] = useState<{
+    saved: number;
+    coins: number;
+    cycleEnded: boolean;
+    newlyEarnedTitles: string[];
+  } | null>(null);
   // 회차 완료 시 사진들이 초기화되기 직전의 스냅샷 — 사용자에게 캡처/저장 유도
   const [archive, setArchive] = useState<{
     cycle: number;
@@ -26,9 +31,12 @@ export default function Camera() {
   } | null>(null);
   const u = useUser();
 
-  // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30
+  // 하드 모드(goal>=100만): 확정된 미션 합계, 노말: goal/30.
+  // savePhoto 의 폴백과 일치: confirmed 비어 있으면 picks 합산 (사용자에게 0원 표시 후
+  // 실제 보상은 다르게 들어가던 불일치 방지).
+  const rewardIds = u.missionConfirmed.length > 0 ? u.missionConfirmed : u.missionPicks;
   const expectedReward = u.goal >= 1_000_000
-    ? u.missionConfirmed.reduce(
+    ? rewardIds.reduce(
         (sum, id) => sum + (MISSIONS.find((m) => m.id === id)?.amount ?? 0),
         0,
       )
@@ -72,7 +80,12 @@ export default function Camera() {
   function submit() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
-    setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
+    setReward({
+      saved: r.reward,
+      coins: r.coins,
+      cycleEnded: r.cycleEnded,
+      newlyEarnedTitles: r.newlyEarnedTitles,
+    });
     if (r.archive) setArchive(r.archive);
     playSuccessSfx();
     if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
@@ -249,6 +262,34 @@ export default function Camera() {
                 +{reward.coins}P
               </p>
             </div>
+
+            {/* 칭호 자동 획득 — savePhoto 가 반환한 newlyEarnedTitles 가 있을 때만 노출 */}
+            {reward.newlyEarnedTitles.length > 0 && (
+              <div className="mt-3 bg-accent/15 border-2 border-accent/40 rounded-2xl py-3 px-3">
+                <p className="text-[12px] font-bold text-accent">🏅 새 칭호 획득!</p>
+                <div className="mt-2 space-y-2">
+                  {reward.newlyEarnedTitles.map((tid) => {
+                    const t = TITLES.find((x) => x.id === tid);
+                    if (!t) return null;
+                    return (
+                      <div key={tid} className="flex items-center gap-2 text-left">
+                        <img
+                          src={t.img}
+                          alt=""
+                          className="w-10 h-10 object-contain shrink-0"
+                          onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-bold text-text leading-tight">{t.name}</p>
+                          <p className="text-[11px] text-text/65 mt-0.5 leading-tight">{t.tagline}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={closeRewardAndContinue}
               className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
@@ -326,6 +367,10 @@ export default function Camera() {
             <p className="mt-2 text-center text-[12px] text-text/65 leading-relaxed">
               다음 회차가 시작되면 사진들이 초기화돼요.<br />
               <span className="font-bold text-text">화면을 캡처해 저장</span>해주세요!
+            </p>
+            <p className="mt-2 text-center text-[11px] text-text/55 leading-relaxed bg-amber-100/60 rounded-lg py-2 px-3">
+              💾 잊지 않게 <Link to="/settings" className="font-bold underline text-text/80">설정 → 데이터 백업</Link> 도
+              한 번 받아두세요. 다른 기기로 옮기거나 브라우저 캐시가 지워져도 복원 가능해요.
             </p>
 
             {/* 노트 카드 — 마이페이지와 비슷한 레이아웃 */}

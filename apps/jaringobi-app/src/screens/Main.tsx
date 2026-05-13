@@ -127,9 +127,11 @@ export default function Main() {
 
   // 양심 0개 도달 → 안내 팝업 노출 (차감/복구 예정값만 미리 보여줌).
   // '다시 시작하기' 클릭 시점에 실제 코인 차감 + 양심 복구가 일어남 (인과 명시).
+  // 회차당 1회만 적용 — lastZeroPenaltyCycle 로 무한 반복 차단.
   const [zeroPenalty, setZeroPenalty] = useState<{ lost: number; remain: number } | null>(null);
   useEffect(() => {
-    if (u.hearts === 0 && !zeroPenalty) {
+    const alreadyApplied = u.lastZeroPenaltyCycle === u.cycle;
+    if (u.hearts === 0 && !zeroPenalty && !alreadyApplied) {
       const lost = Math.floor(u.coins * 0.5);
       const remain = u.coins - lost;
       setZeroPenalty({ lost, remain });
@@ -141,7 +143,7 @@ export default function Main() {
 
   function applyZeroPenalty() {
     if (!zeroPenalty) return;
-    u.update({ coins: zeroPenalty.remain });
+    u.update({ coins: zeroPenalty.remain, lastZeroPenaltyCycle: u.cycle });
     u.restoreHearts();
     setZeroPenalty(null);
   }
@@ -242,11 +244,24 @@ export default function Main() {
   function finishTutorial() {
     setShowTutorial(false);
   }
+  function openHelp() {
+    // 사용자가 우상단 ? 버튼 클릭 — 튜토리얼 즉시 재실행
+    setShowTutorial(true);
+    playClickSfx();
+  }
 
   return (
     <main className="relative flex flex-col min-h-full pb-0">
       {/* 상단 정보 */}
       <header className="relative px-5 pt-9 flex items-center justify-between gap-3">
+        {/* 우측 상단 도움말 (?) 버튼 — 튜토리얼 재시작 */}
+        <button
+          type="button"
+          onClick={openHelp}
+          aria-label="도움말 — 튜토리얼 다시 보기"
+          className="absolute top-2 right-3 w-7 h-7 grid place-items-center rounded-full bg-white/70 text-text/55 text-[13px] font-bold shadow-soft active:scale-[.95]"
+        >?</button>
+
         <div className="flex flex-col items-center gap-1">
           <div data-tutorial="hearts" className="flex gap-0">
             {Array.from({ length: 3 }).map((_, i) => (
@@ -284,8 +299,9 @@ export default function Main() {
       {/* 공지/이벤트 배너 — 활성 공지가 있을 때만 노출 */}
       <AnnouncementBanner />
 
-      {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내 */}
-      <section className="px-10 pt-8 pb-8">
+      {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내.
+          위/아래 패딩을 줄여 미션 버튼은 살짝, 캐릭터 룸은 더 많이 위로 올림. */}
+      <section className="px-10 pt-5 pb-2">
         <button
           data-tutorial="missionButton"
           onClick={locked ? () => setShowLockInfo(true) : openMissionModal}
@@ -541,7 +557,8 @@ function RecommendPanel({
     <>
       <ul className="space-y-3">
         {picks.map((id, idx) => {
-          const m = MISSIONS.find((x) => x.id === id)!;
+          const m = MISSIONS.find((x) => x.id === id);
+          if (!m) return null; // admin 이 삭제한 미션 등 — 안전 폴백
           return (
             <li key={`${id}-${idx}`} className="bg-bg rounded-2xl px-3 py-3 flex items-center gap-3">
               <img src={iconUrl(m.iconKey)} alt="" className="w-[64px] h-[64px] object-contain shrink-0" />
@@ -566,7 +583,8 @@ function RecommendPanel({
       <div className="mt-4 bg-bg rounded-2xl p-3">
         <div className="grid grid-cols-3 gap-1">
           {picks.map((id) => {
-            const m = MISSIONS.find((x) => x.id === id)!;
+            const m = MISSIONS.find((x) => x.id === id);
+            if (!m) return null;
             return (
               <div key={id} className="flex flex-col items-center text-center">
                 <img src={iconUrl(m.iconKey)} alt="" className="w-[60px] h-[60px] object-contain" />
@@ -695,7 +713,8 @@ function ReviewPanel({
     <>
       <ul className="space-y-3">
         {picks.map((id, idx) => {
-          const m = MISSIONS.find((x) => x.id === id)!;
+          const m = MISSIONS.find((x) => x.id === id);
+          if (!m) return null;
           const done = successes.includes(idx);
           const showUndo = done && recentToggleIdx === idx;
           return (

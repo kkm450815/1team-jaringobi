@@ -59,6 +59,47 @@ export async function ensureAnonymousSession() {
   return data.session;
 }
 
+/**
+ * 일반 사용자용 이메일+비밀번호 회원가입.
+ * Supabase 의 confirm 정책에 따라:
+ *   - email confirmations OFF (개발/베타) → 즉시 세션 생성, 바로 사용 가능
+ *   - email confirmations ON → 메일 확인 후에 로그인 가능, session=null 반환
+ * 반환: { session, needsEmailConfirm }
+ */
+export async function signUpWithPassword(email: string, password: string) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
+    throw new Error('올바른 이메일 형식이 아닙니다.');
+  }
+  if (!password || password.length < 6) {
+    throw new Error('비밀번호는 6자 이상이어야 합니다.');
+  }
+  const { data, error } = await sb.auth.signUp({ email: trimmed, password });
+  if (error) throw error;
+  // user 는 있지만 session 이 없으면 메일 인증 대기 상태
+  const needsEmailConfirm = !!data.user && !data.session;
+  return { session: data.session, needsEmailConfirm };
+}
+
+/**
+ * 일반 사용자용 이메일+비밀번호 로그인.
+ * 실패 시 에러 throw — caller 가 UI 메시지로 표시.
+ */
+export async function signInWithPassword(email: string, password: string) {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  const trimmed = email.trim().toLowerCase();
+  if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
+    throw new Error('올바른 이메일 형식이 아닙니다.');
+  }
+  if (!password) throw new Error('비밀번호를 입력해 주세요.');
+  const { data, error } = await sb.auth.signInWithPassword({ email: trimmed, password });
+  if (error) throw error;
+  return data.session;
+}
+
 export async function signInWithEmail(email: string, redirectPath = '/admin') {
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');

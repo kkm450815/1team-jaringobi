@@ -74,6 +74,10 @@ export interface UserState {
   // /main 첫 진입 시 코치마크 튜토리얼을 1회 노출. Settings 에서 다시 보기 가능.
   tutorialSeen: boolean;
 
+  // 양심 0 도달 → 코인 절반 차감을 회차당 1회만 적용. 차감 적용한 cycle 번호 기록.
+  // null = 아직 적용 안 됨. 다음 cycle 로 넘어가면 자연스럽게 다시 적용 가능.
+  lastZeroPenaltyCycle: number | null;
+
   settings: UserSettings;
 }
 
@@ -126,6 +130,7 @@ const DEFAULT: UserState = {
   totalSaveCount: 0,
   lastSavedAt: null,
   tutorialSeen: false,
+  lastZeroPenaltyCycle: null,
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
@@ -181,6 +186,7 @@ function read(): UserState {
       totalSaveCount,
       lastSavedAt: typeof parsed.lastSavedAt === 'string' ? parsed.lastSavedAt : DEFAULT.lastSavedAt,
       tutorialSeen: typeof parsed.tutorialSeen === 'boolean' ? parsed.tutorialSeen : DEFAULT.tutorialSeen,
+      lastZeroPenaltyCycle: typeof parsed.lastZeroPenaltyCycle === 'number' ? parsed.lastZeroPenaltyCycle : DEFAULT.lastZeroPenaltyCycle,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
     };
   } catch {
@@ -315,6 +321,10 @@ export function useUser() {
     const coins = Math.round(reward / 100);
     const isCycleEnd = s.day >= CYCLE_DAYS;
 
+    // setState 콜백 안에서 계산되는 칭호 획득 목록을 caller(Camera)로 빼내기 위한 캡처.
+    // setState 콜백은 동기 실행이라 콜백 종료 시점에 값이 들어있음.
+    let earnedTitleIds: string[] = [];
+
     setState((cur) => {
       const day = cur.day;
       const photosWithToday = { ...cur.photos, [day]: dataUrl };
@@ -344,6 +354,7 @@ export function useUser() {
         .filter((t) => !cur.ownedTitles.includes(t.id))
         .filter((t) => getTitleProgress(t, titleCtx).achieved)
         .map((t) => t.id);
+      earnedTitleIds = newlyEarned;
       const ownedTitles = newlyEarned.length > 0
         ? [...cur.ownedTitles, ...newlyEarned]
         : cur.ownedTitles;
@@ -391,7 +402,7 @@ export function useUser() {
           totalSaved: state.totalSaved + reward,
         }
       : undefined;
-    return { reward, coins, cycleEnded: isCycleEnd, archive };
+    return { reward, coins, cycleEnded: isCycleEnd, archive, newlyEarnedTitles: earnedTitleIds };
   }, [state]);
 
   // 양심 1개 차감 (사용자가 ♥ 누르고 확인 모달에서 삭제 누른 경우)

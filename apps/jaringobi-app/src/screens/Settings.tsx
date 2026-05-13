@@ -4,6 +4,7 @@ import { BackButton } from '../components/UI';
 import { useUser, UserSettings } from '../lib/userState';
 import { playClickSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
+import { signOut } from '../lib/auth';
 
 const APP_VERSION = '0.1.0';
 
@@ -76,6 +77,8 @@ export default function Settings() {
   const nav = useNavigate();
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetAck, setResetAck] = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const [editingNick, setEditingNick] = useState(false);
   const [nickDraft, setNickDraft] = useState(u.nickname);
   const [nickError, setNickError] = useState<string | null>(null);
@@ -161,6 +164,20 @@ export default function Settings() {
 
   useEscape(legalKey !== null, () => setLegalKey(null));
   useEscape(confirmReset, () => setConfirmReset(false));
+  useEscape(confirmLogout, () => setConfirmLogout(false));
+
+  async function doLogout() {
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await signOut(); // Supabase 세션 정리 (no-op if 미설정)
+    } catch (e) {
+      console.warn('[Settings.doLogout] signOut 실패', e);
+    }
+    u.reset(); // localStorage user 데이터 초기화 → tutorialSeen 도 false 로
+    setConfirmLogout(false);
+    nav('/login', { replace: true });
+  }
   useEscape(modeModal, () => setModeModal(false));
 
   return (
@@ -328,12 +345,43 @@ export default function Settings() {
 
       <div className="mx-4 mt-6">
         <button
-          onClick={() => nav('/login')}
+          onClick={() => setConfirmLogout(true)}
           className="w-full text-center text-[13px] text-text/55 underline"
         >
           로그아웃
         </button>
       </div>
+
+      {/* 로그아웃 확인 모달 — 닉네임·진행상황 보존되지 않으니 명시 */}
+      {confirmLogout && (
+        <div
+          className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-7"
+          onClick={() => { if (!loggingOut) setConfirmLogout(false); }}
+        >
+          <div
+            className="w-full max-w-[320px] bg-bg rounded-3xl p-6 text-center shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-[18px] font-bold text-text">로그아웃 할까요?</p>
+            <p className="mt-3 text-[13px] text-text/75 leading-relaxed">
+              로컬에 저장된 닉네임·진행상황·코인이 모두 사라져요.<br />
+              필요하면 먼저 데이터 백업을 받아두세요.
+            </p>
+            <div className="mt-5 flex gap-2">
+              <button
+                onClick={() => setConfirmLogout(false)}
+                disabled={loggingOut}
+                className="flex-1 bg-black/5 hover:bg-black/10 text-text font-bold rounded-full py-3 text-[14px]"
+              >취소</button>
+              <button
+                onClick={doLogout}
+                disabled={loggingOut}
+                className="flex-1 bg-danger text-white font-bold rounded-full py-3 text-[14px] disabled:opacity-50"
+              >{loggingOut ? '로그아웃 중…' : '로그아웃'}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 약관/개인정보/라이선스 모달 */}
       {legalKey && (
