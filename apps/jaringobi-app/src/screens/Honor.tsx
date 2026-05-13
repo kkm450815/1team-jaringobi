@@ -21,13 +21,13 @@ interface RankEntry {
   isMe: boolean;
 }
 
-// DB 미설정·로드 실패·빈 결과 대비 폴백 시드 (5명).
+// DB 미설정·로드 실패·빈 결과 대비 폴백 시드 (5명) — 신규 사용자가 곧 추월할 수 있는 컷.
 const FALLBACK_SEED: Omit<RankEntry, 'isMe'>[] = [
-  { nick: '절약왕민지',  totalSaved: 4_500_000, titleId: 'h11', cycle: 10 },
-  { nick: '짠돌이서준',  totalSaved: 2_200_000, titleId: 'h10', cycle: 6 },
-  { nick: '알뜰이수아',  totalSaved: 980_000,   titleId: 'h8',  cycle: 4 },
-  { nick: '무지출지호',  totalSaved: 540_000,   titleId: 'h6',  cycle: 3 },
-  { nick: '신참자린이',  totalSaved: 110_000,   titleId: 'h1',  cycle: 1 },
+  { nick: '절약왕민지',  totalSaved: 850_000, titleId: 'h11', cycle: 4 },
+  { nick: '짠돌이서준',  totalSaved: 420_000, titleId: 'h10', cycle: 3 },
+  { nick: '알뜰이수아',  totalSaved: 220_000, titleId: 'h8',  cycle: 2 },
+  { nick: '무지출지호',  totalSaved: 130_000, titleId: 'h6',  cycle: 1 },
+  { nick: '신참자린이',  totalSaved: 40_000,  titleId: 'h1',  cycle: 1 },
 ];
 
 function profileToEntry(p: PublicProfile): Omit<RankEntry, 'isMe'> {
