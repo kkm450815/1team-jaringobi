@@ -299,8 +299,9 @@ export default function Main() {
       {/* 공지/이벤트 배너 — 활성 공지가 있을 때만 노출 */}
       <AnnouncementBanner />
 
-      {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내 */}
-      <section className="px-10 pt-8 pb-8">
+      {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내.
+          위/아래 패딩을 줄여 미션 버튼은 살짝, 캐릭터 룸은 더 많이 위로 올림. */}
+      <section className="px-10 pt-5 pb-2">
         <button
           data-tutorial="missionButton"
           onClick={locked ? () => setShowLockInfo(true) : openMissionModal}
