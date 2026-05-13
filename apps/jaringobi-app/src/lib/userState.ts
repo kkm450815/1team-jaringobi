@@ -37,6 +37,8 @@ export interface UserSettings {
   sfxEnabled: boolean;
   /** SFX 볼륨 0~100 */
   sfxVolume: number;
+  /** 메인 우상단 '?' 도움말 버튼 표시 여부 (튜토리얼 재실행) */
+  showHelpButton: boolean;
 }
 
 export interface UserState {
@@ -139,6 +141,7 @@ const DEFAULT: UserState = {
     bgmVolume: 60,
     sfxEnabled: true,
     sfxVolume: 80,
+    showHelpButton: true,
   },
 };
 

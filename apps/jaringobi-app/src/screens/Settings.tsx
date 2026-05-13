@@ -306,6 +306,11 @@ export default function Settings() {
             nav('/main');
           }}
         />
+        {settingItem(
+          'showHelpButton',
+          '메인 ? 버튼 표시',
+          '끄면 메인 우상단의 도움말(?) 버튼이 숨겨져요',
+        )}
       </Section>
 
       <Section title="데이터">
