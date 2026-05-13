@@ -20,7 +20,9 @@ export default function Profile() {
   const backFallback = fromState ?? '/talk';
   const [profile, setProfile] = useState<PublicProfile | null | undefined>(undefined);
   const [roomOpen, setRoomOpen] = useState(false);
+  const [zoomPhoto, setZoomPhoto] = useState<{ day: number; src: string } | null>(null);
   useEscape(roomOpen, () => setRoomOpen(false));
+  useEscape(zoomPhoto !== null, () => setZoomPhoto(null));
 
   useEffect(() => {
     let cancelled = false;
@@ -152,15 +154,60 @@ export default function Profile() {
         <div className="mt-5">
           <h3 className="font-bold tracking-[3px] text-[15px] text-text">RECORD</h3>
           <ul className="mt-2 grid grid-cols-6 gap-x-2 gap-y-3">
-            {days.map((d) => (
-              <li key={d} className="flex flex-col items-center">
-                <div className="w-full aspect-square rounded-md bg-text/65" />
-                <span className="mt-1 text-[12px] font-bold text-text">{d}</span>
-              </li>
-            ))}
+            {days.map((d) => {
+              const photo = profile.photos?.[String(d)];
+              const cellCls = `w-full aspect-square rounded-md overflow-hidden ${photo ? 'bg-white' : 'bg-text/65'}`;
+              return (
+                <li key={d} className="flex flex-col items-center">
+                  {photo ? (
+                    <button
+                      type="button"
+                      onClick={() => setZoomPhoto({ day: d, src: photo })}
+                      aria-label={`${d}일차 인증 사진 크게 보기`}
+                      className={`${cellCls} active:scale-[.97] transition`}
+                    >
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ) : (
+                    <div className={cellCls} aria-label={`${d}일차 인증 없음`} />
+                  )}
+                  <span className="mt-1 text-[12px] font-bold text-text">{d}</span>
+                </li>
+              );
+            })}
           </ul>
         </div>
       </section>
+
+      {/* 인증샷 줌 모달 — RECORD 의 실제 사진 클릭 시 */}
+      {zoomPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 grid place-items-center px-4 py-8"
+          onClick={() => setZoomPhoto(null)}
+        >
+          <div
+            className="w-full max-w-[420px] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between text-white px-1 mb-3">
+              <span className="text-[14px] font-bold">
+                {profile.nickname} · {profile.cycle}회차 {zoomPhoto.day}일차
+              </span>
+              <button
+                onClick={() => setZoomPhoto(null)}
+                aria-label="닫기"
+                className="w-9 h-9 grid place-items-center text-[24px] leading-none"
+              >×</button>
+            </div>
+            <img
+              src={zoomPhoto.src}
+              alt={`${zoomPhoto.day}일차 인증`}
+              className="w-full rounded-xl bg-white object-contain"
+              style={{ maxHeight: '70vh' }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 캐릭터 방 모달 */}
       {roomOpen && (
