@@ -11,6 +11,25 @@ import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getSupabase } from './supabase';
 
+/**
+ * redirect URL 기준점. Capacitor 안드로이드 webview 는 window.location.origin
+ * 이 https://localhost 같은 자체 scheme 이라 Supabase 메일/OAuth redirect 가
+ * 동작 안 함 → 환경변수 VITE_PUBLIC_URL 을 우선 사용.
+ * .env 에 VITE_PUBLIC_URL=https://1team-jaringobi.vercel.app 설정.
+ */
+function getPublicOrigin(): string | undefined {
+  const fromEnv = import.meta.env.VITE_PUBLIC_URL as string | undefined;
+  if (fromEnv) return fromEnv.replace(/\/$/, '');
+  if (typeof window !== 'undefined') return window.location.origin;
+  return undefined;
+}
+
+function buildRedirectUrl(path: string): string | undefined {
+  const origin = getPublicOrigin();
+  if (!origin) return undefined;
+  return origin + (path.startsWith('/') ? path : `/${path}`);
+}
+
 /** 현재 세션. undefined = 로딩 중, null = 비로그인, Session = 로그인 됨 */
 export function useSession(): Session | null | undefined {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
@@ -107,10 +126,7 @@ export async function signInWithEmail(email: string, redirectPath = '/admin') {
   if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
     throw new Error('올바른 이메일 형식이 아닙니다.');
   }
-  const redirectTo =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${redirectPath}`
-      : undefined;
+  const redirectTo = buildRedirectUrl(redirectPath);
   const { error } = await sb.auth.signInWithOtp({
     email: trimmed,
     options: redirectTo ? { emailRedirectTo: redirectTo } : undefined,
@@ -132,10 +148,7 @@ export async function signInWithEmail(email: string, redirectPath = '/admin') {
 export async function signInWithGoogle(redirectPath = '/main') {
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
-  const redirectTo =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${redirectPath}`
-      : undefined;
+  const redirectTo = buildRedirectUrl(redirectPath);
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: redirectTo ? { redirectTo } : undefined,
@@ -161,10 +174,7 @@ export async function requestPasswordReset(email: string, redirectPath = '/reset
   if (!trimmed || !/.+@.+\..+/.test(trimmed)) {
     throw new Error('올바른 이메일 형식이 아닙니다.');
   }
-  const redirectTo =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${redirectPath}`
-      : undefined;
+  const redirectTo = buildRedirectUrl(redirectPath);
   const { error } = await sb.auth.resetPasswordForEmail(trimmed, {
     redirectTo,
   });
