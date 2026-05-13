@@ -1,53 +1,87 @@
-// 명예의 전당 — 절약 누적액 랭킹 (시드 + 본인)
-// 1·2·3위는 sticky 로 상단 고정, 4위 이하는 스크롤. 진입 시 본인 위치로 자동 스크롤.
+// 명예의 전당 — 절약 누적액 랭킹.
+// profiles 테이블에서 상위 N명을 가져와 본인을 끼워 정렬. 로드 실패/빈 결과면
+// 데모 시드 폴백. 시상대(1·2·3위) 와 4위 이하 목록을 분리.
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
+import { profilesRepo, PublicProfile } from '../lib/profilesRepo';
 
 const AVATAR = '/jarin/main_mypage.png';
+const RANK_COLORS = ['#F4C430', '#C0C0C0', '#CD7F32']; // 금/은/동
 
-const SEED: { nick: string; totalSaved: number; titleId: string; cycle: number }[] = [
-  { nick: '자린이 7호',   totalSaved: 5_280_000, titleId: 'h11', cycle: 12 },
-  { nick: '자린이 12호',  totalSaved: 3_950_000, titleId: 'h10', cycle: 9 },
-  { nick: '자린이 88호',  totalSaved: 2_870_000, titleId: 'h9',  cycle: 7 },
-  { nick: '자린이 33호',  totalSaved: 1_640_000, titleId: 'h8',  cycle: 5 },
-  { nick: '자린이 47호',  totalSaved: 980_000,   titleId: 'h7',  cycle: 4 },
-  { nick: '자린이 2호',   totalSaved: 720_000,   titleId: 'h6',  cycle: 3 },
-  { nick: '자린이 103호', totalSaved: 480_000,   titleId: 'h3',  cycle: 2 },
-  { nick: '자린이 56호',  totalSaved: 320_000,   titleId: 'h2',  cycle: 2 },
-  { nick: '자린이 21호',  totalSaved: 180_000,   titleId: 'h1',  cycle: 1 },
-  { nick: '자린이 9호',   totalSaved: 90_000,    titleId: 'h0',  cycle: 1 },
+interface RankEntry {
+  nick: string;
+  totalSaved: number;
+  titleId: string;
+  cycle: number;
+  isMe: boolean;
+}
+
+// DB 미설정·로드 실패·빈 결과 대비 폴백 시드 (5명).
+const FALLBACK_SEED: Omit<RankEntry, 'isMe'>[] = [
+  { nick: '절약왕민지',  totalSaved: 4_500_000, titleId: 'h11', cycle: 10 },
+  { nick: '짠돌이서준',  totalSaved: 2_200_000, titleId: 'h10', cycle: 6 },
+  { nick: '알뜰이수아',  totalSaved: 980_000,   titleId: 'h8',  cycle: 4 },
+  { nick: '무지출지호',  totalSaved: 540_000,   titleId: 'h6',  cycle: 3 },
+  { nick: '신참자린이',  totalSaved: 110_000,   titleId: 'h1',  cycle: 1 },
 ];
 
-const RANK_COLORS = ['#F4C430', '#C0C0C0', '#CD7F32']; // 금/은/동
+function profileToEntry(p: PublicProfile): Omit<RankEntry, 'isMe'> {
+  return {
+    nick: p.nickname,
+    totalSaved: p.totalSaved,
+    titleId: p.activeTitleId,
+    cycle: p.cycle,
+  };
+}
 
 export default function Honor() {
   const u = useUser();
   const myRowRef = useRef<HTMLLIElement>(null);
+  const [others, setOthers] = useState<Omit<RankEntry, 'isMe'>[]>([]);
+  const [loaded, setLoaded] = useState(false);
 
-  // 본인을 시드 옆에 끼워넣고 totalSaved 내림차순 정렬
-  const me = {
+  // 부팅 시 1회 — DB 상위 50명 로드. 실패/빈 결과면 FALLBACK_SEED.
+  useEffect(() => {
+    let cancelled = false;
+    profilesRepo.listTop(50)
+      .then((list) => {
+        if (cancelled) return;
+        const filtered = list.filter((p) => p.nickname !== u.nickname);
+        const entries = filtered.length > 0 ? filtered.map(profileToEntry) : FALLBACK_SEED;
+        setOthers(entries);
+        setLoaded(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOthers(FALLBACK_SEED);
+        setLoaded(true);
+      });
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // 본인을 끼워 totalSaved 내림차순 정렬
+  const me: RankEntry = {
     nick: u.nickname,
     totalSaved: u.totalSaved,
     titleId: u.activeTitleId,
     cycle: u.cycle,
-    isMe: true as const,
+    isMe: true,
   };
-  const merged = [
-    ...SEED.map((s) => ({ ...s, isMe: false as const })),
+  const merged: RankEntry[] = [
+    ...others.map((e) => ({ ...e, isMe: false })),
     me,
   ].sort((a, b) => b.totalSaved - a.totalSaved);
 
   const myRank = merged.findIndex((r) => r.isMe) + 1;
 
-  // 진입 시 본인 위치로 부드럽게 스크롤 (4위 이하일 때만)
   useEffect(() => {
     if (myRank > 3 && myRowRef.current) {
-      // 시상대 sticky 높이만큼 보정해 본인 행이 화면 중앙쯤 보이도록
       const t = setTimeout(() => {
         myRowRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
@@ -71,11 +105,14 @@ export default function Honor() {
           <h1 className="font-bold text-[18px] tracking-[3px] text-text inline-flex items-center gap-2">
             <span aria-hidden>🏆</span> 명예의 전당
           </h1>
-          <p className="text-[12px] text-text/60">절약 누적액 랭킹 · 내 순위 {myRank}위</p>
+          <p className="text-[12px] text-text/60">
+            절약 누적액 랭킹 · 내 순위 {myRank}위
+            {!loaded && ' (불러오는 중…)'}
+          </p>
         </div>
       </header>
 
-      {/* 시상대 (1·2·3위) — 상단 고정 (Flex layout 으로 본질적 고정). 4위 이하만 스크롤 */}
+      {/* 시상대 (1·2·3위) */}
       {merged.length >= 3 && (
         <div className="shrink-0 bg-bg px-5 pt-2 pb-3 shadow-[0_8px_12px_-8px_rgba(81,76,68,0.15)]">
           <div className="grid grid-cols-3 gap-2 items-stretch mt-2">
@@ -83,7 +120,6 @@ export default function Honor() {
               const r = merged[idxInTop3];
               const rank = idxInTop3 + 1;
               const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
-              // 1위만 살짝 크고, 2·3위는 동일 높이로 통일 (콘텐츠 잘림 방지)
               const podiumH = rank === 1 ? 'h-[160px]' : 'h-[150px]';
               const bg = rank === 1 ? 'bg-[#FFF7DD]' : rank === 2 ? 'bg-[#F1F1F1]' : 'bg-[#F4E1CC]';
               const ring = rank === 1 ? 'ring-2 ring-[#F4C430]' : '';
@@ -115,51 +151,46 @@ export default function Honor() {
         </div>
       )}
 
-      {/* 4위 이하 — 자체 스크롤 영역. 본인 행에 ref 부여 */}
+      {/* 4위 이하 — 자체 스크롤. 본인 행에 ref */}
       <div className="flex-1 overflow-y-auto no-scrollbar px-5 mt-3 pb-6">
-      <ul className="space-y-2">
-        {merged.slice(3).map((r, i) => {
-          const rank = i + 4;
-          const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
-          return (
-            <li key={`${r.nick}-${rank}`} ref={r.isMe ? myRowRef : undefined}>
-              <Link
-                to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
-                state={{ from: '/honor' }}
-                className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-soft active:scale-[.99] transition ${
-                  r.isMe ? 'bg-accent/15 ring-2 ring-accent/40' : 'bg-white'
-                }`}
-              >
-                <div className="w-9 grid place-items-center shrink-0">
-                  <span className="text-[15px] font-bold text-text/55">{rank}</span>
-                </div>
-                <img src={AVATAR} alt="" className="w-10 h-10 rounded-full bg-white object-contain shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <p className="text-[14px] font-bold text-text truncate">{r.nick}</p>
-                    {r.isMe && (
-                      <span className="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full shrink-0">나</span>
-                    )}
+        <ul className="space-y-2">
+          {merged.slice(3).map((r, i) => {
+            const rank = i + 4;
+            const title = TITLES.find((t) => t.id === r.titleId) ?? TITLES[0];
+            return (
+              <li key={`${r.nick}-${rank}`} ref={r.isMe ? myRowRef : undefined}>
+                <Link
+                  to={r.isMe ? '/mypage' : `/profile/${encodeURIComponent(r.nick)}`}
+                  state={{ from: '/honor' }}
+                  className={`flex items-center gap-3 rounded-2xl px-3 py-3 shadow-soft active:scale-[.99] transition ${
+                    r.isMe ? 'bg-accent/15 ring-2 ring-accent/40' : 'bg-white'
+                  }`}
+                >
+                  <div className="w-9 grid place-items-center shrink-0">
+                    <span className="text-[15px] font-bold text-text/55">{rank}</span>
                   </div>
-                  <div className="mt-1 flex items-center gap-1.5">
-                    <TitleIcon src={title.img} size={16} alt={title.name} />
-                    <span className="text-[11px] text-text/65 truncate">{title.name}</span>
+                  <img src={AVATAR} alt="" className="w-10 h-10 rounded-full bg-white object-contain shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[14px] font-bold text-text truncate">{r.nick}</p>
+                      {r.isMe && (
+                        <span className="text-[10px] font-bold text-accent bg-accent/10 px-1.5 py-0.5 rounded-full shrink-0">나</span>
+                      )}
+                    </div>
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <TitleIcon src={title.img} size={16} alt={title.name} />
+                      <span className="text-[11px] text-text/65 truncate">{title.name}</span>
+                    </div>
                   </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[14px] font-bold text-text">{r.totalSaved.toLocaleString()}</p>
-                  <p className="text-[11px] text-text/55">{r.cycle}회차</p>
-                </div>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-
-      <p className="mt-6 text-center text-[11px] text-text/45 leading-relaxed">
-        * 백엔드 연동 전까지 노출되는 데모 랭킹입니다.<br />
-        실시간 사용자 절약액은 추후 적용될 예정.
-      </p>
+                  <div className="text-right shrink-0">
+                    <p className="text-[14px] font-bold text-text">{r.totalSaved.toLocaleString()}</p>
+                    <p className="text-[11px] text-text/55">{r.cycle}회차</p>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </div>
     </main>
   );
