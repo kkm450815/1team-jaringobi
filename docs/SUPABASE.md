@@ -739,6 +739,72 @@ update public.profiles set cycle=1, day=5,  total_saved=40000  where nickname='�
 > 잔존. 운영 중 시드를 빼고 싶으면 `delete from public.profiles where user_id is null;`
 > 로 정리 가능.
 
+### 3-11. 인증샷 동기화 (`record-photos` 버킷 + `profiles.photos`)
+
+마이페이지·다른 사람 프로필의 RECORD 캘린더에 인증 사진을 노출하려면
+이미지를 Storage 에 올리고 profiles 행에 URL 을 적어둔다.
+
+#### 컬럼 추가
+
+```sql
+alter table public.profiles
+  add column if not exists photos jsonb not null default '{}'::jsonb;
+```
+
+값은 `{ "1": "https://....png", "5": "...", "12": "..." }` 형태 (day → public URL).
+
+#### Storage 버킷 (Dashboard 또는 SQL)
+
+Dashboard → Storage → New bucket → name: `record-photos`, **Public bucket 체크** → Create.
+
+또는 SQL:
+```sql
+insert into storage.buckets (id, name, public)
+values ('record-photos', 'record-photos', true)
+on conflict (id) do nothing;
+```
+
+#### Storage RLS
+
+읽기는 모두, 쓰기·삭제는 본인 폴더 (`<user_id>/...`) 만.
+
+```sql
+drop policy if exists "record-photos public read" on storage.objects;
+create policy "record-photos public read" on storage.objects for select
+  using (bucket_id = 'record-photos');
+
+drop policy if exists "record-photos own upload" on storage.objects;
+create policy "record-photos own upload" on storage.objects for insert
+  with check (
+    bucket_id = 'record-photos'
+    and auth.uid() is not null
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "record-photos own update" on storage.objects;
+create policy "record-photos own update" on storage.objects for update
+  using (
+    bucket_id = 'record-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+
+drop policy if exists "record-photos own delete" on storage.objects;
+create policy "record-photos own delete" on storage.objects for delete
+  using (
+    bucket_id = 'record-photos'
+    and (storage.foldername(name))[1] = auth.uid()::text
+  );
+```
+
+#### 동작
+
+- `savePhoto` 호출 시 클라이언트가 비동기로:
+  1) dataURL → Blob 변환 후 `record-photos/<uid>/<day>.jpg` 로 upsert 업로드
+  2) public URL 받아서 `profiles.photos` jsonb 의 해당 day 키만 patch
+  (실패해도 로컬 인증·보상 흐름은 정상 진행)
+- 본인 마이페이지는 로컬 dataURL 사용 (빠름), 다른 사람 프로필은 DB 의 URL 사용
+- 회차 종료(`isCycleEnd`) 시 profiles.photos 도 빈 객체로 리셋
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

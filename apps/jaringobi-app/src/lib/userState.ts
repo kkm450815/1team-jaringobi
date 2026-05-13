@@ -391,6 +391,14 @@ export function useUser() {
       // 사용자가 같은 기본 닉으로 row 를 가질 가능성을 회피.
       if (next.nickname && next.nickname !== DEFAULT_NICK) {
         void profilesRepo.upsertMe(userToProfile(next));
+        // 인증 사진을 record-photos Storage 에 비동기 업로드 (다른 사람 프로필
+        // 의 RECORD 캘린더에서 보이도록). 실패해도 로컬·보상 흐름은 그대로.
+        // 회차 종료(isCycleEnd) 면 day 매핑이 의미 없어지므로 photos 컬럼을 비움.
+        if (isCycleEnd) {
+          void profilesRepo.clearRecordPhotos();
+        } else {
+          void profilesRepo.syncRecordPhoto(cur.day, dataUrl);
+        }
       }
       return next;
     });
