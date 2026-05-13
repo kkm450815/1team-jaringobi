@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toPng, toBlob } from 'html-to-image';
 import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
@@ -19,6 +20,14 @@ export default function MyPage() {
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
   const [roomOpen, setRoomOpen] = useState(false);
   useEscape(roomOpen, () => setRoomOpen(false));
+
+  // 노트 카드 영역 — 공유 시 이 영역만 이미지로 캡쳐
+  const noteRef = useRef<HTMLElement>(null);
+  const [sharing, setSharing] = useState(false);
+
+  // 사진 줌 모달 — RECORD 그리드에서 사진 클릭 시
+  const [zoomPhoto, setZoomPhoto] = useState<{ day: number; src: string } | null>(null);
+  useEscape(zoomPhoto !== null, () => setZoomPhoto(null));
 
   async function commitNick() {
     const trimmed = nickDraft.trim();
@@ -67,28 +76,60 @@ export default function MyPage() {
     : null;
 
   async function handleShare() {
-    const text = `자린고비 ${u.cycle}회차 ${u.day}일차\n` +
-      `누적 절약: ${u.totalSaved.toLocaleString()}원 / 목표: ${u.goal.toLocaleString()}원\n` +
-      `보유 코인: ${u.coins.toLocaleString()}P`;
-    const data: ShareData = { title: '자린고비', text };
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      try {
-        await navigator.share(data);
-        return;
-      } catch {
-        // 사용자가 공유를 취소했거나 실패 → 클립보드로 폴백
+    if (sharing || !noteRef.current) return;
+    setSharing(true);
+    const text = `자린고비 ${u.cycle}회차 ${u.day}일차 · 누적 절약 ${u.totalSaved.toLocaleString()}원`;
+    const fileName = `jaringobi_${u.nickname}_${u.cycle}회차.png`;
+
+    try {
+      // html-to-image 로 노트 카드 DOM 을 PNG 로 변환. devicePixelRatio 2배로 해상도 보존.
+      const pixelRatio = Math.max(2, window.devicePixelRatio || 1);
+      const opts = {
+        pixelRatio,
+        backgroundColor: '#FAF5E9', // 노트 종이색 (bg-grid-paper)
+        cacheBust: true,
+      };
+
+      // 가능하면 Blob → File 로 navigator.share (iOS/Android 모두 지원)
+      const blob = await toBlob(noteRef.current, opts);
+      if (blob) {
+        const file = new File([blob], fileName, { type: 'image/png' });
+        const shareData: ShareData = { title: '자린고비', text, files: [file] };
+        if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+          try {
+            await navigator.share(shareData);
+            playSuccessSfx();
+            return;
+          } catch {
+            // 사용자 취소 — 폴백 안 거치고 종료
+            return;
+          }
+        }
       }
-    }
-    if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      try {
-        await navigator.clipboard.writeText(text);
-        alert('내용이 클립보드에 복사됐어요');
-        return;
-      } catch {
-        // ignore
+
+      // 폴백 — files share 미지원 환경: PNG dataURL 을 새 탭에서 열어 사용자가 저장
+      const dataUrl = await toPng(noteRef.current, opts);
+      const win = window.open();
+      if (win) {
+        win.document.write(`<title>${fileName}</title><img src="${dataUrl}" style="width:100%;max-width:480px" />`);
+      } else {
+        // 팝업 차단 — 다운로드 링크로
+        const a = document.createElement('a');
+        a.href = dataUrl;
+        a.download = fileName;
+        a.click();
       }
+    } catch (e) {
+      console.error('[MyPage.handleShare] 캡쳐 실패', e);
+      // 최후 폴백 — 텍스트 share
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try { await navigator.share({ title: '자린고비', text }); } catch { /* ignore */ }
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        try { await navigator.clipboard.writeText(text); alert('내용이 클립보드에 복사됐어요'); } catch { /* ignore */ }
+      }
+    } finally {
+      setSharing(false);
     }
-    alert(text);
   }
 
   return (
@@ -136,8 +177,8 @@ export default function MyPage() {
         </Link>
       </div>
 
-      {/* 노트 카드 */}
-      <section className="mx-4 bg-grid-paper rounded-[18px] shadow-soft px-4 pt-3 pb-6 relative">
+      {/* 노트 카드 — 공유 시 이 section 영역만 캡쳐 */}
+      <section ref={noteRef} className="mx-4 bg-grid-paper rounded-[18px] shadow-soft px-4 pt-3 pb-6 relative">
         {/* 노트 바인딩 구멍 */}
         <div className="absolute -top-2 left-0 right-0 flex justify-around px-6 pointer-events-none">
           {Array.from({ length: 6 }).map((_, i) => (
@@ -149,14 +190,22 @@ export default function MyPage() {
         <div className="flex justify-end pt-2">
           <button
             onClick={handleShare}
-            aria-label="공유"
-            className="w-7 h-7 grid place-items-center text-text/70 active:scale-[.95] transition"
+            disabled={sharing}
+            aria-label={sharing ? '이미지 만드는 중' : '공유'}
+            className="w-7 h-7 grid place-items-center text-text/70 active:scale-[.95] transition disabled:opacity-50"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 4v12" />
-              <path d="M7 9l5-5 5 5" />
-              <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
-            </svg>
+            {sharing ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" className="animate-spin">
+                <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="2" strokeOpacity="0.25" />
+                <path d="M21 12a9 9 0 0 0-9-9" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 4v12" />
+                <path d="M7 9l5-5 5 5" />
+                <path d="M5 14v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4" />
+              </svg>
+            )}
           </button>
         </div>
 
@@ -279,21 +328,21 @@ export default function MyPage() {
           <ul className="mt-2 grid grid-cols-6 gap-x-2 gap-y-3">
             {days.map((d) => {
               const photo = u.photos[d];
+              const cellCls = `w-full aspect-square rounded-md overflow-hidden ${photo ? 'bg-white' : 'bg-text/65'}`;
               return (
                 <li key={d} className="flex flex-col items-center">
-                  <div
-                    className={`w-full aspect-square rounded-md overflow-hidden ${
-                      photo ? 'bg-white' : 'bg-text/65'
-                    }`}
-                  >
-                    {photo && (
-                      <img
-                        src={photo}
-                        alt={`${d}일차 인증`}
-                        className="w-full h-full object-cover"
-                      />
-                    )}
-                  </div>
+                  {photo ? (
+                    <button
+                      type="button"
+                      onClick={() => setZoomPhoto({ day: d, src: photo })}
+                      aria-label={`${d}일차 인증 사진 크게 보기`}
+                      className={`${cellCls} active:scale-[.97] transition`}
+                    >
+                      <img src={photo} alt="" className="w-full h-full object-cover" />
+                    </button>
+                  ) : (
+                    <div className={cellCls} aria-label={`${d}일차 인증 없음`} />
+                  )}
                   <span className="mt-1 text-[12px] font-bold text-text">{d}</span>
                 </li>
               );
@@ -335,6 +384,38 @@ export default function MyPage() {
               onClose={closeTitleModal}
             />
           )}
+        </div>
+      )}
+
+      {/* 인증샷 줌 모달 — RECORD 그리드의 사진 클릭 시. 사진은 카메라에서
+          downscaleImage 로 줄여 저장되므로 원본 화질로 보이진 않음 — 안내 문구 함께. */}
+      {zoomPhoto && (
+        <div
+          className="fixed inset-0 z-50 bg-black/85 grid place-items-center px-4 py-8"
+          onClick={() => setZoomPhoto(null)}
+        >
+          <div
+            className="w-full max-w-[420px] flex flex-col items-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between text-white px-1 mb-3">
+              <span className="text-[14px] font-bold">{u.cycle}회차 · {zoomPhoto.day}일차</span>
+              <button
+                onClick={() => setZoomPhoto(null)}
+                aria-label="닫기"
+                className="w-9 h-9 grid place-items-center text-[24px] leading-none"
+              >×</button>
+            </div>
+            <img
+              src={zoomPhoto.src}
+              alt={`${zoomPhoto.day}일차 인증`}
+              className="w-full rounded-xl bg-white object-contain"
+              style={{ maxHeight: '70vh', imageRendering: 'auto' }}
+            />
+            <p className="mt-3 text-[11px] text-white/55 text-center leading-relaxed">
+              저장 공간 절약을 위해 사진은 작은 크기로 보관돼요. 더 크게 봐도 흐려질 수 있어요.
+            </p>
+          </div>
         </div>
       )}
 

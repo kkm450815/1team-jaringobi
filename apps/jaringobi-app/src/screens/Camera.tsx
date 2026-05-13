@@ -64,7 +64,8 @@ export default function Camera() {
     setBusy(true);
     setPickError(null);
     try {
-      const dataUrl = await downscaleImage(f, 320);
+      // 줌 모달에서 봐도 너무 흐릿하지 않게 512px 로 (이전 320 → 512). JPEG 0.8.
+      const dataUrl = await downscaleImage(f, 512);
       setPreview(dataUrl);
       playClickSfx();
     } catch (err) {
