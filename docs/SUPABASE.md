@@ -692,6 +692,43 @@ on conflict (id) do nothing;
 - 칭호 이미지(`img`): 신규 칭호는 `title-images` 버킷 업로드 → public URL 저장. 기존 11개는 정적 경로(`/title/title_NN.png`) 유지
 - 미션 삭제 시 admin UI 가 칭호 reqs 참조 검사 + 2단계 confirm
 
+### 3-10. 데모 프로필 시드 (5명) — 명예의 전당 / 다른 사람 방 보기용
+
+수다방·명예의 전당에서 "다른 사용자" 가 비어 보이지 않도록 가상 프로필 5명을
+profiles 테이블에 넣어 둔다. `user_id = NULL` 이라 실제 auth 사용자와 충돌
+없음. 닉네임은 unique PK 이므로 중복 가입 시 사용자가 다른 닉을 사용해야 함.
+
+```sql
+insert into public.profiles
+  (nickname, cycle, day, total_saved, goal, active_title_id, owned_titles, equipped, user_id)
+values
+  ('절약왕민지', 10, 28, 4500000, 1000000, 'h11',
+   ARRAY['h0','h1','h2','h3','h5','h6','h7','h8','h9','h10','h11'],
+   ARRAY['/shop/clothes/clo_shop_18.png','/shop/acc/acc_shop_05.png','/shop/wall_paper/interior_shop_03.png','/shop/lamp/lamp_shop_07.png','/shop/front/front_shop_12.png','/shop/left/left_shop_04.png'],
+   NULL),
+  ('짠돌이서준', 6, 18, 2200000, 1000000, 'h10',
+   ARRAY['h0','h1','h2','h3','h5','h9','h10'],
+   ARRAY['/shop/clothes/clo_shop_24.png','/shop/acc/acc_shop_38.png','/shop/wall_paper/interior_shop_09.png','/shop/right/right_shop_05.png'],
+   NULL),
+  ('알뜰이수아', 4, 12, 980000, 300000, 'h8',
+   ARRAY['h0','h1','h2','h3','h8'],
+   ARRAY['/shop/clothes/clo_shop_42.png','/shop/acc/acc_shop_13.png','/shop/wall_paper/interior_shop_15.png'],
+   NULL),
+  ('무지출지호', 3, 25, 540000, 300000, 'h6',
+   ARRAY['h0','h1','h6'],
+   ARRAY['/shop/clothes/clo_shop_30.png','/shop/acc/acc_shop_67.png','/shop/wall_paper/interior_shop_21.png','/shop/lamp/lamp_shop_15.png'],
+   NULL),
+  ('신참자린이', 1, 8, 110000, 300000, 'h1',
+   ARRAY['h0','h1'],
+   ARRAY['/shop/clothes/clo_shop_51.png'],
+   NULL)
+on conflict (nickname) do nothing;
+```
+
+> 참고: 실제 가입자는 nickname 변경 시 자기 row 를 만들고, 위 시드는 영구
+> 잔존. 운영 중 시드를 빼고 싶으면 `delete from public.profiles where user_id is null;`
+> 로 정리 가능.
+
 ## 4. Realtime 설정
 
 Supabase 대시보드 > Database > Replication 에서 `talk_posts` 테이블을 publication에 추가. `talkPostsRepo.subscribe()`가 INSERT/DELETE 이벤트를 구독합니다.

@@ -32,6 +32,8 @@ export interface ProfilesRepo {
   upsertMe(profile: PublicProfile): Promise<void>;
   /** 닉네임 변경 — unique 위반 시 reason: 'taken' 반환. 성공 시 옛 row 삭제 시도 */
   tryRename(oldNick: string, profile: PublicProfile): Promise<RenameResult>;
+  /** 명예의 전당 — 누적 절약액 내림차순 상위 N명 */
+  listTop(limit: number): Promise<PublicProfile[]>;
 }
 
 /* ---------------- 데모 데이터 (Supabase 미설정 시 — 개발용) ---------------- */
@@ -88,6 +90,11 @@ const localRepo: ProfilesRepo = {
   },
   async upsertMe() { /* localStorage 모드에선 별도 저장소 불필요 — useUser 가 곧 본인 프로필 */ },
   async tryRename() { return { ok: true }; },
+  async listTop(limit) {
+    // 데모용 시드 — Honor 에서 fallback 으로 노출
+    const demoNicks = ['절약왕민지', '짠돌이서준', '알뜰이수아', '무지출지호', '신참자린이'];
+    return demoNicks.slice(0, limit).map(demoProfile);
+  },
 };
 
 /* ---------------- Supabase 구현 ---------------- */
@@ -163,6 +170,21 @@ const supabaseRepo: ProfilesRepo = {
     if (error) {
       console.error('[profilesRepo.upsertMe] upsert 실패', { row, error });
     }
+  },
+
+  async listTop(limit) {
+    const sb = getSupabase();
+    if (!sb) return [];
+    const { data, error } = await sb
+      .from('profiles')
+      .select('*')
+      .order('total_saved', { ascending: false })
+      .limit(limit);
+    if (error) {
+      console.error('[profilesRepo.listTop] 실패', error);
+      return [];
+    }
+    return (data ?? []).map((r: ProfileRow) => rowToProfile(r));
   },
 
   async tryRename(_oldNick, profile) {
