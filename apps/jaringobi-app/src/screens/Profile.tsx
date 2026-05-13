@@ -3,10 +3,11 @@
 
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useLocation, useParams } from 'react-router-dom';
-import { fitSrc, TITLES } from '../lib/data';
+import { TITLES } from '../lib/data';
 import { profilesRepo, PublicProfile } from '../lib/profilesRepo';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
+import { ProfileCharacterBox } from '../components/ProfileCharacterBox';
 import { TitleIcon } from '../components/TitleIcon';
 import { useEscape } from '../lib/useEscape';
 import { useUser } from '../lib/userState';
@@ -109,21 +110,11 @@ export default function Profile() {
             aria-label={`${profile.nickname} 방 보기`}
             className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
           >
-            <img
-              src="/jarin/main_character.png"
+            <ProfileCharacterBox
+              characterSrc="/jarin/main_character.png"
               alt={`${profile.nickname} 캐릭터`}
-              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
-              draggable={false}
+              equipped={equippedAcc}
             />
-            {equippedAcc.map((s) => (
-              <img
-                key={s}
-                src={fitSrc(s)}
-                alt=""
-                className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
-                draggable={false}
-              />
-            ))}
             <span className="absolute right-1.5 bottom-1.5 bg-text/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               방 보기
             </span>

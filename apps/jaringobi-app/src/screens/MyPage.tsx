@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toPng, toBlob } from 'html-to-image';
-import { fitSrc, getTitleProgress, Title, TITLES } from '../lib/data';
+import { getTitleProgress, Title, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
+import { ProfileCharacterBox } from '../components/ProfileCharacterBox';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
@@ -239,24 +240,13 @@ export default function MyPage() {
             aria-label="내 방 보기"
             className="aspect-square bg-white rounded-2xl shadow-soft overflow-hidden relative active:scale-[.98] transition"
           >
-            {/* 캐릭터 + 장착 fit을 메인/상점과 동일한 캔버스 비율로 그려 어깨선까지 보이게 */}
-            <img
-              src="/jarin/main_character.png"
+            <ProfileCharacterBox
+              characterSrc="/jarin/main_character.png"
               alt={`${u.nickname} 캐릭터`}
-              className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
-              draggable={false}
+              equipped={u.equipped.filter(
+                (s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'),
+              )}
             />
-            {u.equipped
-              .filter((s) => s.startsWith('/shop/clothes/') || s.startsWith('/shop/acc/'))
-              .map((s) => (
-                <img
-                  key={s}
-                  src={fitSrc(s)}
-                  alt=""
-                  className="absolute left-1/2 -translate-x-1/2 top-0 h-[200%] w-auto max-w-none pointer-events-none"
-                  draggable={false}
-                />
-              ))}
             <span className="absolute right-1.5 bottom-1.5 bg-text/70 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
               방 보기
             </span>
