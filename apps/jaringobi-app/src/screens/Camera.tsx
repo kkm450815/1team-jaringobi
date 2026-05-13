@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MISSIONS } from '../lib/data';
+import { MISSIONS, TITLES } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { downscaleImage, isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
 import { playClickSfx, playSuccessSfx, vibrate } from '../lib/feedback';
@@ -17,7 +17,12 @@ export default function Camera() {
   const [preview, setPreview] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
-  const [reward, setReward] = useState<{ saved: number; coins: number; cycleEnded: boolean } | null>(null);
+  const [reward, setReward] = useState<{
+    saved: number;
+    coins: number;
+    cycleEnded: boolean;
+    newlyEarnedTitles: string[];
+  } | null>(null);
   // 회차 완료 시 사진들이 초기화되기 직전의 스냅샷 — 사용자에게 캡처/저장 유도
   const [archive, setArchive] = useState<{
     cycle: number;
@@ -72,7 +77,12 @@ export default function Camera() {
   function submit() {
     if (!preview || busy) return;
     const r = u.savePhoto(preview);
-    setReward({ saved: r.reward, coins: r.coins, cycleEnded: r.cycleEnded });
+    setReward({
+      saved: r.reward,
+      coins: r.coins,
+      cycleEnded: r.cycleEnded,
+      newlyEarnedTitles: r.newlyEarnedTitles,
+    });
     if (r.archive) setArchive(r.archive);
     playSuccessSfx();
     if (u.settings.vibration) vibrate(r.cycleEnded ? [20, 60, 20, 60, 60] : [30, 40, 30]);
@@ -249,6 +259,34 @@ export default function Camera() {
                 +{reward.coins}P
               </p>
             </div>
+
+            {/* 칭호 자동 획득 — savePhoto 가 반환한 newlyEarnedTitles 가 있을 때만 노출 */}
+            {reward.newlyEarnedTitles.length > 0 && (
+              <div className="mt-3 bg-accent/15 border-2 border-accent/40 rounded-2xl py-3 px-3">
+                <p className="text-[12px] font-bold text-accent">🏅 새 칭호 획득!</p>
+                <div className="mt-2 space-y-2">
+                  {reward.newlyEarnedTitles.map((tid) => {
+                    const t = TITLES.find((x) => x.id === tid);
+                    if (!t) return null;
+                    return (
+                      <div key={tid} className="flex items-center gap-2 text-left">
+                        <img
+                          src={t.img}
+                          alt=""
+                          className="w-10 h-10 object-contain shrink-0"
+                          onError={(e) => { e.currentTarget.style.opacity = '0.3'; }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[14px] font-bold text-text leading-tight">{t.name}</p>
+                          <p className="text-[11px] text-text/65 mt-0.5 leading-tight">{t.tagline}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             <button
               onClick={closeRewardAndContinue}
               className="mt-5 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
