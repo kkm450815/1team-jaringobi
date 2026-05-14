@@ -130,15 +130,25 @@ export default function Settings() {
     }
   }
 
-  function commitNick() {
-    if (!nickDraft.trim()) {
+  async function commitNick() {
+    const trimmed = nickDraft.trim();
+    if (!trimmed) {
       setNickError('닉네임은 비울 수 없어요');
       setNickDraft(u.nickname);
       setEditingNick(false);
       setTimeout(() => setNickError(null), 2500);
       return;
     }
-    u.setNickname(nickDraft);
+    // MyPage 와 동일하게 tryRenameNickname 사용 — Supabase 동기화 + unique 체크 +
+    // 본인 talk_posts 닉 일괄 갱신까지. setNickname (로컬 only) 만 쓰면 수다방
+    // 표시명이 안 바뀌고 다른 사용자에게도 옛 닉으로 노출되던 버그 방지.
+    const result = await u.tryRenameNickname(trimmed);
+    if (!result.ok) {
+      setNickError(result.message);
+      setNickDraft(u.nickname);
+      setTimeout(() => setNickError(null), 2500);
+      return;
+    }
     setEditingNick(false);
   }
 
