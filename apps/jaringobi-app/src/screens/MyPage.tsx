@@ -103,6 +103,11 @@ export default function MyPage() {
       }
       // pixelRatio 2 면 인스타용으로 충분. 그 이상은 캡쳐만 느려지고 결과는 비슷.
       const pixelRatio = 2;
+      // offsetWidth 는 정수로 내림 → 실제 렌더 폭이 소수점이면 오른쪽 끝 1px 잘림.
+      // getBoundingClientRect 의 소수점 폭을 ceil 로 올려 잡고, 안전하게 +1 버퍼.
+      const rect = el.getBoundingClientRect();
+      const width = Math.ceil(rect.width) + 1;
+      const height = Math.ceil(rect.height) + 1;
       const blob = await toBlob(el, {
         pixelRatio,
         backgroundColor: '#FAF5E9', // 노트 종이색
@@ -111,9 +116,8 @@ export default function MyPage() {
         // 외부 폰트 인라인 임베드 스킵 → 캡쳐 시간 70% 단축. 워터마크 텍스트는
         // 시스템 폰트로도 깨지지 않음
         skipFonts: true,
-        // 명시적 width/height 로 오른쪽 잘림 방지
-        width: el.offsetWidth,
-        height: el.offsetHeight,
+        width,
+        height,
       });
       if (!blob) throw new Error('blob 변환 실패');
       // 미리보기는 ObjectURL — base64 dataURL 대비 즉시·메모리 효율적
