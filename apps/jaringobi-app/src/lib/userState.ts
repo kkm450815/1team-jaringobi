@@ -537,6 +537,29 @@ export function useUser() {
     });
   }, []);
 
+  // 서버(profiles.photos) 의 day→URL 매핑을 로컬 photos 에 머지.
+  // 로컬에 이미 같은 day 값이 있으면 로컬 우선(=같은 기기서 찍은 base64 dataURL 유지,
+  // 네트워크 없이 즉시 렌더). 로컬에 없는 day 만 서버 URL 로 채워, 다른 기기에서
+  // 올린 사진이나 로컬 write 누락분이 보이게 함.
+  const mergeRemotePhotos = useCallback((remote: Record<string, string> | null | undefined) => {
+    if (!remote) return;
+    setState((s) => {
+      let changed = false;
+      const next = { ...s.photos };
+      for (const [k, v] of Object.entries(remote)) {
+        const d = Number(k);
+        if (!Number.isFinite(d) || !v) continue;
+        if (next[d]) continue; // 로컬 우선
+        next[d] = v;
+        changed = true;
+      }
+      if (!changed) return s;
+      const out: UserState = { ...s, photos: next };
+      write(out);
+      return out;
+    });
+  }, []);
+
   return {
     ...state,
     setNickname,
@@ -553,6 +576,7 @@ export function useUser() {
     resetTodayMission,
     loseHeart,
     restoreHearts,
+    mergeRemotePhotos,
   };
 }
 

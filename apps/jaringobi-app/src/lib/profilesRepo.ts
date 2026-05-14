@@ -205,9 +205,23 @@ const supabaseRepo: ProfilesRepo = {
     if (!userId) {
       return { ok: false, reason: 'unknown', message: '로그인 세션이 없어요. 페이지를 새로고침해 주세요.' };
     }
-    // 본인 row 가 있으면 UPDATE, 없으면 INSERT — user_id 기준 upsert.
-    // 닉네임이 다른 사용자에게 이미 잡혀 있으면 nickname unique 제약(PK)에서 23505.
-    const row: Partial<ProfileRow> = { ...profileToRow(profile), user_id: userId };
+    // INSERT 경로(기존 row 없음)로 빠질 때 photos 가 기본값 {} 로 리셋돼
+    // 이전 인증샷 URL 이 다 끊기던 버그 방어 — 현재 row 의 photos 를 먼저 읽어
+    // payload 에 끼워 넣음. UPDATE 경로에서도 동일 값을 다시 set 하는 거라 무해.
+    let existingPhotos: Record<string, string> | null = null;
+    try {
+      const { data: cur } = await sb
+        .from('profiles')
+        .select('photos')
+        .eq('user_id', userId)
+        .maybeSingle();
+      existingPhotos = (cur?.photos as Record<string, string> | null) ?? null;
+    } catch { /* best effort */ }
+    const row: Partial<ProfileRow> = {
+      ...profileToRow(profile),
+      user_id: userId,
+      ...(existingPhotos ? { photos: existingPhotos } : {}),
+    };
     const { error } = await sb.from('profiles').upsert(row, { onConflict: 'user_id' });
     if (error) {
       const code = (error as { code?: string }).code;

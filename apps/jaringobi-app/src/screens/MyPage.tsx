@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toBlob } from 'html-to-image';
 import { getTitleProgress, Title, TITLES } from '../lib/data';
@@ -7,6 +7,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { ProfileCharacterBox } from '../components/ProfileCharacterBox';
 import { TitleIcon } from '../components/TitleIcon';
 import { useUser } from '../lib/userState';
+import { profilesRepo } from '../lib/profilesRepo';
 import { useEscape } from '../lib/useEscape';
 import { playDeniedSfx, playSuccessSfx } from '../lib/feedback';
 
@@ -40,6 +41,19 @@ export default function MyPage() {
   // 사진 줌 모달 — RECORD 그리드에서 사진 클릭 시
   const [zoomPhoto, setZoomPhoto] = useState<{ day: number; src: string } | null>(null);
   useEscape(zoomPhoto !== null, () => setZoomPhoto(null));
+
+  // 다른 기기에서 올린 인증샷 / 로컬 write 누락분을 서버에서 받아 머지.
+  // 로컬에 이미 있는 day 는 건드리지 않음 (mergeRemotePhotos 안에서 처리).
+  // 닉네임/사이클 바뀌면 다시 fetch — 회차 종료 후 새 회차 사진 동기화 대응.
+  useEffect(() => {
+    if (!u.nickname || u.nickname === '자린이') return;
+    let alive = true;
+    profilesRepo.getByNick(u.nickname).then((p) => {
+      if (!alive || !p?.photos) return;
+      u.mergeRemotePhotos(p.photos);
+    }).catch(() => { /* best-effort */ });
+    return () => { alive = false; };
+  }, [u.nickname, u.cycle, u.mergeRemotePhotos]);
 
   async function commitNick() {
     const trimmed = nickDraft.trim();
