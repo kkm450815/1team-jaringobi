@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { equipSlotOf, getTitleProgress, MISSIONS, TITLES } from './data';
 import { profilesRepo, PublicProfile } from './profilesRepo';
+import { talkPostsRepo } from './talkPostsRepo';
 
 const DEFAULT_NICK = '자린이';
 
@@ -274,19 +275,34 @@ export function useUser() {
       // 사용자 row 를 건드릴 위험이 있어 oldNick 을 빈 문자열로 넘겨 옛 row 삭제 skip).
       const oldForRename = oldNick === DEFAULT_NICK ? '' : oldNick;
       const profile: PublicProfile = { ...userToProfile(fresh), nickname: trimmed };
-      const result = await profilesRepo.tryRename(oldForRename, profile);
+      // 안드로이드 WebView 등 느린 환경에서 Supabase 응답이 늦으면 사용자가
+      // 화면 멈춤으로 인지 → 앱 강제종료 후 재진입하는 사례 발생. 3초 타임아웃을
+      // 두고 그 안에 'taken' 거부가 안 떨어지면 로컬 우선 진행. (백그라운드에서
+      // upsert 가 늦게라도 성공하면 다음 사이클에 자연 동기화.)
+      const TIMEOUT_MS = 3000;
+      const result = await Promise.race<{
+        ok: true;
+      } | { ok: false; reason: 'taken' | 'unknown'; message: string }>([
+        profilesRepo.tryRename(oldForRename, profile),
+        new Promise((resolve) =>
+          setTimeout(
+            () => resolve({ ok: false, reason: 'unknown', message: 'Supabase timeout — 로컬만 저장' }),
+            TIMEOUT_MS,
+          ),
+        ),
+      ]);
       if (!result.ok) {
         // 'taken' = 다른 사용자가 이미 사용 중 → 정말 거부
         if (result.reason === 'taken') return result;
-        // 그 외(세션 없음 등) = Supabase 환경 이슈. 로컬은 저장하고 진행.
-        // 사용자 흐름이 끊기지 않도록 — anonymous session 이 늦게 잡히는
-        // 경우 등에 대한 fallback. 추후 설정 변경 시 자동 동기화됨.
+        // 그 외(세션 없음/타임아웃 등) = Supabase 환경 이슈. 로컬은 저장하고 진행.
         console.warn('[tryRenameNickname] Supabase 동기화 실패, 로컬만 저장:', result.message);
       }
       // 로컬 상태 갱신
       const next: UserState = { ...fresh, nickname: trimmed };
       write(next);
       setState(next);
+      // 내가 쓴 수다방 글들의 nick 컬럼도 새 닉으로 갱신 (실패해도 흐름은 진행).
+      void talkPostsRepo.renameMyPosts(trimmed).catch(() => { /* best-effort */ });
       return { ok: true };
     },
     [],

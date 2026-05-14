@@ -117,22 +117,32 @@ export default function MyPage() {
       }
       // pixelRatio 2 면 인스타용으로 충분. 그 이상은 캡쳐만 느려지고 결과는 비슷.
       const pixelRatio = 2;
-      // offsetWidth 는 정수로 내림 → 실제 렌더 폭이 소수점이면 오른쪽 끝 1px 잘림.
-      // getBoundingClientRect 의 소수점 폭을 ceil 로 올려 잡고, 안전하게 +1 버퍼.
+      // section 안쪽에 'absolute -top-2' 로 위로 벗어난 바인딩 구멍이 있어서
+      // bounding rect 가 그걸 포함 못함. 캡쳐 중에는 잠시 숨겨서 측정 왜곡·잘림 방지.
+      // 안드로이드 WebView 처럼 sub-pixel 반올림 더 보수적인 환경에선 +1 로도 모자라
+      // 우/하단이 잘림 → 버퍼를 4px 까지 키움.
+      const dots = el.querySelector<HTMLElement>('[data-share-hide]');
+      const prevDotsDisplay = dots?.style.display;
+      if (dots) dots.style.display = 'none';
       const rect = el.getBoundingClientRect();
-      const width = Math.ceil(rect.width) + 1;
-      const height = Math.ceil(rect.height) + 1;
-      const blob = await toBlob(el, {
-        pixelRatio,
-        backgroundColor: '#FAF5E9', // 노트 종이색
-        // cacheBust: true 는 dataURL 끝에 ?t= 를 붙여 RECORD 사진을 망가뜨림 → 끔
-        cacheBust: false,
-        // 외부 폰트 인라인 임베드 스킵 → 캡쳐 시간 70% 단축. 워터마크 텍스트는
-        // 시스템 폰트로도 깨지지 않음
-        skipFonts: true,
-        width,
-        height,
-      });
+      const width = Math.ceil(rect.width) + 4;
+      const height = Math.ceil(rect.height) + 4;
+      let blob: Blob | null = null;
+      try {
+        blob = await toBlob(el, {
+          pixelRatio,
+          backgroundColor: '#FAF5E9', // 노트 종이색
+          // cacheBust: true 는 dataURL 끝에 ?t= 를 붙여 RECORD 사진을 망가뜨림 → 끔
+          cacheBust: false,
+          // 외부 폰트 인라인 임베드 스킵 → 캡쳐 시간 70% 단축. 워터마크 텍스트는
+          // 시스템 폰트로도 깨지지 않음
+          skipFonts: true,
+          width,
+          height,
+        });
+      } finally {
+        if (dots) dots.style.display = prevDotsDisplay ?? '';
+      }
       if (!blob) throw new Error('blob 변환 실패');
       // 미리보기는 ObjectURL — base64 dataURL 대비 즉시·메모리 효율적
       const dataUrl = URL.createObjectURL(blob);
@@ -238,8 +248,8 @@ export default function MyPage() {
 
       {/* 노트 카드 — 공유 시 이 section 영역만 캡쳐 */}
       <section ref={noteRef} className="mx-4 bg-grid-paper rounded-[18px] shadow-soft px-4 pt-3 pb-6 relative">
-        {/* 노트 바인딩 구멍 */}
-        <div className="absolute -top-2 left-0 right-0 flex justify-around px-6 pointer-events-none">
+        {/* 노트 바인딩 구멍 — 공유 캡쳐 시엔 section 바운드 위로 벗어나 잘리니까 잠시 숨김 */}
+        <div data-share-hide className="absolute -top-2 left-0 right-0 flex justify-around px-6 pointer-events-none">
           {Array.from({ length: 6 }).map((_, i) => (
             <span key={i} className="w-3.5 h-3.5 rounded-full bg-text/20" />
           ))}

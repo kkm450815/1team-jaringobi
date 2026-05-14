@@ -42,11 +42,7 @@ export default function NickSetup() {
       return;
     }
     playSuccessSfx();
-    if (typeof requestAnimationFrame === 'function') {
-      requestAnimationFrame(() => nav('/main', { replace: true }));
-    } else {
-      nav('/main', { replace: true });
-    }
+    nav('/main', { replace: true });
   }
 
   return (

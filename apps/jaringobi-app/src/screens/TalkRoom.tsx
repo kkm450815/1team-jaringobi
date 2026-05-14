@@ -130,7 +130,7 @@ export default function TalkRoom() {
                 value={input}
                 onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
                 maxLength={MAX_BODY_LEN}
-                placeholder="하고 싶은 말이 있나요? (Enter 로 올리기, Shift+Enter 줄바꿈)"
+                placeholder="하고 싶은 말을 입력하세요"
                 onKeyDown={(e) => {
                   // 한글 IME 조합 중에는 Enter 가 조합 확정용 → submit 하지 않음
                   // (e.nativeEvent.isComposing 또는 keyCode 229 둘 다 체크)
