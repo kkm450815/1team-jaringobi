@@ -15,6 +15,8 @@ export interface TalkPostsRepo {
   list(roomId?: string): Promise<TalkPost[]>;
   add(post: TalkPost): Promise<TalkPost>;
   remove(id: string): Promise<void>;
+  /** 내가 작성한 모든 글의 닉네임을 새 닉으로 일괄 갱신 (닉네임 변경 시 호출). */
+  renameMyPosts(newNick: string): Promise<void>;
   subscribe(cb: () => void): () => void;
 }
 
@@ -51,6 +53,13 @@ const localRepo: TalkPostsRepo = {
   },
   async remove(id) {
     const next = readUserPosts().filter((p) => p.id !== id);
+    writeUserPosts(next);
+    window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
+  },
+  async renameMyPosts(newNick) {
+    // localRepo 에는 user_id 개념이 없어 "내가 쓴 글" 구분이 안 됨 →
+    // 로컬에 쌓인 사용자 글은 전부 내 글로 간주하고 nick 갱신.
+    const next = readUserPosts().map((p) => ({ ...p, nick: newNick }));
     writeUserPosts(next);
     window.dispatchEvent(new StorageEvent('storage', { key: KEY }));
   },
@@ -143,6 +152,21 @@ const supabaseRepo: TalkPostsRepo = {
     if (error) {
       console.error('[talkPostsRepo.remove] Supabase delete 실패', { error, id });
       throw error;
+    }
+  },
+  async renameMyPosts(newNick) {
+    const sb = getSupabase();
+    if (!sb) return;
+    const { data: sessionData } = await sb.auth.getSession();
+    const userId = sessionData.session?.user?.id;
+    if (!userId) return;
+    // 내가 쓴 모든 글의 nick 컬럼 일괄 업데이트. (RLS update 정책이 본인 한정이면 자동으로 본인 row 만)
+    const { error } = await sb
+      .from('talk_posts')
+      .update({ nick: newNick })
+      .eq('user_id', userId);
+    if (error) {
+      console.error('[talkPostsRepo.renameMyPosts] 실패 — talk_posts update 정책이 본인 허용인지 확인', error);
     }
   },
   subscribe(cb) {

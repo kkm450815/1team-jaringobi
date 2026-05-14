@@ -270,7 +270,12 @@ export default function Main() {
               <button
                 key={i}
                 disabled={i >= hearts}
-                onClick={() => { setPendingHeartIdx(i); setShowHeartModal(true); }}
+                onClick={() => {
+                  // 양심은 개수만 의미가 있고, 시각적으로는 항상 오른쪽 끝 활성 하트가
+                  // 다음에 사라지는 것으로 보여줌 (어느 하트를 눌렀든 동일).
+                  setPendingHeartIdx(hearts - 1);
+                  setShowHeartModal(true);
+                }}
                 className="w-5 h-6 grid place-items-center text-[20px] leading-none transition disabled:opacity-30"
                 aria-label={`양심 ${i + 1}`}
               >

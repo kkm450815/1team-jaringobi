@@ -30,8 +30,10 @@ class Bgm {
   private timerId: ReturnType<typeof setInterval> | null = null;
   private step = 0;
   private playing = false;
-  // 0~100 사용자 볼륨을 audio gain (0~0.30) 으로 매핑
-  private targetVolume = 0.18;
+  // 0~100 사용자 볼륨을 audio gain (0~0.70) 으로 매핑.
+  // 안드로이드 WebView 출력이 데스크톱 대비 작아 0.30 상한으로는 잘 안 들린다는 피드백 →
+  // 상한을 0.70 까지 올림. 각 노트 gain 이 0.3 이하라 클리핑 위험은 낮음.
+  private targetVolume = 0.42;
 
   isPlaying() { return this.playing; }
 
@@ -68,10 +70,10 @@ class Bgm {
     }
   }
 
-  /** 0~100 슬라이더 값을 받아 audio gain 으로 매핑 (0 → 무음, 100 → 0.30) */
+  /** 0~100 슬라이더 값을 받아 audio gain 으로 매핑 (0 → 무음, 100 → 0.70) */
   setVolumePercent(percent: number) {
     const clamped = Math.max(0, Math.min(100, percent));
-    this.targetVolume = (clamped / 100) * 0.30;
+    this.targetVolume = (clamped / 100) * 0.70;
     const ctx = getCtx();
     if (ctx && this.master && this.playing) {
       this.master.gain.cancelScheduledValues(ctx.currentTime);
