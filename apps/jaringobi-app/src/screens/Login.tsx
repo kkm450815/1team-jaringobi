@@ -1,4 +1,4 @@
-import { FormEvent, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { signInWithGoogle, signInWithPassword, signUpWithPassword } from '../lib/auth';
 import { playSuccessSfx } from '../lib/feedback';
@@ -41,6 +41,18 @@ export default function Login() {
   const [err, setErr] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [oauthBusy, setOauthBusy] = useState(false);
+
+  // 비밀 데모 진입 — 타이틀 7번 탭 (3초 내). 관리자/QA 전용.
+  // 일반 사용자에겐 노출 안 됨.
+  const tapsRef = useRef<number[]>([]);
+  function onSecretTap() {
+    const now = Date.now();
+    tapsRef.current = [...tapsRef.current.filter((t) => now - t < 3000), now];
+    if (tapsRef.current.length >= 7) {
+      tapsRef.current = [];
+      nav('/mode');
+    }
+  }
 
   async function submit(e: FormEvent) {
     e.preventDefault();
@@ -97,7 +109,11 @@ export default function Login() {
 
   return (
     <main className="px-7 pt-14 pb-10 min-h-full flex flex-col bg-bg">
-      <h1 className="text-center font-bold text-[28px] tracking-[10px] text-text">자 린 고 비</h1>
+      {/* 타이틀 — 7번 빠르게 탭 시 데모(/mode) 진입. 관리자·QA 용 숨김 게이트. */}
+      <h1
+        onClick={onSecretTap}
+        className="text-center font-bold text-[28px] tracking-[10px] text-text select-none cursor-default"
+      >자 린 고 비</h1>
 
       <div className="mt-8 mx-auto w-[140px] h-[140px] bg-primary rounded-[28px] grid place-items-center shadow-soft">
         <img src="/jarin/logo_nobg.png" alt="굴비" className="w-[68%] h-[68%] object-contain" />
@@ -197,15 +213,6 @@ export default function Login() {
           </div>
         )}
       </form>
-
-      {/* TODO: 임시 데모 접속 — 출시 전 제거 */}
-      <button
-        type="button"
-        onClick={() => nav('/mode')}
-        className="mt-3 self-center text-[12px] text-text/55 underline underline-offset-2"
-      >
-        데모로 접속하기
-      </button>
 
       <div className="mt-auto pt-10">
         <div className="flex items-center gap-3">
