@@ -387,15 +387,23 @@ export default function Shop() {
                 <span className="text-[18px] font-bold text-text">{cartTotal.toLocaleString()}P</span>
               </div>
             </div>
-            <button
-              onClick={() => { setCartListOpen(false); setConfirmBuy(true); }}
-              disabled={!canAfford}
-              className={`mt-3 w-full rounded-2xl py-3 text-[15px] font-bold transition ${
-                canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
-              }`}
-            >
-              {canAfford ? `${cart.length}개 구매하기` : '코인 부족'}
-            </button>
+            <div className="mt-3 flex gap-2">
+              <button
+                onClick={() => { playClickSfx(); setCart([]); setCartListOpen(false); }}
+                className="px-4 py-3 rounded-2xl text-[14px] font-bold bg-text/10 text-text/70 active:scale-[.98]"
+              >
+                전체 비우기
+              </button>
+              <button
+                onClick={() => { setCartListOpen(false); setConfirmBuy(true); }}
+                disabled={!canAfford}
+                className={`flex-1 rounded-2xl py-3 text-[15px] font-bold transition ${
+                  canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
+                }`}
+              >
+                {canAfford ? `${cart.length}개 구매하기` : '코인 부족'}
+              </button>
+            </div>
           </div>
         </div>
       )}
