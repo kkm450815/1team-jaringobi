@@ -4,13 +4,14 @@ import {
   ACC_FILES_BY_SUB, ACC_SUBS, AccSub,
   REMODEL_FILES, REMODEL_SUBS, RemodelSub,
   SHOP_ALL, SHOP_GROUPS, ShopCategory, priceFor,
+  equipSlotOf,
 } from '../lib/data';
 import { BackButton } from '../components/UI';
 import { RoomPreview } from '../components/RoomPreview';
 import { useUser } from '../lib/userState';
 import { useEscape } from '../lib/useEscape';
 import { useCustomShopItems } from '../lib/useCustomShopItems';
-import { playClickSfx, playPurchaseSfx, vibrate } from '../lib/feedback';
+import { playClickSfx, playPurchaseSfx, playDeniedSfx, vibrate } from '../lib/feedback';
 
 const CATS: ShopCategory[] = ['전체', '사치품', '티셔츠', '리모델링'];
 const CHUNK = 30;
@@ -38,14 +39,38 @@ export default function Shop() {
   const [cat, setCat] = useState<ShopCategory>('전체');
   const [remodelSub, setRemodelSub] = useState<RemodelSub>('조명');
   const [accSub, setAccSub] = useState<AccSub>('모자');
-  const [selected, setSelected] = useState<string | null>(null);
+  // 장바구니 — 미보유 아이템들. equipSlot 당 1개 제한 (티셔츠/모자/안경/소품 등 9슬롯).
+  // 같은 슬롯에 다른 아이템을 담으면 이전 것은 자동 제외.
+  const [cart, setCart] = useState<string[]>([]);
   const [confirmBuy, setConfirmBuy] = useState(false);
   const [purchased, setPurchased] = useState<string | null>(null);
+  const [cartListOpen, setCartListOpen] = useState(false);
+  // 이미 보유한 아이템을 시착하려 했을 때 잠깐 띄우는 안내 토스트
+  const [ownedToast, setOwnedToast] = useState<string | null>(null);
 
-  const selectedPrice = selected ? priceFor(selected) : 0;
-  const selectedOwned = !!selected && u.owned.includes(selected);
-  const showBuyCta = !!selected && !selectedOwned;
-  const canAfford = u.coins >= selectedPrice;
+  const cartTotal = cart.reduce((sum, src) => sum + priceFor(src), 0);
+  const canAfford = u.coins >= cartTotal;
+
+  function toggleCart(src: string) {
+    if (u.owned.includes(src)) {
+      playDeniedSfx();
+      setOwnedToast('이미 보유 중 — 옷장에서 입어보세요');
+      window.setTimeout(() => setOwnedToast(null), 2000);
+      return;
+    }
+    playClickSfx();
+    setCart((prev) => {
+      if (prev.includes(src)) return prev.filter((x) => x !== src);
+      const slot = equipSlotOf(src);
+      const withoutSameSlot = prev.filter((x) => equipSlotOf(x) !== slot);
+      return [...withoutSameSlot, src];
+    });
+  }
+
+  function removeFromCart(src: string) {
+    playClickSfx();
+    setCart((prev) => prev.filter((x) => x !== src));
+  }
 
   const customItems = useCustomShopItems();
 
@@ -98,6 +123,7 @@ export default function Shop() {
   }, [items.length]);
 
   useEscape(confirmBuy, () => setConfirmBuy(false));
+  useEscape(cartListOpen, () => setCartListOpen(false));
 
   // 구매 완료 토스트 — 3초 후 자동 사라짐
   useEffect(() => {
@@ -105,6 +131,29 @@ export default function Shop() {
     const t = setTimeout(() => setPurchased(null), 3000);
     return () => clearTimeout(t);
   }, [purchased]);
+
+  // 한 번에 카트 전체 구매 — 각 아이템에 대해 u.buy 호출.
+  // 합계가 코인 보다 작으면 모두 성공 (buy 가 functional setState 라 순차 차감 안전).
+  function purchaseCart() {
+    if (cart.length === 0) return;
+    if (!canAfford) {
+      playDeniedSfx();
+      return;
+    }
+    let success = 0;
+    for (const src of cart) {
+      const ok = u.buy(src, priceFor(src));
+      if (ok) success++;
+    }
+    if (success > 0) {
+      // 마지막 구매 아이템을 토스트에 노출 (대표)
+      setPurchased(cart[cart.length - 1]);
+      playPurchaseSfx();
+      if (u.settings.vibration) vibrate([20, 30, 20]);
+    }
+    setCart([]);
+    setConfirmBuy(false);
+  }
 
   return (
     <main className="min-h-full pb-10 bg-bg">
@@ -128,7 +177,7 @@ export default function Shop() {
 
         <RoomPreview
           equipped={u.equipped}
-          extra={selected ? [selected] : []}
+          extra={cart}
           className="mx-auto w-[60%] max-w-[260px]"
         />
 
@@ -187,55 +236,42 @@ export default function Shop() {
           </div>
         )}
 
-        {/* 미보유 아이템 미리보기 시 구매 CTA (sticky 영역 안쪽 - 항상 상단에 노출) */}
-        {showBuyCta && (
-          <div className="px-5 mt-3 flex items-center gap-2">
-            <div className="flex-1 min-w-0 flex items-center gap-2">
-              <CoinIcon size={18} />
-              <span className="text-[16px] font-bold text-text">{selectedPrice.toLocaleString()}P</span>
-              {!canAfford && (
-                <span className="text-[12px] text-pink font-bold">코인 부족</span>
-              )}
-            </div>
-            <button
-              onClick={() => canAfford && setConfirmBuy(true)}
-              disabled={!canAfford}
-              className={`px-5 py-2 rounded-full text-[14px] font-bold transition ${
-                canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
-              }`}
-            >
-              구매하기
-            </button>
-            <button
-              onClick={() => setSelected(null)}
-              aria-label="미리보기 닫기"
-              className="w-8 h-8 grid place-items-center text-text/60 text-[20px]"
-            >×</button>
-          </div>
-        )}
       </div>
 
-      {/* 아이템 그리드 (스크롤 대상) */}
-      <section className="px-5 mt-3 grid grid-cols-3 gap-2.5">
+      {/* 아이템 그리드 (스크롤 대상) — 하단 고정 바 높이 만큼 추가 패딩 */}
+      <section className={`px-5 mt-3 grid grid-cols-3 gap-2.5 ${cart.length > 0 ? 'pb-28' : ''}`}>
         {items.slice(0, visible).map((src) => {
           const owned = u.owned.includes(src);
-          const isSelected = src === selected;
+          const inCart = cart.includes(src);
           const price = priceFor(src);
           return (
             <button
               key={src}
-              onClick={() => setSelected(src)}
+              onClick={() => toggleCart(src)}
               className={`relative rounded-xl overflow-hidden transition-colors ${
-                isSelected ? 'bg-text/25' : 'bg-white/70'
+                inCart ? 'bg-accent/30 ring-2 ring-accent' : owned ? 'bg-white/40' : 'bg-white/70'
               }`}
+              aria-pressed={inCart}
             >
-              {!owned && price > 0 && (
+              {inCart && (
+                <span
+                  className="absolute top-1.5 right-1.5 z-10 bg-accent text-white text-[10px] font-bold rounded-full w-5 h-5 grid place-items-center shadow"
+                  aria-hidden
+                >✓</span>
+              )}
+              {!owned && price > 0 && !inCart && (
                 <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="4" y="11" width="16" height="10" rx="2" />
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
                   </svg>
                 </span>
+              )}
+              {owned && (
+                <span
+                  className="absolute top-1.5 left-1.5 z-10 bg-text/70 text-bg text-[9px] font-bold rounded-full px-1.5 py-0.5 shadow"
+                  aria-hidden
+                >보유</span>
               )}
               <div className="aspect-square grid place-items-center px-3 pt-4 pb-2">
                 <img
@@ -263,8 +299,8 @@ export default function Shop() {
         )}
       </section>
 
-      {/* 구매 확인 모달 */}
-      {confirmBuy && selected && (
+      {/* 카트 구매 확인 모달 — 합계/잔액/카트 안 미리보기 */}
+      {confirmBuy && cart.length > 0 && (
         <div
           className="fixed inset-0 z-30 bg-black/45 grid place-items-center px-7"
           onClick={() => setConfirmBuy(false)}
@@ -273,11 +309,18 @@ export default function Shop() {
             className="w-full max-w-[320px] bg-bg rounded-3xl p-5 text-center shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="text-[16px] font-bold text-text">이 아이템을 구매하시겠어요?</p>
+            <p className="text-[16px] font-bold text-text">담은 {cart.length}개를 구매하시겠어요?</p>
             <div className="mt-3 flex items-center justify-center gap-2">
               <CoinIcon size={22} />
-              <span className="text-[20px] font-bold text-text">−{selectedPrice.toLocaleString()}P</span>
+              <span className="text-[20px] font-bold text-text">−{cartTotal.toLocaleString()}P</span>
             </div>
+            <ul className="mt-3 max-h-[28vh] overflow-y-auto thin-scrollbar grid grid-cols-4 gap-1.5 px-1 py-1">
+              {cart.map((src) => (
+                <li key={src} className="bg-white rounded-lg aspect-square grid place-items-center">
+                  <img src={src} alt="" className="max-w-full max-h-full object-contain" onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }} />
+                </li>
+              ))}
+            </ul>
             <div className="mt-4 bg-white rounded-2xl px-4 py-3 shadow-soft">
               <div className="flex items-center justify-between text-[13px]">
                 <span className="text-text/55">현재 보유</span>
@@ -286,7 +329,7 @@ export default function Shop() {
               <div className="mt-1 flex items-center justify-between text-[13px]">
                 <span className="text-text/55">구매 후 잔액</span>
                 <span className="font-bold text-accent text-[15px]">
-                  {(u.coins - selectedPrice).toLocaleString()}P
+                  {(u.coins - cartTotal).toLocaleString()}P
                 </span>
               </div>
             </div>
@@ -296,17 +339,112 @@ export default function Shop() {
                 className="flex-1 bg-primary/70 text-text font-bold rounded-2xl py-3 active:scale-[.98]"
               >취소</button>
               <button
-                onClick={() => {
-                  if (u.buy(selected, selectedPrice)) {
-                    setPurchased(selected);
-                    playPurchaseSfx();
-                    if (u.settings.vibration) vibrate([20, 30, 20]);
-                  }
-                  setConfirmBuy(false);
-                }}
+                onClick={purchaseCart}
                 className="flex-1 bg-accent text-white font-bold rounded-2xl py-3 active:scale-[.98]"
               >구매</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 장바구니 상세 — 담긴 옷 목록 + 슬롯별 X 제거 */}
+      {cartListOpen && cart.length > 0 && (
+        <div
+          className="fixed inset-0 z-30 bg-black/45 grid place-items-end sm:place-items-center px-4 pb-24"
+          onClick={() => setCartListOpen(false)}
+        >
+          <div
+            className="w-full max-w-[360px] bg-bg rounded-3xl p-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative">
+              <p className="text-center font-bold text-[16px] text-text">장바구니 ({cart.length})</p>
+              <button
+                onClick={() => setCartListOpen(false)}
+                aria-label="닫기"
+                className="absolute -right-1 -top-1 w-10 h-10 grid place-items-center text-[26px] leading-none text-text/70 font-bold"
+              >×</button>
+            </div>
+            <ul className="mt-3 grid grid-cols-3 gap-2">
+              {cart.map((src) => (
+                <li key={src} className="relative bg-white rounded-xl aspect-square grid place-items-center p-2 shadow-soft">
+                  <img src={src} alt="" className="max-w-full max-h-full object-contain" onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }} />
+                  <span className="absolute bottom-1 inset-x-1 text-center text-[11px] font-bold text-text bg-white/85 rounded">
+                    {priceFor(src)}P
+                  </span>
+                  <button
+                    onClick={() => removeFromCart(src)}
+                    aria-label="장바구니에서 제거"
+                    className="absolute -right-1 -top-1 w-7 h-7 grid place-items-center bg-pink text-white text-[16px] font-bold rounded-full shadow"
+                  >×</button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-4 flex items-center justify-between px-1">
+              <span className="text-[13px] text-text/60 font-bold">합계</span>
+              <div className="flex items-center gap-1.5">
+                <CoinIcon size={18} />
+                <span className="text-[18px] font-bold text-text">{cartTotal.toLocaleString()}P</span>
+              </div>
+            </div>
+            <button
+              onClick={() => { setCartListOpen(false); setConfirmBuy(true); }}
+              disabled={!canAfford}
+              className={`mt-3 w-full rounded-2xl py-3 text-[15px] font-bold transition ${
+                canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
+              }`}
+            >
+              {canAfford ? `${cart.length}개 구매하기` : '코인 부족'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 하단 고정 장바구니 바 — 카트에 1개 이상이면 노출 */}
+      {cart.length > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-20 pointer-events-none">
+          <div className="mx-auto max-w-[420px] px-3 pb-3 pointer-events-auto">
+            <div className="bg-bg/95 backdrop-blur-sm border border-text/10 rounded-2xl shadow-2xl px-3 py-2.5 flex items-center gap-2">
+              <button
+                onClick={() => setCartListOpen(true)}
+                className="flex items-center gap-1.5 px-1 active:scale-[.98]"
+                aria-label="장바구니 열기"
+              >
+                <span className="relative inline-grid place-items-center w-9 h-9 rounded-full bg-accent/15">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent">
+                    <circle cx="9" cy="21" r="1" />
+                    <circle cx="20" cy="21" r="1" />
+                    <path d="M1 1h4l2.7 13.4a2 2 0 0 0 2 1.6h9.7a2 2 0 0 0 2-1.6L23 6H6" />
+                  </svg>
+                  <span className="absolute -top-1 -right-1 bg-pink text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] px-1 grid place-items-center">{cart.length}</span>
+                </span>
+              </button>
+              <div className="flex-1 min-w-0 flex items-center gap-1.5">
+                <CoinIcon size={16} />
+                <span className="text-[15px] font-bold text-text">{cartTotal.toLocaleString()}P</span>
+                {!canAfford && (
+                  <span className="text-[11px] text-pink font-bold ml-1">코인 부족</span>
+                )}
+              </div>
+              <button
+                onClick={() => canAfford && setConfirmBuy(true)}
+                disabled={!canAfford}
+                className={`px-4 py-2 rounded-full text-[14px] font-bold transition ${
+                  canAfford ? 'bg-accent text-white active:scale-[.98]' : 'bg-text/20 text-text/50'
+                }`}
+              >
+                구매
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 이미 보유 안내 토스트 */}
+      {ownedToast && (
+        <div className="fixed inset-x-0 bottom-24 z-40 grid place-items-center pointer-events-none" aria-live="polite">
+          <div className="pointer-events-auto bg-text/90 text-bg rounded-2xl px-4 py-2 text-[12px] font-bold shadow-2xl">
+            {ownedToast}
           </div>
         </div>
       )}
