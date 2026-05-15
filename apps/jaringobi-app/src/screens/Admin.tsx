@@ -52,6 +52,109 @@ interface UserRow {
   last_post_at: string | null;
 }
 
+/* ============================================================
+ * 공통 UI 헬퍼 — 모든 섹션이 같은 스타일을 쓰도록 통합.
+ * 이전엔 인라인 className 이 섹션마다 미묘하게 달랐음.
+ * ============================================================ */
+
+function SectionHeader({
+  title, count, actions,
+}: { title: string; count?: number; actions?: React.ReactNode }) {
+  return (
+    <div className="flex items-end justify-between gap-3 flex-wrap mb-5">
+      <h2 className="text-[22px] font-black tracking-tight flex items-baseline gap-2">
+        {title}
+        {count != null && (
+          <span className="text-[14px] font-bold text-[#2a2723]/45 tabular-nums">
+            {count.toLocaleString()}
+          </span>
+        )}
+      </h2>
+      {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+    </div>
+  );
+}
+
+function PrimaryButton({
+  children, className = '', ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...rest}
+      className={`text-[13px] font-bold bg-[#1f1d1a] hover:bg-[#2a2723] text-white px-4 py-2 rounded-lg transition disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function GhostButton({
+  children, className = '', ...rest
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      {...rest}
+      className={`text-[13px] font-bold bg-white hover:bg-black/5 ring-1 ring-black/10 px-3.5 py-2 rounded-lg transition disabled:opacity-50 ${className}`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SearchInput({
+  value, onChange, placeholder,
+}: { value: string; onChange: (v: string) => void; placeholder: string }) {
+  return (
+    <div className="relative">
+      <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#2a2723]/40 pointer-events-none" viewBox="0 0 24 24" fill="none" aria-hidden>
+        <path stroke="currentColor" strokeWidth="2" strokeLinecap="round" d="M21 21l-4.3-4.3M11 19a8 8 0 100-16 8 8 0 000 16z" />
+      </svg>
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="bg-white ring-1 ring-black/10 rounded-lg pl-9 pr-3 py-2 text-[13px] outline-none w-64 focus:ring-[#1f1d1a]/30 transition"
+      />
+    </div>
+  );
+}
+
+function ErrorBox({
+  title, message, hint,
+}: { title: string; message: string; hint?: string }) {
+  return (
+    <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px]">
+      <p className="font-bold flex items-center gap-2">
+        <span aria-hidden>⚠</span>
+        {title}
+      </p>
+      <p className="mt-1">{message}</p>
+      {hint && <p className="mt-2 text-[11px] text-red-700/80">{hint}</p>}
+    </div>
+  );
+}
+
+function EmptyState({
+  icon, title, hint,
+}: { icon?: string; title: string; hint?: string }) {
+  return (
+    <div className="text-center py-14">
+      {icon && <div className="text-[44px] mb-2 opacity-40 select-none" aria-hidden>{icon}</div>}
+      <p className="text-[14px] font-bold text-[#2a2723]/60">{title}</p>
+      {hint && <p className="mt-1.5 text-[12px] text-[#2a2723]/40">{hint}</p>}
+    </div>
+  );
+}
+
+function LoadingBox({ children = '불러오는 중…' }: { children?: string }) {
+  return (
+    <div className="text-center py-14">
+      <div className="inline-block w-5 h-5 border-2 border-[#2a2723]/15 border-t-[#1f1d1a] rounded-full animate-spin" />
+      <p className="mt-3 text-[12px] text-[#2a2723]/55">{children}</p>
+    </div>
+  );
+}
+
 export default function Admin() {
   if (!isSupabaseEnabled()) {
     return (
@@ -148,18 +251,24 @@ function LoginGate() {
   }
 
   return (
-    <main className="min-h-dvh w-full bg-[#1f1d1a] text-white grid place-items-center p-6">
-      <form onSubmit={submit} className="w-full max-w-sm bg-[#2a2723] rounded-2xl p-8 shadow-2xl">
-        <h1 className="text-[20px] font-bold tracking-[2px] text-center">자린고비 ADMIN</h1>
-        <p className="mt-2 text-[12px] text-white/60 text-center">
-          관리자 이메일로 로그인 링크를 받아 진행해주세요.
+    <main className="min-h-dvh w-full bg-gradient-to-br from-[#1f1d1a] via-[#2a2723] to-[#1f1d1a] text-white grid place-items-center p-6">
+      <form onSubmit={submit} className="w-full max-w-sm bg-[#2a2723]/80 backdrop-blur rounded-3xl p-8 shadow-2xl ring-1 ring-white/5">
+        <div className="flex justify-center">
+          <div className="w-14 h-14 rounded-2xl bg-amber-400 grid place-items-center text-[28px] shadow-lg">
+            🐟
+          </div>
+        </div>
+        <h1 className="mt-4 text-[22px] font-black tracking-[2px] text-center">자린고비 ADMIN</h1>
+        <p className="mt-2 text-[12px] text-white/55 text-center">
+          관리자 이메일로 매직 링크를 받아 로그인해 주세요
         </p>
         {sent ? (
-          <div className="mt-6 bg-emerald-500/10 ring-1 ring-emerald-400/30 rounded-lg p-4 text-[13px] text-emerald-200">
-            <p className="font-bold">메일을 발송했습니다.</p>
-            <p className="mt-1 text-emerald-300/80">
-              {email} 의 받은편지함에서 로그인 링크를 클릭해 주세요.
-              스팸함도 확인해 보세요.
+          <div className="mt-7 bg-emerald-500/10 ring-1 ring-emerald-400/30 rounded-xl p-4 text-[13px] text-emerald-200">
+            <p className="font-bold flex items-center gap-2">
+              <span aria-hidden>✓</span> 메일 발송 완료
+            </p>
+            <p className="mt-1.5 text-emerald-300/80 leading-relaxed">
+              <span className="font-mono">{email}</span> 의 받은편지함에서 로그인 링크를 클릭해 주세요. 스팸함도 확인해 보세요.
             </p>
           </div>
         ) : (
@@ -171,18 +280,20 @@ function LoginGate() {
               onChange={(e) => { setEmail(e.target.value); setErr(null); }}
               placeholder="admin@example.com"
               required
-              className="mt-6 w-full bg-black/30 rounded-lg px-4 py-3 outline-none text-[15px] text-white placeholder:text-white/30 ring-1 ring-white/10 focus:ring-white/30"
+              className="mt-7 w-full bg-black/40 rounded-xl px-4 py-3.5 outline-none text-[15px] text-white placeholder:text-white/25 ring-1 ring-white/10 focus:ring-amber-400/50 transition"
             />
-            {err && <p className="mt-2 text-[12px] text-red-400" role="alert">{err}</p>}
+            {err && (
+              <p className="mt-2 text-[12px] text-red-300 font-bold" role="alert">⚠ {err}</p>
+            )}
             <button
               type="submit"
               disabled={busy || !email.trim()}
-              className="mt-5 w-full bg-amber-400 hover:bg-amber-300 disabled:opacity-40 text-[#1f1d1a] rounded-lg py-3 text-[14px] font-bold transition"
+              className="mt-5 w-full bg-amber-400 hover:bg-amber-300 disabled:opacity-40 disabled:cursor-not-allowed text-[#1f1d1a] rounded-xl py-3.5 text-[14px] font-black tracking-wide transition active:scale-[.98]"
             >
               {busy ? '메일 발송 중…' : '매직 링크 받기'}
             </button>
-            <p className="mt-4 text-[11px] text-white/40 leading-relaxed">
-              ※ admins 테이블에 등록되지 않은 이메일은 로그인 후에도 접근이 거부됩니다.
+            <p className="mt-5 text-[11px] text-white/40 leading-relaxed text-center">
+              admins 테이블에 등록되지 않은 이메일은<br />로그인 후에도 접근이 거부됩니다.
             </p>
           </>
         )}
@@ -195,32 +306,46 @@ function LoginGate() {
  * Admin Panel — 탭 네비게이션
  * ============================================================ */
 
+const TABS: { id: Tab; label: string; icon: string }[] = [
+  { id: 'dashboard',     label: '대시보드',    icon: '📊' },
+  { id: 'users',         label: '가입자',      icon: '👥' },
+  { id: 'announcements', label: '공지/이벤트', icon: '📣' },
+  { id: 'shop',          label: '상점',        icon: '🛍' },
+  { id: 'missions',      label: '챌린지/미션', icon: '🎯' },
+  { id: 'titles',        label: '칭호',        icon: '🏆' },
+  { id: 'rooms',         label: '수다방',      icon: '💬' },
+  { id: 'posts',         label: '수다방 글',   icon: '📝' },
+];
+
 function AdminPanel({ email }: { email: string }) {
   const [tab, setTab] = useState<Tab>('dashboard');
 
   return (
     <main className="min-h-dvh w-full bg-[#f7f3ec] text-[#2a2723]">
-      <header className="sticky top-0 z-10 bg-[#1f1d1a] text-white shadow">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-3">
-            <span className="font-black tracking-[3px] text-[16px]">자린고비 ADMIN</span>
-            <span className="text-[11px] text-white/55 truncate">{email}</span>
+      <header className="sticky top-0 z-20 bg-[#1f1d1a] text-white shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-amber-400 grid place-items-center text-[20px] shadow-md shrink-0">
+              🐟
+            </div>
+            <div className="min-w-0">
+              <p className="font-black tracking-[3px] text-[15px] leading-none">자린고비 ADMIN</p>
+              <p className="text-[10.5px] text-white/55 mt-1.5 tracking-wide truncate">{email}</p>
+            </div>
           </div>
           <LogoutButton />
         </div>
-        <nav className="max-w-6xl mx-auto px-6 flex gap-1 text-[13px] flex-wrap">
-          <TabButton active={tab === 'dashboard'} onClick={() => setTab('dashboard')}>대시보드</TabButton>
-          <TabButton active={tab === 'users'} onClick={() => setTab('users')}>가입자</TabButton>
-          <TabButton active={tab === 'announcements'} onClick={() => setTab('announcements')}>공지/이벤트</TabButton>
-          <TabButton active={tab === 'shop'} onClick={() => setTab('shop')}>상점 관리</TabButton>
-          <TabButton active={tab === 'missions'} onClick={() => setTab('missions')}>챌린지/미션</TabButton>
-          <TabButton active={tab === 'titles'} onClick={() => setTab('titles')}>칭호</TabButton>
-          <TabButton active={tab === 'rooms'} onClick={() => setTab('rooms')}>수다방 관리</TabButton>
-          <TabButton active={tab === 'posts'} onClick={() => setTab('posts')}>수다방 글</TabButton>
+        <nav className="max-w-6xl mx-auto px-6 pb-3 -mb-px flex gap-1.5 text-[13px] flex-wrap">
+          {TABS.map((t) => (
+            <TabButton key={t.id} active={tab === t.id} onClick={() => setTab(t.id)}>
+              <span className="mr-1.5" aria-hidden>{t.icon}</span>
+              {t.label}
+            </TabButton>
+          ))}
         </nav>
       </header>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-8">
         {tab === 'dashboard' && <DashboardSection />}
         {tab === 'users' && <UsersSection />}
         {tab === 'announcements' && <AnnouncementsSection />}
@@ -238,10 +363,10 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
   return (
     <button
       onClick={onClick}
-      className={`px-4 py-2 rounded-t-md font-bold transition ${
+      className={`px-4 py-2 rounded-full font-bold transition whitespace-nowrap ${
         active
-          ? 'bg-[#f7f3ec] text-[#1f1d1a]'
-          : 'text-white/60 hover:text-white hover:bg-white/5'
+          ? 'bg-amber-400 text-[#1f1d1a] shadow-md'
+          : 'text-white/60 hover:text-white hover:bg-white/8'
       }`}
     >
       {children}
@@ -279,42 +404,82 @@ function DashboardSection() {
 
   useEffect(() => { load(); }, []);
 
-  if (loading) return <p className="text-[#2a2723]/55">불러오는 중…</p>;
-  if (err) return (
-    <div className="bg-red-50 border border-red-200 text-red-700 rounded-md px-4 py-3 text-[13px]">
-      <p className="font-bold">통계 조회 실패</p>
-      <p className="mt-1">{err}</p>
-      <p className="mt-2 text-[11px] text-red-700/80">
-        admin_dashboard_stats RPC 함수가 Supabase 에 생성돼 있는지 확인하세요. (docs/SUPABASE.md 참고)
-      </p>
-    </div>
-  );
+  if (loading) {
+    return (
+      <div>
+        <SectionHeader title="대시보드" actions={<GhostButton disabled>↻ 새로고침</GhostButton>} />
+        <LoadingBox>통계 불러오는 중…</LoadingBox>
+      </div>
+    );
+  }
+  if (err) {
+    return (
+      <div>
+        <SectionHeader title="대시보드" actions={<GhostButton onClick={load}>↻ 새로고침</GhostButton>} />
+        <ErrorBox
+          title="통계 조회 실패"
+          message={err}
+          hint="admin_dashboard_stats RPC 함수가 Supabase 에 생성돼 있는지 확인하세요. (docs/SUPABASE.md 참고)"
+        />
+      </div>
+    );
+  }
   if (!stats) return null;
 
-  const cards: { label: string; value: number; sub?: string }[] = [
-    { label: '전체 가입자', value: stats.total_auth_users, sub: '인증된 user' },
-    { label: '닉네임 설정 사용자', value: stats.total_profiles, sub: '실제 활동 시작' },
-    { label: '활동 작성자', value: stats.active_posters, sub: '글 1건 이상' },
-    { label: '전체 글 수', value: stats.total_posts },
-    { label: '24시간 글 수', value: stats.posts_24h, sub: '실시간 활동' },
-    { label: '7일 글 수', value: stats.posts_7d, sub: '주간 활동' },
+  // 톤은 시각적 그룹화 — 사용자(주황) / 활동(녹) / 글 수(보라/하늘/사이안/장미).
+  // 시간 단위 카드(24h, 7d) 는 따뜻한 톤으로 묶어 시선이 다른 카드로 쉽게 이동.
+  type Tone = 'amber' | 'emerald' | 'violet' | 'sky' | 'cyan' | 'rose';
+  const cards: { label: string; value: number; sub?: string; tone: Tone; icon: string }[] = [
+    { label: '전체 가입자',     value: stats.total_auth_users, sub: '인증된 user',     tone: 'amber',   icon: '👤' },
+    { label: '닉네임 설정',     value: stats.total_profiles,   sub: '실제 활동 시작',  tone: 'emerald', icon: '✏️' },
+    { label: '활동 작성자',     value: stats.active_posters,   sub: '글 1건 이상',     tone: 'violet',  icon: '✨' },
+    { label: '전체 글 수',       value: stats.total_posts,                              tone: 'sky',     icon: '📝' },
+    { label: '24시간 글 수',     value: stats.posts_24h,        sub: '실시간 활동',     tone: 'cyan',    icon: '⚡' },
+    { label: '7일 글 수',        value: stats.posts_7d,         sub: '주간 활동',       tone: 'rose',    icon: '📈' },
   ];
+  const iconClass: Record<Tone, string> = {
+    amber:   'bg-amber-100 text-amber-700 ring-amber-200',
+    emerald: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+    violet:  'bg-violet-100 text-violet-700 ring-violet-200',
+    sky:     'bg-sky-100 text-sky-700 ring-sky-200',
+    cyan:    'bg-cyan-100 text-cyan-700 ring-cyan-200',
+    rose:    'bg-rose-100 text-rose-700 ring-rose-200',
+  };
+  const barClass: Record<Tone, string> = {
+    amber:   'from-amber-400 to-amber-300',
+    emerald: 'from-emerald-400 to-emerald-300',
+    violet:  'from-violet-400 to-violet-300',
+    sky:     'from-sky-400 to-sky-300',
+    cyan:    'from-cyan-400 to-cyan-300',
+    rose:    'from-rose-400 to-rose-300',
+  };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-[18px] font-bold">대시보드</h2>
-        <button
-          onClick={load}
-          className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-        >새로고침</button>
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+      <SectionHeader
+        title="대시보드"
+        actions={<GhostButton onClick={load}>↻ 새로고침</GhostButton>}
+      />
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
         {cards.map((c) => (
-          <div key={c.label} className="bg-white rounded-xl shadow-sm p-4">
-            <p className="text-[12px] text-[#2a2723]/60">{c.label}</p>
-            <p className="mt-1 text-[28px] font-black">{c.value.toLocaleString()}</p>
-            {c.sub && <p className="text-[11px] text-[#2a2723]/45 mt-0.5">{c.sub}</p>}
+          <div
+            key={c.label}
+            className="relative overflow-hidden bg-white rounded-2xl ring-1 ring-black/5 shadow-sm hover:shadow-md transition p-5"
+          >
+            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${barClass[c.tone]}`} />
+            <div className="flex items-center justify-between">
+              <p className="text-[12px] font-bold text-[#2a2723]/65 uppercase tracking-wider">{c.label}</p>
+              <span
+                className={`w-9 h-9 grid place-items-center rounded-xl ring-1 text-[16px] ${iconClass[c.tone]}`}
+                aria-hidden
+              >
+                {c.icon}
+              </span>
+            </div>
+            <p className="mt-3 text-[34px] font-black tracking-tight tabular-nums leading-none">
+              {c.value.toLocaleString()}
+            </p>
+            {c.sub && <p className="text-[11px] text-[#2a2723]/45 mt-2">{c.sub}</p>}
           </div>
         ))}
       </div>
@@ -363,81 +528,97 @@ function UsersSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h2 className="text-[18px] font-bold">가입자 ({filtered.length})</h2>
-        <div className="flex items-center gap-2">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="이메일/닉네임/UUID 검색"
-            className="bg-black/5 rounded-md px-3 py-1.5 text-[13px] outline-none w-64 focus:bg-black/10"
-          />
-          <button
-            onClick={load}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
-        </div>
-      </div>
+      <SectionHeader
+        title="가입자"
+        count={filtered.length}
+        actions={
+          <>
+            <SearchInput value={search} onChange={setSearch} placeholder="이메일/닉네임/UUID 검색" />
+            <GhostButton onClick={load}>↻ 새로고침</GhostButton>
+          </>
+        }
+      />
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
-          <p className="font-bold">가입자 목록 조회 실패</p>
-          <p>{err}</p>
-          <p className="mt-1 text-[11px] text-red-700/80">
-            admin_list_users RPC 함수가 Supabase 에 생성돼 있는지 확인하세요.
-          </p>
-        </div>
+        <ErrorBox
+          title="가입자 목록 조회 실패"
+          message={err}
+          hint="admin_list_users RPC 함수가 Supabase 에 생성돼 있는지 확인하세요."
+        />
       )}
 
-      <div className="bg-white rounded-xl shadow-sm overflow-x-auto">
-        <table className="w-full text-[13px]">
-          <thead>
-            <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
-              <th className="px-4 py-2">가입일</th>
-              <th className="px-4 py-2">이메일</th>
-              <th className="px-4 py-2">닉네임</th>
-              <th className="px-4 py-2 text-right">회차</th>
-              <th className="px-4 py-2 text-right">누적 절약</th>
-              <th className="px-4 py-2 text-right">글 수</th>
-              <th className="px-4 py-2">마지막 활동</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
-            )}
-            {!loading && filtered.length === 0 && (
-              <tr><td colSpan={7} className="px-4 py-6 text-center text-[#2a2723]/50">표시할 가입자가 없습니다.</td></tr>
-            )}
-            {!loading && filtered.map((u) => (
-              <tr key={u.user_id} className="border-b border-black/5">
-                <td className="px-4 py-2 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
-                  {new Date(u.signed_up_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
-                </td>
-                <td className="px-4 py-2 whitespace-nowrap">
-                  {u.email ? (
-                    <span className="font-mono text-[12px]">{u.email}</span>
-                  ) : (
-                    <span className="text-[11px] text-[#2a2723]/45 italic">익명</span>
-                  )}
-                </td>
-                <td className="px-4 py-2 font-bold whitespace-nowrap">
-                  {u.nickname ?? <span className="text-[11px] text-[#2a2723]/45 font-normal italic">미설정</span>}
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">{u.cycle ?? '—'}</td>
-                <td className="px-4 py-2 text-right tabular-nums">
-                  {u.total_saved != null ? `${u.total_saved.toLocaleString()}원` : '—'}
-                </td>
-                <td className="px-4 py-2 text-right tabular-nums">{u.post_count}</td>
-                <td className="px-4 py-2 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
-                  {u.last_post_at
-                    ? new Date(u.last_post_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
-                    : '—'}
-                </td>
+      <div className="bg-white rounded-2xl ring-1 ring-black/5 shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-[13px]">
+            <thead>
+              <tr className="text-left text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider bg-[#2a2723]/[0.03] border-b border-black/5">
+                <th className="px-4 py-3">가입일</th>
+                <th className="px-4 py-3">이메일</th>
+                <th className="px-4 py-3">닉네임</th>
+                <th className="px-4 py-3 text-right">회차</th>
+                <th className="px-4 py-3 text-right">누적 절약</th>
+                <th className="px-4 py-3 text-right">글 수</th>
+                <th className="px-4 py-3">마지막 활동</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {loading && (
+                <tr><td colSpan={7}><LoadingBox /></td></tr>
+              )}
+              {!loading && filtered.length === 0 && (
+                <tr><td colSpan={7}>
+                  <EmptyState
+                    icon={search ? '🔍' : '👥'}
+                    title={search ? '검색 결과가 없어요' : '표시할 가입자가 없어요'}
+                    hint={search ? '다른 키워드로 다시 시도해 보세요' : undefined}
+                  />
+                </td></tr>
+              )}
+              {!loading && filtered.map((u, i) => (
+                <tr
+                  key={u.user_id}
+                  className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${
+                    i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''
+                  }`}
+                >
+                  <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                    {new Date(u.signed_up_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    {u.email ? (
+                      <span className="font-mono text-[12px]">{u.email}</span>
+                    ) : (
+                      <span className="text-[11px] text-[#2a2723]/45 italic">익명</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 font-bold whitespace-nowrap">
+                    {u.nickname ?? <span className="text-[11px] text-[#2a2723]/45 font-normal italic">미설정</span>}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">{u.cycle ?? '—'}</td>
+                  <td className="px-4 py-3 text-right tabular-nums font-bold">
+                    {u.total_saved != null
+                      ? <><span>{u.total_saved.toLocaleString()}</span><span className="text-[10px] text-[#2a2723]/45 ml-0.5">원</span></>
+                      : '—'}
+                  </td>
+                  <td className="px-4 py-3 text-right tabular-nums">
+                    {u.post_count > 0 ? (
+                      <span className="inline-block bg-violet-100 text-violet-700 rounded-full px-2 py-0.5 text-[11px] font-bold">
+                        {u.post_count}
+                      </span>
+                    ) : (
+                      <span className="text-[#2a2723]/30">0</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                    {u.last_post_at
+                      ? new Date(u.last_post_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
+                      : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -513,98 +694,114 @@ function PostsSection() {
   }, [posts]);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6">
+    <div>
+      <SectionHeader
+        title="수다방 글"
+        count={filtered.length}
+        actions={
+          <>
+            <SearchInput value={search} onChange={setSearch} placeholder="닉/본문/ID 검색" />
+            <GhostButton onClick={load}>↻ 새로고침</GhostButton>
+          </>
+        }
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-5">
       <aside>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <h3 className="text-[13px] font-bold text-[#2a2723]/80">방별 필터</h3>
-          <ul className="mt-2 space-y-1">
-            {adminRooms.map((r) => (
-              <li key={r.id} className="flex items-center justify-between text-[13px]">
-                <button
-                  onClick={() => setFilterRoom(filterRoom === r.id ? '' : r.id)}
-                  className={`text-left flex-1 px-2 py-1 rounded ${filterRoom === r.id ? 'bg-amber-100 font-bold' : 'hover:bg-black/5'}`}
-                >
-                  # {r.title}
-                </button>
-                <span className="text-[#2a2723]/60 tabular-nums">{stats.byRoom.get(r.id) ?? 0}</span>
-              </li>
-            ))}
+        <div className="bg-white rounded-2xl ring-1 ring-black/5 shadow-sm p-4 sticky top-[160px]">
+          <h3 className="text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider mb-3">방별 필터</h3>
+          <ul className="space-y-0.5">
+            {adminRooms.map((r) => {
+              const count = stats.byRoom.get(r.id) ?? 0;
+              const isActive = filterRoom === r.id;
+              return (
+                <li key={r.id}>
+                  <button
+                    onClick={() => setFilterRoom(isActive ? '' : r.id)}
+                    className={`w-full flex items-center justify-between gap-2 text-left px-3 py-2 rounded-lg text-[13px] transition ${
+                      isActive
+                        ? 'bg-amber-400 text-[#1f1d1a] font-bold shadow-sm'
+                        : 'text-[#2a2723]/80 hover:bg-black/5'
+                    }`}
+                  >
+                    <span className="truncate">#&nbsp;{r.title}</span>
+                    <span className={`tabular-nums text-[11px] ${isActive ? 'text-[#1f1d1a]/70' : 'text-[#2a2723]/45'}`}>
+                      {count}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
           </ul>
           {filterRoom && (
             <button
               onClick={() => setFilterRoom('')}
-              className="mt-2 text-[11px] text-amber-700 hover:underline"
-            >필터 해제</button>
+              className="mt-3 text-[11px] text-amber-700 hover:underline font-bold"
+            >× 필터 해제</button>
           )}
         </div>
       </aside>
 
       <section>
-        <div className="bg-white rounded-xl shadow-sm p-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <h2 className="text-[15px] font-bold">수다방 글 ({filtered.length})</h2>
-            <div className="flex items-center gap-2">
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="닉/본문/ID 검색"
-                className="bg-black/5 rounded-md px-3 py-1.5 text-[13px] outline-none w-64 focus:bg-black/10"
-              />
-              <button
-                onClick={load}
-                className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-              >새로고침</button>
-            </div>
-          </div>
-
+        <div className="bg-white rounded-2xl ring-1 ring-black/5 shadow-sm overflow-hidden">
           {err && (
-            <div className="mt-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
-              불러오기 실패: {err}
+            <div className="p-4">
+              <ErrorBox title="불러오기 실패" message={err} />
             </div>
           )}
 
-          <div className="mt-3 overflow-x-auto">
+          <div className="overflow-x-auto">
             <table className="w-full text-[13px]">
               <thead>
-                <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
-                  <th className="py-2 pr-3">작성일</th>
-                  <th className="py-2 pr-3">방</th>
-                  <th className="py-2 pr-3">닉네임</th>
-                  <th className="py-2 pr-3">본문</th>
-                  <th className="py-2 pr-3 w-[80px]">작업</th>
+                <tr className="text-left text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider bg-[#2a2723]/[0.03] border-b border-black/5">
+                  <th className="px-4 py-3">작성일</th>
+                  <th className="px-4 py-3">방</th>
+                  <th className="px-4 py-3">닉네임</th>
+                  <th className="px-4 py-3">본문</th>
+                  <th className="px-4 py-3 w-[80px] text-right">작업</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
-                  <tr><td colSpan={5} className="py-6 text-center text-[#2a2723]/50">불러오는 중…</td></tr>
+                  <tr><td colSpan={5}><LoadingBox /></td></tr>
                 )}
                 {!loading && filtered.length === 0 && (
-                  <tr><td colSpan={5} className="py-6 text-center text-[#2a2723]/50">표시할 글이 없습니다.</td></tr>
+                  <tr><td colSpan={5}>
+                    <EmptyState
+                      icon={search || filterRoom ? '🔍' : '💬'}
+                      title={search || filterRoom ? '조건에 맞는 글이 없어요' : '아직 글이 없어요'}
+                      hint={search || filterRoom ? '필터를 해제하거나 검색어를 바꿔보세요' : undefined}
+                    />
+                  </td></tr>
                 )}
-                {!loading && filtered.map((p) => {
+                {!loading && filtered.map((p, i) => {
                   const room = adminRooms.find((r) => r.id === p.room_id);
                   return (
-                    <tr key={p.id} className="border-b border-black/5 align-top">
-                      <td className="py-2 pr-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                    <tr
+                      key={p.id}
+                      className={`border-b border-black/5 last:border-b-0 align-top hover:bg-amber-50/40 transition-colors ${
+                        i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''
+                      }`}
+                    >
+                      <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
                         {p.created_at
                           ? new Date(p.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })
                           : '—'}
                       </td>
-                      <td className="py-2 pr-3 whitespace-nowrap">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <span
-                          className="inline-block px-2 py-0.5 rounded text-[11px] font-bold"
+                          className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ring-1 ring-black/10"
                           style={{ background: room?.bg ?? '#eee' }}
                         >
-                          # {room?.title ?? p.room_id}
+                          #&nbsp;{room?.title ?? p.room_id}
                         </span>
                       </td>
-                      <td className="py-2 pr-3 font-bold whitespace-nowrap">{p.nick}</td>
-                      <td className="py-2 pr-3 whitespace-pre-wrap break-words max-w-[520px]">{p.body}</td>
-                      <td className="py-2 pr-3">
+                      <td className="px-4 py-3 font-bold whitespace-nowrap">{p.nick}</td>
+                      <td className="px-4 py-3 whitespace-pre-wrap break-words max-w-[520px] leading-relaxed">{p.body}</td>
+                      <td className="px-4 py-3 text-right">
                         <button
                           onClick={() => deletePost(p.id)}
                           disabled={busyId === p.id}
-                          className="text-[12px] font-bold text-red-600 hover:bg-red-50 px-2 py-1 rounded disabled:opacity-40"
+                          className="text-[12px] font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg disabled:opacity-40 transition"
                         >
                           {busyId === p.id ? '삭제 중…' : '삭제'}
                         </button>
@@ -617,6 +814,7 @@ function PostsSection() {
           </div>
         </div>
       </section>
+      </div>
     </div>
   );
 }
@@ -689,22 +887,23 @@ function RoomsSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h2 className="text-[18px] font-bold">수다방 관리 ({list.length})</h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={refresh}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
-          <button
-            onClick={startNew}
-            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
-          >+ 새 방</button>
-        </div>
-      </div>
+      <SectionHeader
+        title="수다방 관리"
+        count={list.length}
+        actions={
+          <>
+            <GhostButton onClick={refresh}>↻ 새로고침</GhostButton>
+            <button
+              onClick={startNew}
+              className="text-[13px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-lg shadow-sm transition active:scale-[.98]"
+            >+ 새 방</button>
+          </>
+        }
+      />
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+        <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
+          <span aria-hidden>⚠</span>
           {err}
         </div>
       )}
@@ -987,22 +1186,23 @@ function AnnouncementsSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h2 className="text-[18px] font-bold">공지/이벤트 ({list.length})</h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
-          <button
-            onClick={startNew}
-            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
-          >+ 새 공지</button>
-        </div>
-      </div>
+      <SectionHeader
+        title="공지/이벤트"
+        count={list.length}
+        actions={
+          <>
+            <GhostButton onClick={load}>↻ 새로고침</GhostButton>
+            <button
+              onClick={startNew}
+              className="text-[13px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-lg shadow-sm transition active:scale-[.98]"
+            >+ 새 공지</button>
+          </>
+        }
+      />
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+        <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
+          <span aria-hidden>⚠</span>
           {err}
         </div>
       )}
@@ -1308,28 +1508,31 @@ function ShopItemsSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
+      <div className="flex items-end justify-between mb-5 gap-3 flex-wrap">
         <div>
-          <h2 className="text-[18px] font-bold">상점 관리 ({list.length})</h2>
-          <p className="text-[11px] text-[#2a2723]/55 mt-1">
-            기존 하드코딩 아이템 + 여기 추가한 항목이 함께 노출됩니다.
+          <h2 className="text-[22px] font-black tracking-tight flex items-baseline gap-2">
+            상점 관리
+            <span className="text-[14px] font-bold text-[#2a2723]/45 tabular-nums">
+              {list.length.toLocaleString()}
+            </span>
+          </h2>
+          <p className="text-[12px] text-[#2a2723]/55 mt-1.5 leading-relaxed">
+            기존 하드코딩 아이템 + 여기 추가한 항목이 함께 노출돼요.
             추가 항목은 사용자 화면 상단에 우선 표시.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <GhostButton onClick={load}>↻ 새로고침</GhostButton>
           <button
             onClick={startNew}
-            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
+            className="text-[13px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-lg shadow-sm transition active:scale-[.98]"
           >+ 새 아이템</button>
         </div>
       </div>
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+        <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
+          <span aria-hidden>⚠</span>
           {err}
         </div>
       )}
@@ -1696,22 +1899,23 @@ function MissionsSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h2 className="text-[18px] font-bold">챌린지/미션 ({list.length})</h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
-          <button
-            onClick={startNew}
-            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
-          >+ 새 미션</button>
-        </div>
-      </div>
+      <SectionHeader
+        title="챌린지/미션"
+        count={list.length}
+        actions={
+          <>
+            <GhostButton onClick={load}>↻ 새로고침</GhostButton>
+            <button
+              onClick={startNew}
+              className="text-[13px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-lg shadow-sm transition active:scale-[.98]"
+            >+ 새 미션</button>
+          </>
+        }
+      />
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+        <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
+          <span aria-hidden>⚠</span>
           {err}
         </div>
       )}
@@ -2089,22 +2293,23 @@ function TitlesSection() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-4 gap-3 flex-wrap">
-        <h2 className="text-[18px] font-bold">칭호 ({list.length})</h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={load}
-            className="text-[12px] font-bold bg-black/5 hover:bg-black/10 px-3 py-1.5 rounded-md"
-          >새로고침</button>
-          <button
-            onClick={startNew}
-            className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-3 py-1.5 rounded-md"
-          >+ 새 칭호</button>
-        </div>
-      </div>
+      <SectionHeader
+        title="칭호"
+        count={list.length}
+        actions={
+          <>
+            <GhostButton onClick={load}>↻ 새로고침</GhostButton>
+            <button
+              onClick={startNew}
+              className="text-[13px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-4 py-2 rounded-lg shadow-sm transition active:scale-[.98]"
+            >+ 새 칭호</button>
+          </>
+        }
+      />
 
       {err && (
-        <div className="mb-3 bg-red-50 border border-red-200 text-red-700 rounded-md px-3 py-2 text-[12px]">
+        <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
+          <span aria-hidden>⚠</span>
           {err}
         </div>
       )}
