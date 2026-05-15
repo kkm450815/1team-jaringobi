@@ -239,7 +239,13 @@ export default function Shop() {
       </div>
 
       {/* 아이템 그리드 (스크롤 대상) — 하단 고정 바 높이 만큼 추가 패딩 */}
-      <section className={`px-5 mt-3 grid grid-cols-3 gap-2.5 ${cart.length > 0 ? 'pb-28' : ''}`}>
+      <section
+        className="px-5 mt-3 grid grid-cols-3 gap-2.5"
+        style={cart.length > 0
+          // 카트 바가 차지하는 높이(약 76px) + 카트 바 자체 하단 패딩(16px) + safe-area
+          ? { paddingBottom: 'calc(96px + env(safe-area-inset-bottom, 0px))' }
+          : undefined}
+      >
         {items.slice(0, visible).map((src) => {
           const owned = u.owned.includes(src);
           const inCart = cart.includes(src);
@@ -408,10 +414,15 @@ export default function Shop() {
         </div>
       )}
 
-      {/* 하단 고정 장바구니 바 — 카트에 1개 이상이면 노출 */}
+      {/* 하단 고정 장바구니 바 — 카트에 1개 이상이면 노출.
+          안드로이드 제스처 바·iOS Home Indicator 에 가려지지 않도록 env(safe-area-inset-bottom) 적용 +
+          기본 패딩 16px 로 살짝 더 띄움. */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 z-20 pointer-events-none">
-          <div className="mx-auto max-w-[420px] px-3 pb-3 pointer-events-auto">
+        <div
+          className="fixed bottom-0 inset-x-0 z-20 pointer-events-none"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="mx-auto max-w-[420px] px-3 pb-4 pointer-events-auto">
             <div className="bg-bg/95 backdrop-blur-sm border border-text/10 rounded-2xl shadow-2xl px-3 py-2.5 flex items-center gap-2">
               <button
                 onClick={() => setCartListOpen(true)}

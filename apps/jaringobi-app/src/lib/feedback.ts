@@ -10,9 +10,10 @@ function getCtx(): AudioContext | null {
 
 // 효과음 마스터 볼륨 (0~100). Settings의 sfxVolume 슬라이더로 제어.
 // 기본 100 — 코드 작성된 gain 값 × SFX_BOOST 가 실제 출력.
-// 안드로이드 WebView 가 데스크톱 대비 출력이 작아 추가 2.8배 부스트.
-// Web Audio gain > 1 허용 (destination 에서 ±1 클리핑) — 단음 위주라 안전.
-const SFX_BOOST = 2.8;
+// 안드로이드 WebView 가 데스크톱 대비 출력이 작아 추가 부스트.
+// BGM 마스터가 최대 ~3.5 까지 올라가는데 비해 SFX 가 작다는 사용자 피드백으로
+// 2.8 → 6.0 으로 상향. 단음 위주라 약한 클리핑은 허용 (지각 음량 우선).
+const SFX_BOOST = 6.0;
 let sfxVolumePercent = 100;
 let sfxEnabled = true;
 export function setSfxVolume(percent: number) {

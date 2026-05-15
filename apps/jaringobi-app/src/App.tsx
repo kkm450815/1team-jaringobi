@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import { App as CapApp, type AppState } from '@capacitor/app';
 import { PhoneFrame } from './components/PhoneFrame';
 import { isLocalStorageAvailable } from './lib/storage';
 import { ensureAnonymousSession } from './lib/auth';
@@ -71,6 +73,39 @@ function BgmController() {
     setSfxEnabled(u.settings.sfxEnabled ?? true);
     setSfxVolume(u.settings.sfxVolume ?? 80);
   }, [u.settings.sfxEnabled, u.settings.sfxVolume]);
+
+  // 앱이 백그라운드/탭 비활성이면 BGM 멈추기.
+  // 안드로이드 WebView 는 visibilitychange 만으로는 백그라운드 전환을 못 잡는 케이스가 있어서
+  // Capacitor App 의 appStateChange 도 동시에 듣는다.
+  // 사용자 sound 토글이 ON 일 때만 복귀 시 재시작.
+  useEffect(() => {
+    const soundOn = u.settings.sound;
+
+    function onVisibility() {
+      const bgm = getBgm();
+      if (document.hidden) {
+        bgm.stop();
+      } else if (soundOn) {
+        bgm.start();
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility);
+
+    // Capacitor 네이티브 — 앱이 백그라운드로 가면 isActive=false
+    let capListenerHandle: { remove: () => void } | null = null;
+    if (Capacitor.isNativePlatform()) {
+      CapApp.addListener('appStateChange', (state: AppState) => {
+        const bgm = getBgm();
+        if (!state.isActive) bgm.stop();
+        else if (soundOn) bgm.start();
+      }).then((h) => { capListenerHandle = h; }).catch(() => { /* ignore */ });
+    }
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      if (capListenerHandle) capListenerHandle.remove();
+    };
+  }, [u.settings.sound]);
 
   return null;
 }
