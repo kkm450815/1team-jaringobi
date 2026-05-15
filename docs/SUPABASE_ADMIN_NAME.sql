@@ -21,8 +21,11 @@ alter table public.admins
 -- ---------------------------------------------------------------------
 -- 2) admin_list_admins() — name 포함하도록 재정의
 -- ---------------------------------------------------------------------
+-- PostgreSQL 은 함수 반환 타입(OUT 파라미터 시그니처)이 바뀌면
+-- CREATE OR REPLACE 만으로는 못 바꿈 → 먼저 DROP.
+drop function if exists public.admin_list_admins();
 
-create or replace function public.admin_list_admins()
+create function public.admin_list_admins()
 returns table (
   user_id uuid,
   email text,
