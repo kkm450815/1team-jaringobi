@@ -20,8 +20,12 @@ import { titlesRepo, TitleWithMeta } from '../lib/titlesRepo';
 import { TITLES, MISSIONS, MissionCategory, Difficulty, TitleReq, TitleDifficulty } from '../lib/data';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
+import {
+  ACTION_LABELS, AdminInfo, AuditLogEntry, TABLE_LABELS,
+  listAdmins, listAuditLog, logAdminAction,
+} from '../lib/adminAudit';
 
-type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions' | 'titles';
+type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions' | 'titles' | 'admins';
 
 interface RawPost {
   id: string;
@@ -315,6 +319,7 @@ const TABS: { id: Tab; label: string; icon: string }[] = [
   { id: 'titles',        label: '칭호',        icon: '🏆' },
   { id: 'rooms',         label: '수다방',      icon: '💬' },
   { id: 'posts',         label: '수다방 글',   icon: '📝' },
+  { id: 'admins',        label: '관리자/기록', icon: '🛡' },
 ];
 
 function AdminPanel({ email }: { email: string }) {
@@ -346,7 +351,7 @@ function AdminPanel({ email }: { email: string }) {
       </header>
 
       <div className="max-w-6xl mx-auto px-6 py-8">
-        {tab === 'dashboard' && <DashboardSection />}
+        {tab === 'dashboard' && <DashboardSection onJump={setTab} />}
         {tab === 'users' && <UsersSection />}
         {tab === 'announcements' && <AnnouncementsSection />}
         {tab === 'shop' && <ShopItemsSection />}
@@ -354,6 +359,7 @@ function AdminPanel({ email }: { email: string }) {
         {tab === 'titles' && <TitlesSection />}
         {tab === 'rooms' && <RoomsSection />}
         {tab === 'posts' && <PostsSection />}
+        {tab === 'admins' && <AdminsSection />}
       </div>
     </main>
   );
@@ -378,7 +384,7 @@ function TabButton({ active, onClick, children }: { active: boolean; onClick: ()
  * 대시보드 — 통계 카드
  * ============================================================ */
 
-function DashboardSection() {
+function DashboardSection({ onJump }: { onJump: (tab: Tab) => void }) {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -428,14 +434,17 @@ function DashboardSection() {
 
   // 톤은 시각적 그룹화 — 사용자(주황) / 활동(녹) / 글 수(보라/하늘/사이안/장미).
   // 시간 단위 카드(24h, 7d) 는 따뜻한 톤으로 묶어 시선이 다른 카드로 쉽게 이동.
+  // jumpTo: 카드 클릭 시 이동할 탭. 클릭 가능한 카드만 명시.
   type Tone = 'amber' | 'emerald' | 'violet' | 'sky' | 'cyan' | 'rose';
-  const cards: { label: string; value: number; sub?: string; tone: Tone; icon: string }[] = [
-    { label: '전체 가입자',     value: stats.total_auth_users, sub: '인증된 user',     tone: 'amber',   icon: '👤' },
-    { label: '닉네임 설정',     value: stats.total_profiles,   sub: '실제 활동 시작',  tone: 'emerald', icon: '✏️' },
-    { label: '활동 작성자',     value: stats.active_posters,   sub: '글 1건 이상',     tone: 'violet',  icon: '✨' },
-    { label: '전체 글 수',       value: stats.total_posts,                              tone: 'sky',     icon: '📝' },
-    { label: '24시간 글 수',     value: stats.posts_24h,        sub: '실시간 활동',     tone: 'cyan',    icon: '⚡' },
-    { label: '7일 글 수',        value: stats.posts_7d,         sub: '주간 활동',       tone: 'rose',    icon: '📈' },
+  const cards: {
+    label: string; value: number; sub?: string; tone: Tone; icon: string; jumpTo?: Tab;
+  }[] = [
+    { label: '전체 가입자',     value: stats.total_auth_users, sub: '인증된 user',     tone: 'amber',   icon: '👤', jumpTo: 'users' },
+    { label: '닉네임 설정',     value: stats.total_profiles,   sub: '실제 활동 시작',  tone: 'emerald', icon: '✏️', jumpTo: 'users' },
+    { label: '활동 작성자',     value: stats.active_posters,   sub: '글 1건 이상',     tone: 'violet',  icon: '✨', jumpTo: 'posts' },
+    { label: '전체 글 수',       value: stats.total_posts,                              tone: 'sky',     icon: '📝', jumpTo: 'posts' },
+    { label: '24시간 글 수',     value: stats.posts_24h,        sub: '실시간 활동',     tone: 'cyan',    icon: '⚡', jumpTo: 'posts' },
+    { label: '7일 글 수',        value: stats.posts_7d,         sub: '주간 활동',       tone: 'rose',    icon: '📈', jumpTo: 'posts' },
   ];
   const iconClass: Record<Tone, string> = {
     amber:   'bg-amber-100 text-amber-700 ring-amber-200',
@@ -461,28 +470,45 @@ function DashboardSection() {
         actions={<GhostButton onClick={load}>↻ 새로고침</GhostButton>}
       />
       <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        {cards.map((c) => (
-          <div
-            key={c.label}
-            className="relative overflow-hidden bg-white rounded-2xl ring-1 ring-black/5 shadow-sm hover:shadow-md transition p-5"
-          >
-            <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${barClass[c.tone]}`} />
-            <div className="flex items-center justify-between">
-              <p className="text-[12px] font-bold text-[#2a2723]/65 uppercase tracking-wider">{c.label}</p>
-              <span
-                className={`w-9 h-9 grid place-items-center rounded-xl ring-1 text-[16px] ${iconClass[c.tone]}`}
-                aria-hidden
-              >
-                {c.icon}
-              </span>
-            </div>
-            <p className="mt-3 text-[34px] font-black tracking-tight tabular-nums leading-none">
-              {c.value.toLocaleString()}
-            </p>
-            {c.sub && <p className="text-[11px] text-[#2a2723]/45 mt-2">{c.sub}</p>}
-          </div>
-        ))}
+        {cards.map((c) => {
+          const clickable = !!c.jumpTo;
+          const Tag = clickable ? 'button' : 'div';
+          return (
+            <Tag
+              key={c.label}
+              onClick={clickable ? () => onJump(c.jumpTo!) : undefined}
+              className={`relative overflow-hidden bg-white rounded-2xl ring-1 ring-black/5 shadow-sm p-5 text-left ${
+                clickable
+                  ? 'hover:shadow-md hover:-translate-y-0.5 hover:ring-black/10 active:scale-[.98] cursor-pointer transition'
+                  : 'transition'
+              }`}
+            >
+              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${barClass[c.tone]}`} />
+              <div className="flex items-center justify-between">
+                <p className="text-[12px] font-bold text-[#2a2723]/65 uppercase tracking-wider">{c.label}</p>
+                <span
+                  className={`w-9 h-9 grid place-items-center rounded-xl ring-1 text-[16px] ${iconClass[c.tone]}`}
+                  aria-hidden
+                >
+                  {c.icon}
+                </span>
+              </div>
+              <p className="mt-3 text-[34px] font-black tracking-tight tabular-nums leading-none">
+                {c.value.toLocaleString()}
+              </p>
+              <div className="mt-2 flex items-center justify-between gap-2">
+                {c.sub && <p className="text-[11px] text-[#2a2723]/45">{c.sub}</p>}
+                {clickable && (
+                  <span className="text-[11px] text-[#2a2723]/40 font-bold ml-auto">상세 →</span>
+                )}
+              </div>
+            </Tag>
+          );
+        })}
       </div>
+      <p className="mt-5 text-[11px] text-[#2a2723]/45">
+        카드를 누르면 해당 상세 페이지로 이동해요.
+      </p>
     </div>
   );
 }
@@ -664,8 +690,12 @@ function PostsSection() {
     if (!confirm('이 글을 정말 삭제하시겠습니까? (되돌릴 수 없습니다)')) return;
     setBusyId(id);
     try {
+      const target = posts.find((p) => p.id === id);
       await talkPostsRepo.remove(id);
       setPosts((prev) => prev.filter((p) => p.id !== id));
+      void logAdminAction('delete', 'talk_posts', id, target?.nick ?? null, {
+        body_excerpt: (target?.body ?? '').slice(0, 80),
+      });
     } catch (e) {
       console.error('[PostsSection.deletePost] 실패', e);
       alert(`삭제 실패: ${(e as Error).message ?? String(e)}\n\nRLS 정책(talk_posts delete)이 설정돼 있는지 확인하세요.`);
@@ -820,6 +850,217 @@ function PostsSection() {
 }
 
 /* ============================================================
+ * 관리자 / 기록 — 관리자 목록 + 감사 로그
+ * 사전 적용: docs/SUPABASE_AUDIT_LOG.sql (RPC + audit table)
+ * ============================================================ */
+
+function AdminsSection() {
+  const [admins, setAdmins] = useState<AdminInfo[] | null>(null);
+  const [logs, setLogs] = useState<AuditLogEntry[] | null>(null);
+  const [adminsErr, setAdminsErr] = useState<string | null>(null);
+  const [logsErr, setLogsErr] = useState<string | null>(null);
+  const [filterTable, setFilterTable] = useState<string>('');
+  const [filterAdmin, setFilterAdmin] = useState<string>('');
+
+  async function loadAll() {
+    setAdminsErr(null);
+    setLogsErr(null);
+    setAdmins(null);
+    setLogs(null);
+    try {
+      setAdmins(await listAdmins());
+    } catch (e) {
+      console.error('[AdminsSection] listAdmins 실패', e);
+      setAdminsErr((e as Error).message ?? String(e));
+      setAdmins([]);
+    }
+    try {
+      setLogs(await listAuditLog(300));
+    } catch (e) {
+      console.error('[AdminsSection] listAuditLog 실패', e);
+      setLogsErr((e as Error).message ?? String(e));
+      setLogs([]);
+    }
+  }
+  useEffect(() => { loadAll(); }, []);
+
+  const filteredLogs = useMemo(() => {
+    if (!logs) return [];
+    return logs.filter((l) => {
+      if (filterTable && l.target_table !== filterTable) return false;
+      if (filterAdmin && l.admin_email !== filterAdmin) return false;
+      return true;
+    });
+  }, [logs, filterTable, filterAdmin]);
+
+  const tableOptions = useMemo(() => {
+    const set = new Set<string>();
+    (logs ?? []).forEach((l) => set.add(l.target_table));
+    return Array.from(set).sort();
+  }, [logs]);
+  const adminOptions = useMemo(() => {
+    const set = new Set<string>();
+    (logs ?? []).forEach((l) => { if (l.admin_email) set.add(l.admin_email); });
+    return Array.from(set).sort();
+  }, [logs]);
+
+  const actionPill: Record<string, string> = {
+    create: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+    update: 'bg-sky-100 text-sky-700 ring-sky-200',
+    toggle: 'bg-violet-100 text-violet-700 ring-violet-200',
+    delete: 'bg-rose-100 text-rose-700 ring-rose-200',
+  };
+
+  return (
+    <div className="space-y-8">
+      {/* 관리자 목록 */}
+      <div>
+        <SectionHeader
+          title="관리자 목록"
+          count={admins?.length}
+          actions={<GhostButton onClick={loadAll}>↻ 새로고침</GhostButton>}
+        />
+        {adminsErr && (
+          <ErrorBox
+            title="관리자 목록 조회 실패"
+            message={adminsErr}
+            hint="docs/SUPABASE_AUDIT_LOG.sql 의 admin_list_admins() 함수가 Supabase 에 생성돼 있는지 확인하세요."
+          />
+        )}
+        <div className="bg-white rounded-2xl ring-1 ring-black/5 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider bg-[#2a2723]/[0.03] border-b border-black/5">
+                  <th className="px-4 py-3">이메일</th>
+                  <th className="px-4 py-3">등록일</th>
+                  <th className="px-4 py-3">user_id</th>
+                </tr>
+              </thead>
+              <tbody>
+                {admins === null && (
+                  <tr><td colSpan={3}><LoadingBox /></td></tr>
+                )}
+                {admins && admins.length === 0 && !adminsErr && (
+                  <tr><td colSpan={3}>
+                    <EmptyState icon="🛡" title="관리자가 없어요" />
+                  </td></tr>
+                )}
+                {admins && admins.map((a, i) => (
+                  <tr key={a.user_id} className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''}`}>
+                    <td className="px-4 py-3 font-mono text-[12px]">{a.email}</td>
+                    <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                      {new Date(a.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-[11px] text-[#2a2723]/45">
+                      {a.user_id.slice(0, 8)}…
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* 감사 로그 */}
+      <div>
+        <SectionHeader
+          title="수정 기록 (감사 로그)"
+          count={filteredLogs.length}
+          actions={
+            <>
+              <select
+                value={filterTable}
+                onChange={(e) => setFilterTable(e.target.value)}
+                className="bg-white ring-1 ring-black/10 rounded-lg px-3 py-2 text-[13px] outline-none focus:ring-[#1f1d1a]/30"
+              >
+                <option value="">전체 항목</option>
+                {tableOptions.map((t) => (
+                  <option key={t} value={t}>{TABLE_LABELS[t] ?? t}</option>
+                ))}
+              </select>
+              <select
+                value={filterAdmin}
+                onChange={(e) => setFilterAdmin(e.target.value)}
+                className="bg-white ring-1 ring-black/10 rounded-lg px-3 py-2 text-[13px] outline-none focus:ring-[#1f1d1a]/30 max-w-[200px]"
+              >
+                <option value="">전체 관리자</option>
+                {adminOptions.map((a) => (
+                  <option key={a} value={a}>{a}</option>
+                ))}
+              </select>
+              <GhostButton onClick={loadAll}>↻ 새로고침</GhostButton>
+            </>
+          }
+        />
+        {logsErr && (
+          <ErrorBox
+            title="감사 로그 조회 실패"
+            message={logsErr}
+            hint="docs/SUPABASE_AUDIT_LOG.sql 을 Supabase SQL Editor 에서 실행해 admin_audit_log 테이블을 생성하세요."
+          />
+        )}
+        <div className="bg-white rounded-2xl ring-1 ring-black/5 shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-[13px]">
+              <thead>
+                <tr className="text-left text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider bg-[#2a2723]/[0.03] border-b border-black/5">
+                  <th className="px-4 py-3">시각</th>
+                  <th className="px-4 py-3">관리자</th>
+                  <th className="px-4 py-3">작업</th>
+                  <th className="px-4 py-3">대상</th>
+                  <th className="px-4 py-3">이름/제목</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs === null && (
+                  <tr><td colSpan={5}><LoadingBox /></td></tr>
+                )}
+                {logs && filteredLogs.length === 0 && !logsErr && (
+                  <tr><td colSpan={5}>
+                    <EmptyState
+                      icon={filterTable || filterAdmin ? '🔍' : '📜'}
+                      title={filterTable || filterAdmin ? '조건에 맞는 기록이 없어요' : '아직 기록이 없어요'}
+                      hint={
+                        filterTable || filterAdmin
+                          ? '필터를 해제하거나 다른 값을 선택해 보세요'
+                          : '관리자가 작업을 하면 여기에 자동으로 쌓여요'
+                      }
+                    />
+                  </td></tr>
+                )}
+                {logs && filteredLogs.map((l, i) => (
+                  <tr key={l.id} className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''}`}>
+                    <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                      {new Date(l.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </td>
+                    <td className="px-4 py-3 font-mono text-[12px] whitespace-nowrap">
+                      {l.admin_email ?? <span className="text-[#2a2723]/40 italic">알 수 없음</span>}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ring-1 ${actionPill[l.action] ?? 'bg-black/5 ring-black/10 text-[#2a2723]/70'}`}>
+                        {ACTION_LABELS[l.action] ?? l.action}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-[12px] whitespace-nowrap font-bold">
+                      {TABLE_LABELS[l.target_table] ?? l.target_table}
+                    </td>
+                    <td className="px-4 py-3 text-[12px] max-w-[320px] truncate" title={l.target_name ?? ''}>
+                      {l.target_name ?? <span className="text-[#2a2723]/40 italic">—</span>}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
  * 수다방 관리 — talk_rooms CRUD
  * ============================================================ */
 
@@ -859,9 +1100,11 @@ function RoomsSection() {
     setBusy(true);
     setErr(null);
     try {
+      const wasEdit = !!isEdit;
       await talkRoomsRepo.upsert({ ...editing, id, title });
       setEditing(null);
       refresh();
+      void logAdminAction(wasEdit ? 'update' : 'create', 'talk_rooms', id, title);
     } catch (e) {
       console.error('[RoomsSection.save] 실패', e);
       setErr((e as Error).message ?? '저장 실패');
@@ -877,6 +1120,7 @@ function RoomsSection() {
     try {
       await talkRoomsRepo.remove(r.id);
       refresh();
+      void logAdminAction('delete', 'talk_rooms', r.id, r.title);
     } catch (e) {
       console.error('[RoomsSection.remove] 실패', e);
       setErr((e as Error).message ?? '삭제 실패');
@@ -1134,6 +1378,7 @@ function AnnouncementsSection() {
     setBusy(true);
     setErr(null);
     try {
+      const wasEdit = !!(editing.id && (items ?? []).some((a) => a.id === editing.id));
       const saved = await announcementsRepo.upsert({ ...editing, title });
       setEditing(null);
       // 새로 만든 거면 list 에 push, 수정이면 replace
@@ -1147,6 +1392,7 @@ function AnnouncementsSection() {
         }
         return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
       });
+      void logAdminAction(wasEdit ? 'update' : 'create', 'announcements', saved.id, title);
     } catch (e) {
       console.error('[AnnouncementsSection.save] 실패', e);
       setErr((e as Error).message ?? '저장 실패');
@@ -1161,6 +1407,7 @@ function AnnouncementsSection() {
     try {
       await announcementsRepo.remove(a.id);
       setItems((prev) => (prev ?? []).filter((x) => x.id !== a.id));
+      void logAdminAction('delete', 'announcements', a.id, a.title);
     } catch (e) {
       console.error('[AnnouncementsSection.remove] 실패', e);
       setErr((e as Error).message ?? '삭제 실패');
@@ -1174,6 +1421,7 @@ function AnnouncementsSection() {
     try {
       const saved = await announcementsRepo.upsert({ ...a, active: !a.active });
       setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+      void logAdminAction('toggle', 'announcements', saved.id, saved.title, { active: saved.active });
     } catch (e) {
       console.error('[AnnouncementsSection.toggleActive] 실패', e);
       setErr((e as Error).message ?? '변경 실패');
@@ -1457,6 +1705,7 @@ function ShopItemsSection() {
     setBusy(true);
     setErr(null);
     try {
+      const wasEdit = !!(editing.id && (items ?? []).some((i) => i.id === editing.id));
       const saved = await shopItemsRepo.upsert(editing);
       setEditing(null);
       setItems((prev) => {
@@ -1469,6 +1718,7 @@ function ShopItemsSection() {
         }
         return [...list, saved];
       });
+      void logAdminAction(wasEdit ? 'update' : 'create', 'shop_items', saved.id, saved.label || saved.shopImageUrl);
     } catch (e) {
       console.error('[ShopItemsSection.save] 실패', e);
       setErr((e as Error).message ?? '저장 실패');
@@ -1483,6 +1733,7 @@ function ShopItemsSection() {
     try {
       await shopItemsRepo.remove(i.id);
       setItems((prev) => (prev ?? []).filter((x) => x.id !== i.id));
+      void logAdminAction('delete', 'shop_items', i.id, i.label || i.shopImageUrl);
     } catch (e) {
       console.error('[ShopItemsSection.remove] 실패', e);
       setErr((e as Error).message ?? '삭제 실패');
@@ -1496,6 +1747,7 @@ function ShopItemsSection() {
     try {
       const saved = await shopItemsRepo.upsert({ ...i, active: !i.active });
       setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+      void logAdminAction('toggle', 'shop_items', saved.id, saved.label || saved.shopImageUrl, { active: saved.active });
     } catch (e) {
       console.error('[ShopItemsSection.toggleActive] 실패', e);
       setErr((e as Error).message ?? '변경 실패');
@@ -1792,6 +2044,9 @@ function MissionsSection() {
   const [tipsText, setTipsText] = useState(''); // textarea 한 줄 = 한 tip
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+  // 카테고리 필터 — 한 화면에 미션이 많을 때 카테고리별로 분리해서 보기.
+  // null = 전체. 표시할 카테고리 칩이 활성화되면 list 가 그 카테고리만으로 필터됨.
+  const [categoryFilter, setCategoryFilter] = useState<MissionCategory | null>(null);
 
   async function load() {
     setErr(null);
@@ -1841,6 +2096,7 @@ function MissionsSection() {
     setBusy(true);
     setErr(null);
     try {
+      const wasEdit = !!(editing.id && (items ?? []).some((m) => m.id === editing.id));
       const saved = await missionsRepo.upsert({ ...editing, id, title, tips });
       setEditing(null);
       setTipsText('');
@@ -1854,6 +2110,7 @@ function MissionsSection() {
         }
         return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
       });
+      void logAdminAction(wasEdit ? 'update' : 'create', 'missions', saved.id, title);
     } catch (e) {
       console.error('[MissionsSection.save] 실패', e);
       setErr((e as Error).message ?? '저장 실패');
@@ -1874,6 +2131,7 @@ function MissionsSection() {
     try {
       await missionsRepo.remove(m.id);
       setItems((prev) => (prev ?? []).filter((x) => x.id !== m.id));
+      void logAdminAction('delete', 'missions', m.id, m.title);
     } catch (e) {
       console.error('[MissionsSection.remove] 실패', e);
       setErr((e as Error).message ?? '삭제 실패');
@@ -1887,6 +2145,7 @@ function MissionsSection() {
     try {
       const saved = await missionsRepo.upsert({ ...m, active: !m.active });
       setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+      void logAdminAction('toggle', 'missions', saved.id, saved.title, { active: saved.active });
     } catch (e) {
       console.error('[MissionsSection.toggleActive] 실패', e);
       setErr((e as Error).message ?? '변경 실패');
@@ -1895,7 +2154,23 @@ function MissionsSection() {
     }
   }
 
-  const list = items ?? [];
+  const allList = items ?? [];
+  const list = categoryFilter ? allList.filter((m) => m.category === categoryFilter) : allList;
+
+  // 각 카테고리별 개수 — 칩 옆에 표시.
+  const countByCategory = useMemo(() => {
+    const map: Record<MissionCategory, number> = { 식비: 0, 여가: 0, 충동: 0, 통장: 0 };
+    for (const m of allList) map[m.category] = (map[m.category] ?? 0) + 1;
+    return map;
+  }, [allList]);
+
+  // 카테고리 칩 색상 (대시보드 톤과 통일)
+  const catTone: Record<MissionCategory, string> = {
+    식비: 'bg-rose-100 text-rose-700 ring-rose-200',
+    여가: 'bg-sky-100 text-sky-700 ring-sky-200',
+    충동: 'bg-violet-100 text-violet-700 ring-violet-200',
+    통장: 'bg-emerald-100 text-emerald-700 ring-emerald-200',
+  };
 
   return (
     <div>
@@ -1912,6 +2187,36 @@ function MissionsSection() {
           </>
         }
       />
+
+      {/* 카테고리 필터 칩 — "전체" + 4개 카테고리. 활성화 시 amber 강조. */}
+      <div className="mb-5 flex items-center gap-2 flex-wrap">
+        <button
+          onClick={() => setCategoryFilter(null)}
+          className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition ${
+            categoryFilter === null
+              ? 'bg-[#1f1d1a] text-white shadow-sm'
+              : 'bg-white ring-1 ring-black/10 text-[#2a2723]/70 hover:bg-black/5'
+          }`}
+        >
+          전체 <span className="ml-1 opacity-70 tabular-nums">{allList.length}</span>
+        </button>
+        {MISSION_CATEGORIES.map((c) => {
+          const active = categoryFilter === c;
+          return (
+            <button
+              key={c}
+              onClick={() => setCategoryFilter(active ? null : c)}
+              className={`px-3.5 py-1.5 rounded-full text-[12px] font-bold transition ring-1 ${
+                active
+                  ? `${catTone[c]} ring-current shadow-sm`
+                  : 'bg-white ring-black/10 text-[#2a2723]/70 hover:bg-black/5'
+              }`}
+            >
+              {c} <span className="ml-1 opacity-70 tabular-nums">{countByCategory[c] ?? 0}</span>
+            </button>
+          );
+        })}
+      </div>
 
       {err && (
         <div className="mb-4 bg-red-50 ring-1 ring-red-200 text-red-700 rounded-xl px-4 py-3 text-[13px] font-bold flex items-center gap-2">
@@ -2241,6 +2546,7 @@ function TitlesSection() {
     setBusy(true);
     setErr(null);
     try {
+      const wasEdit = !!(editing.id && (items ?? []).some((t) => t.id === editing.id));
       const saved = await titlesRepo.upsert({ ...editing, id, name });
       setEditing(null);
       setItems((prev) => {
@@ -2253,6 +2559,7 @@ function TitlesSection() {
         }
         return [...list, saved].sort((a, b) => a.sortOrder - b.sortOrder);
       });
+      void logAdminAction(wasEdit ? 'update' : 'create', 'titles', saved.id, name);
     } catch (e) {
       console.error('[TitlesSection.save] 실패', e);
       setErr((e as Error).message ?? '저장 실패');
@@ -2268,6 +2575,7 @@ function TitlesSection() {
     try {
       await titlesRepo.remove(t.id);
       setItems((prev) => (prev ?? []).filter((x) => x.id !== t.id));
+      void logAdminAction('delete', 'titles', t.id, t.name);
     } catch (e) {
       console.error('[TitlesSection.remove] 실패', e);
       setErr((e as Error).message ?? '삭제 실패');
@@ -2281,6 +2589,7 @@ function TitlesSection() {
     try {
       const saved = await titlesRepo.upsert({ ...t, active: !t.active });
       setItems((prev) => (prev ?? []).map((x) => (x.id === saved.id ? saved : x)));
+      void logAdminAction('toggle', 'titles', saved.id, saved.name, { active: saved.active });
     } catch (e) {
       console.error('[TitlesSection.toggleActive] 실패', e);
       setErr((e as Error).message ?? '변경 실패');
