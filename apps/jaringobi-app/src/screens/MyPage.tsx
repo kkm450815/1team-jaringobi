@@ -17,7 +17,9 @@ const MAX_NICK = 10;
 export default function MyPage() {
   const u = useUser();
   const [editing, setEditing] = useState(false);
-  const [nickDraft, setNickDraft] = useState(u.nickname);
+  // 닉 편집은 비제어 ref — 키 입력마다 MyPage 전체(30칸 RECORD 그리드 등) 리렌더되면
+  // 안드로이드 WebView 에서 타이핑 지연이 큼. 제출 시점에만 ref.value 를 읽는다.
+  const nickInputRef = useRef<HTMLInputElement | null>(null);
   const [nickError, setNickError] = useState<string | null>(null);
   const [titleModal, setTitleModal] = useState(false);
   const [detailTitleId, setDetailTitleId] = useState<string | null>(null);
@@ -57,10 +59,10 @@ export default function MyPage() {
   }, [u.nickname, u.cycle, u.mergeRemotePhotos]);
 
   async function commitNick() {
-    const trimmed = nickDraft.trim();
+    const raw = (nickInputRef.current?.value ?? '').slice(0, MAX_NICK);
+    const trimmed = raw.trim();
     if (!trimmed) {
       setNickError('닉네임은 비울 수 없어요');
-      setNickDraft(u.nickname);
       setEditing(false);
       setTimeout(() => setNickError(null), 2500);
       return;
@@ -72,7 +74,6 @@ export default function MyPage() {
     const result = await u.tryRenameNickname(trimmed);
     if (!result.ok) {
       setNickError(result.message);
-      setNickDraft(u.nickname);
       setEditing(false);
       setTimeout(() => setNickError(null), 3000);
       return;
@@ -331,18 +332,19 @@ export default function MyPage() {
               {editing ? (
                 <input
                   autoFocus
-                  value={nickDraft}
-                  onChange={(e) => setNickDraft(e.target.value.slice(0, MAX_NICK))}
+                  ref={nickInputRef}
+                  defaultValue={u.nickname}
+                  maxLength={MAX_NICK}
                   onBlur={commitNick}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') commitNick();
-                    if (e.key === 'Escape') { setNickDraft(u.nickname); setEditing(false); }
+                    if (e.key === 'Escape') setEditing(false);
                   }}
                   className="bg-primary/70 rounded-full px-4 py-1.5 text-[16px] font-bold text-text outline-none w-full max-w-[160px] text-center"
                 />
               ) : (
                 <button
-                  onClick={() => { setNickDraft(u.nickname); setEditing(true); }}
+                  onClick={() => setEditing(true)}
                   className="bg-primary/70 rounded-full px-5 py-1.5 text-[16px] font-bold text-text active:scale-[.98]"
                   aria-label="닉네임 편집"
                 >
@@ -469,7 +471,7 @@ export default function MyPage() {
                 setDetailTitleId(null);
               }}
               onBackToGrid={() => setDetailTitleId(null)}
-              onClose={closeTitleModal}
+              onClose={() => setDetailTitleId(null)}
             />
           ) : (
             <TitleGrid
@@ -492,7 +494,7 @@ export default function MyPage() {
           onClick={() => !shareSending && closeSharePreview()}
         >
           <div
-            className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl"
+            className="w-full max-w-[300px] bg-bg rounded-3xl p-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative">
@@ -501,7 +503,7 @@ export default function MyPage() {
                 onClick={closeSharePreview}
                 disabled={shareSending}
                 aria-label="닫기"
-                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[22px] leading-none text-text/70 font-bold disabled:opacity-50"
+                className="absolute -right-1 -top-1 w-10 h-10 grid place-items-center text-[26px] leading-none text-text/70 font-bold disabled:opacity-50"
               >×</button>
             </div>
 
@@ -511,7 +513,7 @@ export default function MyPage() {
               <img
                 src={sharePreview.dataUrl}
                 alt="공유 미리보기"
-                style={{ maxHeight: '52vh' }}
+                style={{ maxHeight: '48vh' }}
                 className="max-w-full w-auto h-auto object-contain rounded-xl bg-white shadow-soft block"
               />
             </div>
@@ -637,7 +639,7 @@ function TitleGrid({
         <button
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+          className="absolute -right-1 -top-1 text-text/70 text-[26px] leading-none w-10 h-10 grid place-items-center font-bold"
         >
           ×
         </button>
@@ -711,7 +713,7 @@ function TitleDetail({
         <button
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+          className="absolute -right-1 -top-1 text-text/70 text-[26px] leading-none w-10 h-10 grid place-items-center font-bold"
         >
           ×
         </button>

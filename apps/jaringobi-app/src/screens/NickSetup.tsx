@@ -1,7 +1,7 @@
 // 닉네임 입력 단계 — Login/ModeSelect 후 메인 진입 전에 닉을 정함.
 // 이미 기본값('자린이')이 아닌 닉을 가졌으면 자동으로 메인으로 (Settings에서 재진입 가능 위해 force prop 없음).
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { useUser } from '../lib/userState';
 import { playSuccessSfx } from '../lib/feedback';
@@ -11,7 +11,11 @@ const MAX_NICK = 10;
 export default function NickSetup() {
   const nav = useNavigate();
   const u = useUser();
-  const [draft, setDraft] = useState(u.nickname === '자린이' ? '' : u.nickname);
+  // 비제어 ref — 키 입력마다 setState 안 함 → 안드로이드 WebView 타이핑 지연 차단.
+  // 빈 상태 / 입력 상태 토글 표시용으로 hasText 만 onInput 에서 가끔 갱신.
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const initial = u.nickname === '자린이' ? '' : u.nickname;
+  const [hasText, setHasText] = useState(initial.trim().length > 0);
   const [error, setError] = useState<string | null>(null);
 
   // 이미 닉을 정한 사용자가 직접 URL 진입했으면 메인으로
@@ -23,6 +27,7 @@ export default function NickSetup() {
 
   async function submit() {
     if (busy) return;
+    const draft = (inputRef.current?.value ?? '').slice(0, MAX_NICK);
     const trimmed = draft.trim();
     if (!trimmed) {
       setError('닉네임을 입력해주세요');
@@ -65,8 +70,15 @@ export default function NickSetup() {
       <div className="mt-8">
         <input
           autoFocus
-          value={draft}
-          onChange={(e) => { setDraft(e.target.value.slice(0, MAX_NICK)); setError(null); }}
+          ref={inputRef}
+          defaultValue={initial}
+          maxLength={MAX_NICK}
+          onInput={(e) => {
+            const has = (e.currentTarget.value ?? '').trim().length > 0;
+            // 같은 값이면 setState 자체를 호출 안 함 → 키 입력마다 리렌더 없음
+            setHasText((prev) => (prev === has ? prev : has));
+            if (error) setError(null);
+          }}
           onKeyDown={(e) => { if (e.key === 'Enter') submit(); }}
           placeholder="예: 절약왕"
           className="w-full bg-white rounded-2xl px-4 py-3.5 text-[16px] text-text outline-none shadow-soft text-center"
@@ -83,9 +95,9 @@ export default function NickSetup() {
 
       <button
         onClick={submit}
-        disabled={!draft.trim() || busy}
+        disabled={!hasText || busy}
         className={`mt-8 w-full rounded-full py-3.5 text-[15px] font-bold transition ${
-          draft.trim() && !busy
+          hasText && !busy
             ? 'bg-accent text-white active:scale-[.98]'
             : 'bg-text/15 text-text/40 cursor-not-allowed'
         }`}

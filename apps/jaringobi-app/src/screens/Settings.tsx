@@ -323,6 +323,38 @@ export default function Settings() {
             className="flex-1 accent-accent disabled:opacity-40"
           />
         </div>
+        {/* BGM 스타일 — 3종 토글 버튼. sound 가 OFF 면 비활성. */}
+        <div className="px-4 py-3">
+          <p className="text-[15px] font-bold text-text">BGM 스타일</p>
+          <p className="text-[12px] text-text/55 mt-0.5">취향에 맞는 분위기를 골라보세요</p>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {([
+              { id: 'default', label: '차분', sub: '꼬질꼬질' },
+              { id: 'cheerful', label: '동요풍', sub: '밝게' },
+              { id: 'retro8', label: '8비트', sub: '레트로' },
+            ] as const).map((opt) => {
+              const active = (u.settings.bgmStyle ?? 'default') === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  disabled={!u.settings.sound}
+                  onClick={() => u.setSetting('bgmStyle', opt.id)}
+                  className={`rounded-xl py-2 px-2 text-center transition active:scale-[.98] disabled:opacity-40 ${
+                    active
+                      ? 'bg-accent text-white shadow-soft'
+                      : 'bg-white text-text border border-text/15'
+                  }`}
+                  aria-pressed={active}
+                  aria-label={`BGM 스타일 ${opt.label}`}
+                >
+                  <p className="text-[13px] font-bold leading-tight">{opt.label}</p>
+                  <p className={`mt-0.5 text-[10px] ${active ? 'text-white/85' : 'text-text/55'}`}>{opt.sub}</p>
+                </button>
+              );
+            })}
+          </div>
+        </div>
         {settingItem('sfxEnabled', '효과음', '클릭·구매·인증 등 짧은 효과음')}
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 w-[90px] shrink-0">

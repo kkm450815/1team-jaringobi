@@ -42,6 +42,8 @@ export interface UserSettings {
   vibration: boolean;
   /** BGM 볼륨 0~100 */
   bgmVolume: number;
+  /** BGM 스타일 — 'default' 차분, 'cheerful' 밝은 동요풍, 'retro8' 8비트 레트로 */
+  bgmStyle: 'default' | 'cheerful' | 'retro8';
   /** SFX 토글 — sound 가 ON 이라도 SFX 만 따로 끌 수 있음 */
   sfxEnabled: boolean;
   /** SFX 볼륨 0~100 */
@@ -152,6 +154,7 @@ const DEFAULT: UserState = {
     sound: true,
     vibration: false,
     bgmVolume: 100,
+    bgmStyle: 'default',
     sfxEnabled: true,
     sfxVolume: 100,
     showHelpButton: true,

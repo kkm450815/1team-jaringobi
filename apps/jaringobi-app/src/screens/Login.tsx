@@ -95,9 +95,15 @@ export default function Login() {
     setErr(null);
     try {
       await signInWithGoogle('/mode');
+      // 안드로이드는 Chrome Custom Tabs 가 별도 브라우저로 열려 비동기 콜백.
+      // 5초 후에도 busy 가 풀려 있으면 사용자가 다시 시도할 수 있도록 풀어줌
+      // (실제 로그인 성공 시 onAuthStateChange → 라우팅 전환되므로 이 값은 영향 없음).
+      window.setTimeout(() => setOauthBusy(false), 5000);
     } catch (e) {
-      console.error('[Login.handleGoogle] 실패', e);
-      setErr((e as Error).message ?? '로그인에 실패했어요.');
+      const err = e as Error & { status?: number };
+      const detail = err.status ? ` (status ${err.status})` : '';
+      console.error('[Login.handleGoogle] 실패', { message: err.message, status: err.status, raw: e });
+      setErr(`구글 로그인 실패: ${err.message ?? '알 수 없는 오류'}${detail}`);
       setOauthBusy(false);
     }
   }
