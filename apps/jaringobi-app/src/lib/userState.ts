@@ -29,6 +29,14 @@ const KEY = 'jaringobi.user.v1';
 export interface UserSettings {
   notifyChallenge: boolean;
   notifyHeart: boolean;
+  /** 아침 챌린지 등록 알림 ON/OFF */
+  notifyMorning: boolean;
+  /** 아침 알림 시각 "HH:MM" (기본 "08:00") */
+  notifyMorningTime: string;
+  /** 저녁 챌린지 완료 알림 ON/OFF (당일 인증 완료 시 자동 스킵) */
+  notifyEvening: boolean;
+  /** 저녁 알림 시각 "HH:MM" (기본 "21:00") */
+  notifyEveningTime: string;
   /** 마스터 사운드 토글 — OFF 면 BGM·SFX 모두 무음 */
   sound: boolean;
   vibration: boolean;
@@ -137,6 +145,10 @@ const DEFAULT: UserState = {
   settings: {
     notifyChallenge: true,
     notifyHeart: true,
+    notifyMorning: true,
+    notifyMorningTime: '08:00',
+    notifyEvening: true,
+    notifyEveningTime: '21:00',
     sound: true,
     vibration: false,
     bgmVolume: 100,

@@ -9,6 +9,7 @@ import { unlockAudio } from './lib/audio';
 import { getBgm } from './lib/bgm';
 import { setSfxEnabled, setSfxVolume } from './lib/feedback';
 import { useUser } from './lib/userState';
+import { reconcileNotifications, requestNotificationPermission } from './lib/notifications';
 import Splash from './screens/Splash';
 import Login from './screens/Login';
 import ForgotPassword from './screens/ForgotPassword';
@@ -97,6 +98,26 @@ function AuthBootstrap() {
   return null;
 }
 
+// 로컬 알림 — 권한 요청(1회) + 설정/완료상태 바뀔 때마다 30 일치 스케줄 reconcile.
+// native 가 아니면 notifications.ts 가 알아서 no-op.
+function NotificationsBootstrap() {
+  const u = useUser();
+  // 첫 마운트 때 한 번 권한 요청 (이미 허용/거부돼 있으면 prompt 안 뜸)
+  useEffect(() => {
+    void requestNotificationPermission();
+  }, []);
+  // 알림 관련 설정 + 마지막 인증 시각이 바뀔 때마다 reconcile.
+  // (lastSavedAt 변경 = 챌린지 인증 발생 → 그날 저녁 알림 자동 스킵 반영)
+  const { notifyMorning, notifyMorningTime, notifyEvening, notifyEveningTime } = u.settings;
+  const lastSavedAt = u.lastSavedAt;
+  useEffect(() => {
+    void reconcileNotifications(u.settings, lastSavedAt);
+    // u.settings 객체 참조가 매번 새로 만들어지므로 필요한 필드만 deps 로 사용
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [notifyMorning, notifyMorningTime, notifyEvening, notifyEveningTime, lastSavedAt]);
+  return null;
+}
+
 // 관리자가 추가한 상점 아이템을 1회 로드하고 Realtime 구독 시작.
 function ShopItemsBootstrap() {
   useEffect(() => {
@@ -154,6 +175,7 @@ function AppShell() {
       <StorageGuard />
       <AudioUnlocker />
       <BgmController />
+      <NotificationsBootstrap />
       <Routes>
         <Route path="/" element={<Splash />} />
         <Route path="/login" element={<Login />} />

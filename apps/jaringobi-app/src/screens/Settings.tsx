@@ -254,7 +254,54 @@ export default function Settings() {
       </Section>
 
       <Section title="알림">
-        {settingItem('notifyChallenge', '챌린지 알림', '인증 시간을 매일 알려드려요')}
+        <Row
+          label="아침 등록 알림"
+          sub="오늘의 챌린지를 정하라고 알려드려요"
+          right={
+            <Toggle
+              on={u.settings.notifyMorning}
+              onChange={(v) => handleSettingChange('notifyMorning', v)}
+            />
+          }
+        />
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold text-text">아침 알림 시간</p>
+            <p className="text-[12px] text-text/55 mt-0.5">매일 이 시간에 등록 알림</p>
+          </div>
+          <input
+            type="time"
+            disabled={!u.settings.notifyMorning}
+            value={u.settings.notifyMorningTime}
+            onChange={(e) => u.setSetting('notifyMorningTime', e.target.value)}
+            aria-label="아침 알림 시간"
+            className="bg-bg rounded-xl px-3 py-2 text-[15px] font-bold text-text outline-none disabled:opacity-40"
+          />
+        </div>
+        <Row
+          label="저녁 완료 알림"
+          sub="이미 인증한 날은 알림이 자동으로 꺼져요"
+          right={
+            <Toggle
+              on={u.settings.notifyEvening}
+              onChange={(v) => handleSettingChange('notifyEvening', v)}
+            />
+          }
+        />
+        <div className="px-4 py-3 flex items-center gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="text-[15px] font-bold text-text">저녁 알림 시간</p>
+            <p className="text-[12px] text-text/55 mt-0.5">매일 이 시간에 인증 알림</p>
+          </div>
+          <input
+            type="time"
+            disabled={!u.settings.notifyEvening}
+            value={u.settings.notifyEveningTime}
+            onChange={(e) => u.setSetting('notifyEveningTime', e.target.value)}
+            aria-label="저녁 알림 시간"
+            className="bg-bg rounded-xl px-3 py-2 text-[15px] font-bold text-text outline-none disabled:opacity-40"
+          />
+        </div>
       </Section>
 
       <Section title="피드백">
