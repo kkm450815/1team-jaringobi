@@ -262,7 +262,7 @@ export default function Settings() {
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 w-[90px] shrink-0">
             <p className="text-[15px] font-bold text-text">BGM 볼륨</p>
-            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.bgmVolume ?? 60}%</p>
+            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.bgmVolume ?? 100}%</p>
           </div>
           <input
             type="range"
@@ -270,7 +270,7 @@ export default function Settings() {
             max={100}
             step={5}
             disabled={!u.settings.sound}
-            value={u.settings.bgmVolume ?? 60}
+            value={u.settings.bgmVolume ?? 100}
             onChange={(e) => u.setSetting('bgmVolume', Number(e.target.value))}
             aria-label="BGM 볼륨"
             className="flex-1 accent-accent disabled:opacity-40"
@@ -280,7 +280,7 @@ export default function Settings() {
         <div className="px-4 py-3 flex items-center gap-3">
           <div className="min-w-0 w-[90px] shrink-0">
             <p className="text-[15px] font-bold text-text">효과음 볼륨</p>
-            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.sfxVolume ?? 80}%</p>
+            <p className="text-[12px] text-text/55 mt-0.5">{u.settings.sfxVolume ?? 100}%</p>
           </div>
           <input
             type="range"
@@ -288,7 +288,7 @@ export default function Settings() {
             max={100}
             step={5}
             disabled={!(u.settings.sfxEnabled ?? true)}
-            value={u.settings.sfxVolume ?? 80}
+            value={u.settings.sfxVolume ?? 100}
             onChange={(e) => u.setSetting('sfxVolume', Number(e.target.value))}
             aria-label="효과음 볼륨"
             className="flex-1 accent-accent disabled:opacity-40"
@@ -358,10 +358,12 @@ export default function Settings() {
         <Row label="오픈소스 라이선스" right={<span aria-hidden>›</span>} onClick={() => setLegalKey('license')} />
       </Section>
 
-      <div className="mx-4 mt-6">
+      {/* 로그아웃 — 작고 화면 맨 아래라 누르기 힘들다는 피드백 → 크게+위로.
+          하단 시스템 네비바 안 잘리도록 pb-28 (= 하단 네비 56px + 여유) */}
+      <div className="mx-4 mt-6 pb-28">
         <button
           onClick={() => setConfirmLogout(true)}
-          className="w-full text-center text-[13px] text-text/55 underline"
+          className="w-full rounded-2xl bg-white shadow-soft py-4 text-[16px] font-bold text-text/80 active:scale-[.98] transition"
         >
           로그아웃
         </button>

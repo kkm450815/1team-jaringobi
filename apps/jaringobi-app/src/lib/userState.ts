@@ -139,9 +139,9 @@ const DEFAULT: UserState = {
     notifyHeart: true,
     sound: true,
     vibration: false,
-    bgmVolume: 60,
+    bgmVolume: 100,
     sfxEnabled: true,
-    sfxVolume: 80,
+    sfxVolume: 100,
     showHelpButton: true,
   },
 };
@@ -241,6 +241,11 @@ export function useUser() {
     setState((s) => {
       const next = { ...s, ...patch };
       write(next);
+      // 타인 프로필 보기 화면에서 본인 변경사항이 보이도록 Supabase profiles 동기화.
+      // 기본 닉('자린이') 사용자는 아직 row 가 없으므로 skip — 닉네임 설정 후부터 sync.
+      if (next.nickname && next.nickname !== DEFAULT_NICK) {
+        void profilesRepo.upsertMe(userToProfile(next));
+      }
       return next;
     });
   }, []);
@@ -499,6 +504,11 @@ export function useUser() {
       }
 
       write(next);
+      // 타인이 내 프로필 봤을 때 변경된 의상·악세서리·룸 아이템이 보이도록 동기화.
+      // 닉네임 미설정(기본 '자린이')이면 row 가 아직 없으므로 skip.
+      if (next.nickname && next.nickname !== DEFAULT_NICK) {
+        void profilesRepo.upsertMe(userToProfile(next));
+      }
       return next;
     });
   }, []);

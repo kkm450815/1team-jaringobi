@@ -14,18 +14,38 @@ const AVATAR = '/jarin/main_mypage.png';
 const MAX_BODY_LEN = 500;
 
 /**
- * 입력창 분리 — 부모(TalkRoom) state 의존을 없애 키 입력마다 posts 리스트가
- * 재렌더되지 않도록 함. 안드로이드 WebView 에서 타이핑 속도가 느렸던 원인.
- * 제출 시점에만 부모 onSubmit 호출 → 부모는 그때만 리렌더.
+ * 입력창 — **비제어(uncontrolled)** ref 기반.
+ *
+ * 안드로이드 WebView 에서 타이핑이 느린 원인은 키 입력마다 React state 가 갱신되며
+ * 컴포넌트가 재렌더되기 때문. value 를 React 가 관리하지 않으면 키 입력은 순수 브라우저
+ * 네이티브 속도로 동작.
+ *
+ * - value/onChange 제거 → textarea 가 DOM 자체 상태로만 동작
+ * - maxLength HTML 속성으로 길이 제한 (DB 제약과 동일)
+ * - 제출/취소 시 ref.value 직접 읽고 비움
+ * - 글자 카운트 표시는 키 입력 100ms 디바운스로 가끔만 갱신 (타이핑 방해 X)
  */
 const TalkInput = memo(function TalkInput({
   nickname, sending, onSubmit,
 }: { nickname: string; sending: boolean; onSubmit: (body: string) => void | Promise<void> }) {
-  const [input, setInput] = useState('');
+  const ref = useRef<HTMLTextAreaElement | null>(null);
+  // 카운트는 가끔만 갱신 (디바운스) — 매 키 입력 setState 막아 타이핑 지연 차단
+  const [count, setCount] = useState(0);
+  const countTimer = useRef<number | null>(null);
+  function scheduleCountUpdate() {
+    if (countTimer.current !== null) window.clearTimeout(countTimer.current);
+    countTimer.current = window.setTimeout(() => {
+      setCount(ref.current?.value.length ?? 0);
+      countTimer.current = null;
+    }, 120);
+  }
   async function doSend() {
-    const body = input.trim();
+    const ta = ref.current;
+    if (!ta) return;
+    const body = ta.value.trim();
     if (!body) return;
-    setInput('');
+    ta.value = '';
+    setCount(0);
     await onSubmit(body);
   }
   return (
@@ -35,42 +55,41 @@ const TalkInput = memo(function TalkInput({
         <div className="flex-1 min-w-0">
           <p className="text-[15px] font-bold text-text">{nickname}</p>
           <textarea
+            ref={ref}
             rows={1}
-            value={input}
-            onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
+            defaultValue=""
             maxLength={MAX_BODY_LEN}
             placeholder="하고 싶은 말을 입력하세요"
+            onInput={scheduleCountUpdate}
             onKeyDown={(e) => {
               const composing =
                 (e.nativeEvent as KeyboardEvent).isComposing ||
                 (e.nativeEvent as KeyboardEvent).keyCode === 229;
               if (e.key === 'Enter' && !e.shiftKey && !composing) {
                 e.preventDefault();
-                if (input.trim()) doSend();
+                if ((ref.current?.value ?? '').trim()) doSend();
               }
             }}
             className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
           />
-          {input.length > 0 && (
+          {count > 0 && (
             <p
               className={`mt-0.5 text-[11px] text-right ${
-                input.length >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
+                count >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
               }`}
               aria-live="polite"
             >
-              {input.length} / {MAX_BODY_LEN}
+              {count} / {MAX_BODY_LEN}
             </p>
           )}
         </div>
-        {input.trim() && (
-          <button
-            type="submit"
-            disabled={sending}
-            className="text-accent text-[14px] font-bold whitespace-nowrap pt-1 disabled:opacity-50"
-          >
-            {sending ? '올리는 중…' : '올리기'}
-          </button>
-        )}
+        <button
+          type="submit"
+          disabled={sending || count === 0}
+          className="text-accent text-[14px] font-bold whitespace-nowrap pt-1 disabled:opacity-30"
+        >
+          {sending ? '올리는 중…' : '올리기'}
+        </button>
       </form>
     </section>
   );

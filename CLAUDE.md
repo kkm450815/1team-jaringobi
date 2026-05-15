@@ -34,9 +34,11 @@
 ## 현재 안드로이드 버전 (Play Console)
 
 - 정의 위치: `apps/jaringobi-app/android/app/build.gradle` 의 `versionCode` / `versionName`
-- **현재 값**: `versionCode 5` / `versionName "1.0.3"` (2026-05-15)
-  - 1.0.3 내용: 사운드/레이아웃/공유/닉네임/타이핑 7개 개선
-  - versionCode 4 는 옛날 main 에서 빌드돼 변경사항 미반영인 채로 Play Console 에 업로드된 이력 있음 → 재사용 불가 → 5 로 증가
+- **현재 값**: `versionCode 6` / `versionName "1.0.4"` (2026-05-15)
+  - 1.0.4 내용: 사운드 추가 상향(BGM 2.5×/SFX 2.8×), 타이핑 비제어 입력 전환, 구글 OAuth 안드로이드 외부 브라우저+딥링크, 로그아웃/구글 버튼 크기·위치, 프로필 의상/룸 실시간 동기화
+- 과거 이력:
+  - vCode 5 / 1.0.3 — 사운드/레이아웃/공유/닉네임/타이핑 7개 개선
+  - vCode 4 / 1.0.3 — 옛날 main 에서 빌드돼 변경사항 미반영인 채로 Play Console 에 업로드된 이력 있음 (재사용 불가)
 - **다음 출시 규칙**:
   - versionCode 는 항상 직전 값 +1 (Play Console 에 한 번 업로드되면 영구 재사용 불가).
   - versionName 은 같은 내용 재빌드면 유지, 새 기능/수정이면 의미 단위로 증가 (`1.0.3 → 1.0.4` 등).
