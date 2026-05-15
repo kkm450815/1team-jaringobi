@@ -231,16 +231,34 @@ export default function Main() {
   useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
   useEscape(showLockInfo, () => setShowLockInfo(false));
 
-  // 튜토리얼 — 첫 진입 시 1회 노출. tutorialSeen 플래그로 재진입 차단.
-  // 노출되는 즉시 tutorialSeen=true 저장 (중간에 닫아도 다음 방문엔 안 뜸).
-  // Settings 에서 "다시 보기" 누르면 false 로 리셋되어 다음 /main 진입 시 재실행.
+  // 닉네임 팝업 — 신규 사용자가 메인에 처음 진입했을 때 (1회). 모달 닫힌 뒤
+  // 튜토리얼이 자동으로 이어 뜸. /nickname 페이지를 별도 화면으로 두지 않고
+  // 메인 화면에 오버레이로 띄워 흐름 끊김 방지.
+  const [showNickModal, setShowNickModal] = useState(u.nickname === '자린이');
+  const [nickDraft, setNickDraft] = useState('');
+  const [nickError, setNickError] = useState<string | null>(null);
+  const [nickBusy, setNickBusy] = useState(false);
+  async function submitNick() {
+    if (nickBusy) return;
+    const trimmed = nickDraft.trim();
+    if (!trimmed) { setNickError('닉네임을 입력해주세요'); return; }
+    if (trimmed.length < 2) { setNickError('닉네임은 2자 이상이어야 해요'); return; }
+    setNickBusy(true);
+    const result = await u.tryRenameNickname(trimmed);
+    setNickBusy(false);
+    if (!result.ok) { setNickError(result.message); return; }
+    playSuccessSfx();
+    setShowNickModal(false);
+  }
+
+  // 튜토리얼 — 첫 진입 시 1회 노출. 단, 닉네임 팝업이 떠 있는 동안에는 보류.
   const [showTutorial, setShowTutorial] = useState(false);
   useEffect(() => {
-    if (!u.tutorialSeen) {
+    if (!u.tutorialSeen && !showNickModal) {
       setShowTutorial(true);
       u.update({ tutorialSeen: true });
     }
-  }, [u.tutorialSeen]);
+  }, [u.tutorialSeen, showNickModal]);
   function finishTutorial() {
     setShowTutorial(false);
   }
@@ -307,8 +325,8 @@ export default function Main() {
       <AnnouncementBanner />
 
       {/* 오늘의 절약미션 버튼 — 잠김 상태에선 '인증 완료' 표시 + 04:00 초기화 안내.
-          위/아래 패딩을 줄여 미션 버튼은 살짝, 캐릭터 룸은 더 많이 위로 올림. */}
-      <section className="px-10 pt-5 pb-2">
+          미션 버튼·캐릭터 룸을 상단 헤더와 충분히 떨어뜨려 답답함 줄임 (pt-10). */}
+      <section className="px-10 pt-10 pb-2">
         <button
           data-tutorial="missionButton"
           onClick={locked ? () => setShowLockInfo(true) : openMissionModal}
@@ -333,8 +351,8 @@ export default function Main() {
         )}
       </section>
 
-      {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) */}
-      <div ref={roomRef} data-tutorial="room" className="relative w-full mt-2">
+      {/* 캐릭터 룸 (옷장에서 장착한 것 자동 반영) — 미션 버튼과 충분히 띄움 (mt-6) */}
+      <div ref={roomRef} data-tutorial="room" className="relative w-full mt-6">
         <RoomPreview
           equipped={u.equipped}
           framed={false}
@@ -520,6 +538,54 @@ export default function Main() {
               className="mt-4 w-full bg-accent text-white font-bold rounded-full py-3 text-[15px] active:scale-[.98]"
             >
               다시 시작하기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 닉네임 팝업 — 신규 사용자가 처음 메인 진입했을 때 1회. 닫기/취소 없음 (필수).
+          제출 성공 후 자동 닫힘 → 튜토리얼로 자연스럽게 이어짐. */}
+      {showNickModal && (
+        <div className="fixed inset-0 z-[55] bg-black/55 grid place-items-center px-6">
+          <div className="w-full max-w-[340px] bg-bg rounded-3xl p-6 shadow-2xl">
+            <div className="flex justify-center">
+              <img
+                src="/jarin/logo_nobg.png"
+                alt="자린고비"
+                className="w-[72px] h-[72px] object-contain"
+                draggable={false}
+              />
+            </div>
+            <h2 className="mt-4 text-center font-bold text-[20px] text-text">반가워요!</h2>
+            <p className="mt-2 text-center text-[13px] text-text/70 leading-relaxed">
+              수다방·랭킹에서 보일<br />닉네임을 정해주세요
+            </p>
+            <input
+              autoFocus
+              value={nickDraft}
+              onChange={(e) => { setNickDraft(e.target.value.slice(0, 10)); setNickError(null); }}
+              onKeyDown={(e) => { if (e.key === 'Enter') submitNick(); }}
+              placeholder="예: 절약왕"
+              className="mt-5 w-full bg-white rounded-2xl px-4 py-3 text-[15px] text-text outline-none shadow-soft text-center"
+            />
+            <p className="mt-2 text-[11px] text-text/55 text-center">
+              최대 10자 · 마이페이지에서 언제든 변경 가능
+            </p>
+            {nickError && (
+              <p className="mt-2 text-[12px] text-pink font-bold text-center" role="alert">
+                ⚠ {nickError}
+              </p>
+            )}
+            <button
+              onClick={submitNick}
+              disabled={!nickDraft.trim() || nickBusy}
+              className={`mt-5 w-full rounded-full py-3 text-[15px] font-bold transition ${
+                nickDraft.trim() && !nickBusy
+                  ? 'bg-accent text-white active:scale-[.98]'
+                  : 'bg-text/15 text-text/40 cursor-not-allowed'
+              }`}
+            >
+              {nickBusy ? '확인 중…' : '시작하기'}
             </button>
           </div>
         </div>

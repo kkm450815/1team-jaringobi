@@ -23,3 +23,10 @@
 - 작업 브랜치: `claude/prepare-new-branch-XcP7M`
 - 푸시 명령: `git push origin claude/prepare-new-branch-XcP7M`
 - main 브랜치에는 직접 푸시하지 않는다 (PR로만 머지됨).
+
+## 사용자 PC 환경 (Windows)
+
+- 저장소 경로: `C:\Users\Administrator\1team-jaringobi`
+- Capacitor/안드로이드 작업 폴더: `C:\Users\Administrator\1team-jaringobi\apps\jaringobi-app`
+- 빌드용 CMD 이동 명령(복붙용): `cd /d C:\Users\Administrator\1team-jaringobi\apps\jaringobi-app`
+- 안드로이드 빌드/배포 관련 CMD 명령을 안내할 때는 항상 위 경로를 기준으로 작성한다. 예시 경로(`C:\dev\...` 등)로 대체 금지.

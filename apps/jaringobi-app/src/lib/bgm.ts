@@ -30,10 +30,10 @@ class Bgm {
   private timerId: ReturnType<typeof setInterval> | null = null;
   private step = 0;
   private playing = false;
-  // 0~100 사용자 볼륨을 audio gain (0~0.70) 으로 매핑.
-  // 안드로이드 WebView 출력이 데스크톱 대비 작아 0.30 상한으로는 잘 안 들린다는 피드백 →
-  // 상한을 0.70 까지 올림. 각 노트 gain 이 0.3 이하라 클리핑 위험은 낮음.
-  private targetVolume = 0.42;
+  // 0~100 사용자 볼륨을 audio gain (0~1.0) 으로 매핑.
+  // 안드로이드 WebView 출력이 데스크톱 대비 매우 작아 0.70 상한도 안 들린다는 피드백 →
+  // 상한을 1.0 (max) 으로 올리고 각 노트 gain 도 1.5배 증폭. 노트 피크 0.32×1.5=0.48 이라 안전.
+  private targetVolume = 0.60;
 
   isPlaying() { return this.playing; }
 
@@ -70,10 +70,10 @@ class Bgm {
     }
   }
 
-  /** 0~100 슬라이더 값을 받아 audio gain 으로 매핑 (0 → 무음, 100 → 0.70) */
+  /** 0~100 슬라이더 값을 받아 audio gain 으로 매핑 (0 → 무음, 100 → 1.0) */
   setVolumePercent(percent: number) {
     const clamped = Math.max(0, Math.min(100, percent));
-    this.targetVolume = (clamped / 100) * 0.70;
+    this.targetVolume = (clamped / 100) * 1.0;
     const ctx = getCtx();
     if (ctx && this.master && this.playing) {
       this.master.gain.cancelScheduledValues(ctx.currentTime);
@@ -86,24 +86,24 @@ class Bgm {
     if (!ctx || !this.master) return;
     const s = this.step % TOTAL_STEPS;
 
-    // 베이스 — 1, 3박 (16스텝 단위, 즉 step 0/16/8 위주)
-    if (s % 16 === 0) this.note(ROOT - 24, 0.45, 'triangle', 0.32);   // C2
-    if (s === 8 || s === 24) this.note(ROOT - 17, 0.35, 'triangle', 0.26); // G2
+    // 베이스 — 1, 3박. 안드로이드 WebView 볼륨 보정 위해 1.5배 증폭
+    if (s % 16 === 0) this.note(ROOT - 24, 0.45, 'triangle', 0.48);   // C2 (0.32→0.48)
+    if (s === 8 || s === 24) this.note(ROOT - 17, 0.35, 'triangle', 0.39); // G2 (0.26→0.39)
 
-    // 하이햇 비슷한 노이즈 — 2, 4박
-    if (s % 8 === 4) this.noise(0.04, 0.18);
+    // 하이햇 비슷한 노이즈
+    if (s % 8 === 4) this.noise(0.04, 0.27); // 0.18→0.27
 
-    // 멜로디 — 4스텝마다 펜타토닉 무작위 (꼬질꼬질 stumble)
+    // 멜로디 — 4스텝마다 펜타토닉 무작위
     if (s % 4 === 0) {
       const idx = (Math.floor(s / 4) + (Math.random() < 0.4 ? 1 : 0)) % PENTA.length;
       const oct = Math.random() < 0.25 ? 12 : 0;
-      this.note(ROOT + PENTA[idx] + oct, 0.18, 'square', 0.16);
+      this.note(ROOT + PENTA[idx] + oct, 0.18, 'square', 0.24); // 0.16→0.24
     }
 
-    // 가끔 비뚤거리는 추가 음 — 5% 로 낮춰서 됍됍거림 줄임
+    // 가끔 비뚤거리는 추가 음
     if (Math.random() < 0.05) {
       const idx = Math.floor(Math.random() * PENTA.length);
-      this.note(ROOT + PENTA[idx] + 12, 0.09, 'square', 0.08);
+      this.note(ROOT + PENTA[idx] + 12, 0.09, 'square', 0.12); // 0.08→0.12
     }
 
     this.step++;

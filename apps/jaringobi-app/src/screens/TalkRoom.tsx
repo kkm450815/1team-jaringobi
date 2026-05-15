@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { memo, useCallback, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { BackButton } from '../components/UI';
 import { useBookmarks } from '../lib/useBookmarks';
@@ -12,6 +12,69 @@ const AVATAR = '/jarin/main_mypage.png';
 // DB 제약(body_len: 1..500) 과 동일하게 클라이언트에서도 막아 사용자가
 // 알지 못한 채 insert 실패 토스트 받는 일 방지
 const MAX_BODY_LEN = 500;
+
+/**
+ * 입력창 분리 — 부모(TalkRoom) state 의존을 없애 키 입력마다 posts 리스트가
+ * 재렌더되지 않도록 함. 안드로이드 WebView 에서 타이핑 속도가 느렸던 원인.
+ * 제출 시점에만 부모 onSubmit 호출 → 부모는 그때만 리렌더.
+ */
+const TalkInput = memo(function TalkInput({
+  nickname, sending, onSubmit,
+}: { nickname: string; sending: boolean; onSubmit: (body: string) => void | Promise<void> }) {
+  const [input, setInput] = useState('');
+  async function doSend() {
+    const body = input.trim();
+    if (!body) return;
+    setInput('');
+    await onSubmit(body);
+  }
+  return (
+    <section className="px-5 pt-4">
+      <form onSubmit={(e) => { e.preventDefault(); doSend(); }} className="flex items-start gap-3">
+        <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-[15px] font-bold text-text">{nickname}</p>
+          <textarea
+            rows={1}
+            value={input}
+            onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
+            maxLength={MAX_BODY_LEN}
+            placeholder="하고 싶은 말을 입력하세요"
+            onKeyDown={(e) => {
+              const composing =
+                (e.nativeEvent as KeyboardEvent).isComposing ||
+                (e.nativeEvent as KeyboardEvent).keyCode === 229;
+              if (e.key === 'Enter' && !e.shiftKey && !composing) {
+                e.preventDefault();
+                if (input.trim()) doSend();
+              }
+            }}
+            className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
+          />
+          {input.length > 0 && (
+            <p
+              className={`mt-0.5 text-[11px] text-right ${
+                input.length >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
+              }`}
+              aria-live="polite"
+            >
+              {input.length} / {MAX_BODY_LEN}
+            </p>
+          )}
+        </div>
+        {input.trim() && (
+          <button
+            type="submit"
+            disabled={sending}
+            className="text-accent text-[14px] font-bold whitespace-nowrap pt-1 disabled:opacity-50"
+          >
+            {sending ? '올리는 중…' : '올리기'}
+          </button>
+        )}
+      </form>
+    </section>
+  );
+});
 
 function BookmarkIcon({ filled, size = 26 }: { filled: boolean; size?: number }) {
   const w = size;
@@ -44,7 +107,6 @@ export default function TalkRoom() {
   };
 
   const { posts, addPost } = useTalkPosts(room.id);
-  const [input, setInput] = useState('');
   const [toast, setToast] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   // 모바일 Safari/Chrome 에서 같은 탭에 onClick 과 form submit 이 동시에 들어오는 경우
@@ -58,32 +120,33 @@ export default function TalkRoom() {
     window.setTimeout(() => setToast(null), ms);
   }
 
-  async function send() {
+  // 키 입력마다 부모를 리렌더하면 posts 리스트가 같이 재렌더돼 안드로이드 WebView 가
+  // 버벅임 → 입력은 TalkInput 내부 state 로만 유지하고, 제출 시점에만 부모 호출.
+  const sendRef = useRef<(body: string) => Promise<void>>();
+  sendRef.current = async (body: string) => {
     if (inFlight.current) return;
-    const body = input.trim();
-    if (!body) return;
+    const trimmed = body.trim();
+    if (!trimmed) return;
     const nick = (u.nickname ?? '').trim() || '익명';
-
     inFlight.current = true;
     setSending(true);
-    // 입력은 즉시 비워줌 (사용자 체감 반응성)
-    setInput('');
-
-    const post = { id: newId(), roomId: room.id, nick, body };
+    const post = { id: newId(), roomId: room.id, nick, body: trimmed };
     const saved = await addPost(post, (err) => {
       const msg =
         (err as { message?: string } | null)?.message ??
         '글을 올리지 못했어요. 잠시 후 다시 시도해 주세요.';
       console.error('[TalkRoom.send] addPost 에러', err);
       showToast(`작성 실패: ${msg}`);
-      // 실패 시 입력 복원
-      setInput(body);
       playDeniedSfx();
     });
     inFlight.current = false;
     setSending(false);
     if (saved) playSuccessSfx();
-  }
+  };
+  const handleSend = useCallback(
+    async (body: string) => { await sendRef.current?.(body); },
+    [],
+  );
 
   return (
     <main className="min-h-full pb-10">
@@ -116,56 +179,8 @@ export default function TalkRoom() {
           </Link>
         </header>
 
-        {/* 입력 영역 — form 으로 감싸서 모바일 키보드 "전송" 키도 동작 */}
-        <section className="px-5 pt-4">
-          <form
-            onSubmit={(e) => { e.preventDefault(); send(); }}
-            className="flex items-start gap-3"
-          >
-            <img src={AVATAR} alt="" className="w-11 h-11 rounded-full bg-white object-contain shrink-0" />
-            <div className="flex-1 min-w-0">
-              <p className="text-[15px] font-bold text-text">{u.nickname || '익명'}</p>
-              <textarea
-                rows={1}
-                value={input}
-                onChange={(e) => setInput(e.target.value.slice(0, MAX_BODY_LEN))}
-                maxLength={MAX_BODY_LEN}
-                placeholder="하고 싶은 말을 입력하세요"
-                onKeyDown={(e) => {
-                  // 한글 IME 조합 중에는 Enter 가 조합 확정용 → submit 하지 않음
-                  // (e.nativeEvent.isComposing 또는 keyCode 229 둘 다 체크)
-                  const composing =
-                    (e.nativeEvent as KeyboardEvent).isComposing ||
-                    (e.nativeEvent as KeyboardEvent).keyCode === 229;
-                  if (e.key === 'Enter' && !e.shiftKey && !composing) {
-                    e.preventDefault();
-                    if (input.trim()) send();
-                  }
-                }}
-                className="mt-1.5 w-full resize-none bg-transparent outline-none text-[15px] text-text placeholder:text-text/40"
-              />
-              {input.length > 0 && (
-                <p
-                  className={`mt-0.5 text-[11px] text-right ${
-                    input.length >= MAX_BODY_LEN ? 'text-pink font-bold' : 'text-text/45'
-                  }`}
-                  aria-live="polite"
-                >
-                  {input.length} / {MAX_BODY_LEN}
-                </p>
-              )}
-            </div>
-            {input.trim() && (
-              <button
-                type="submit"
-                disabled={sending}
-                className="text-accent text-[14px] font-bold whitespace-nowrap pt-1 disabled:opacity-50"
-              >
-                {sending ? '올리는 중…' : '올리기'}
-              </button>
-            )}
-          </form>
-        </section>
+        {/* 입력 영역 — 부모 리렌더 영향 차단을 위해 TalkInput 으로 분리 */}
+        <TalkInput nickname={u.nickname || '익명'} sending={sending} onSubmit={handleSend} />
 
         <hr className="mx-5 mt-4 border-t border-text/20" />
       </div>

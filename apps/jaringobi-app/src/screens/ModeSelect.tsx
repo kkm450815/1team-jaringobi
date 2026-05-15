@@ -44,9 +44,8 @@ export default function ModeSelect() {
 
   function start(goal: number) {
     u.update({ goal });
-    // 닉네임 미설정(기본 '자린이')인 신규 사용자는 닉네임 단계로
-    if (u.nickname === '자린이') nav('/nickname', { replace: true });
-    else nav('/main', { replace: true });
+    // 닉네임 미설정이어도 곧장 /main 으로 — 메인에서 1회성 닉네임 팝업이 뜸.
+    nav('/main', { replace: true });
   }
 
   return (

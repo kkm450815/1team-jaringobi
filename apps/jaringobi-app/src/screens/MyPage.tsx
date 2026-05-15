@@ -10,6 +10,7 @@ import { useUser } from '../lib/userState';
 import { profilesRepo } from '../lib/profilesRepo';
 import { useEscape } from '../lib/useEscape';
 import { playDeniedSfx, playSuccessSfx } from '../lib/feedback';
+import { isNative, nativeSaveImage, nativeShareImage } from '../lib/nativeShare';
 
 const MAX_NICK = 10;
 
@@ -134,9 +135,9 @@ export default function MyPage() {
           backgroundColor: '#FAF5E9', // 노트 종이색
           // cacheBust: true 는 dataURL 끝에 ?t= 를 붙여 RECORD 사진을 망가뜨림 → 끔
           cacheBust: false,
-          // 외부 폰트 인라인 임베드 스킵 → 캡쳐 시간 70% 단축. 워터마크 텍스트는
-          // 시스템 폰트로도 깨지지 않음
-          skipFonts: true,
+          // skipFonts: true 면 캡쳐는 빠르지만 안드로이드 WebView 에서 시스템 폰트로
+          // 폴백되며 한글이 깨져 보이는 이슈 → false 로 두고 Pretendard 임베드.
+          skipFonts: false,
           width,
           height,
         });
@@ -163,25 +164,38 @@ export default function MyPage() {
     }
   }
 
-  // 미리보기 모달에서 "공유하기" 클릭 — 실제 navigator.share 호출
+  // 미리보기 모달에서 "공유하기" 클릭
+  // 안드로이드 Capacitor: Filesystem 으로 파일 만들고 Share 플러그인으로 시스템 시트 호출.
+  // 웹: navigator.share files → 폴백 다운로드 순.
   async function doShare() {
     if (!sharePreview || shareSending) return;
     setShareSending(true);
     try {
+      // 1) 네이티브(Android) — Capacitor Share 사용
+      if (isNative()) {
+        try {
+          await nativeShareImage(sharePreview.blob, shareFileName, shareText);
+          playSuccessSfx();
+          closeSharePreview();
+          return;
+        } catch (e) {
+          console.error('[MyPage.doShare] native share 실패', e);
+          // 아래 웹 폴백으로 떨어짐
+        }
+      }
+      // 2) 웹 — navigator.share files
       const file = new File([sharePreview.blob], shareFileName, { type: 'image/png' });
-      const shareData: ShareData = { title: '자린고비', text: shareText, files: [file] };
       if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share(shareData);
+          await navigator.share({ title: '자린고비', text: shareText, files: [file] });
           playSuccessSfx();
           closeSharePreview();
           return;
         } catch {
-          // 사용자 취소 — 모달 유지
-          return;
+          return; // 사용자 취소
         }
       }
-      // files share 미지원 — 다운로드 폴백
+      // 3) 마지막 폴백 — 다운로드
       const a = document.createElement('a');
       a.href = sharePreview.dataUrl;
       a.download = shareFileName;
@@ -192,13 +206,26 @@ export default function MyPage() {
     }
   }
 
-  // 이미지 길게 눌러 저장 / 다운로드만 받고 싶을 때
-  function downloadShareImage() {
+  // "이미지 저장" — 안드로이드: Capacitor Filesystem 으로 Documents 에 저장
+  //              웹: <a download> 다운로드
+  async function downloadShareImage() {
     if (!sharePreview) return;
+    if (isNative()) {
+      try {
+        await nativeSaveImage(sharePreview.blob, shareFileName);
+        playSuccessSfx();
+        alert(`이미지를 Documents 폴더에 저장했어요\n파일: ${shareFileName}`);
+        return;
+      } catch (e) {
+        console.error('[MyPage.downloadShareImage] native save 실패', e);
+        // 웹 폴백으로 진행
+      }
+    }
     const a = document.createElement('a');
     a.href = sharePreview.dataUrl;
     a.download = shareFileName;
     a.click();
+    playSuccessSfx();
   }
 
   return (
@@ -478,11 +505,14 @@ export default function MyPage() {
               >×</button>
             </div>
 
-            <div className="mt-3 bg-text/5 rounded-2xl p-2.5 max-h-[60vh] overflow-y-auto no-scrollbar">
+            {/* 미리보기 — 노트가 길어도 한 화면에 다 보이도록 object-contain + 화면 높이 제한.
+                상세는 작아 보일 수 있지만 잘리지 않게 보여줘 사용자가 전체 모양 확인 가능. */}
+            <div className="mt-3 bg-text/5 rounded-2xl p-2 grid place-items-center">
               <img
                 src={sharePreview.dataUrl}
                 alt="공유 미리보기"
-                className="w-full rounded-xl bg-white shadow-soft block"
+                style={{ maxHeight: '52vh' }}
+                className="max-w-full w-auto h-auto object-contain rounded-xl bg-white shadow-soft block"
               />
             </div>
 

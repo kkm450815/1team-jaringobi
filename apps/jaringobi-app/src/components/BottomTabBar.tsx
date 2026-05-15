@@ -12,7 +12,10 @@ export function BottomTabBar() {
   const { pathname } = useLocation();
   const u = useUser();
   return (
-    <nav className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-4 pb-6 grid grid-cols-[0.8fr_2fr_0.8fr] gap-3 items-stretch">
+    <nav
+      className="sticky bottom-0 left-0 right-0 bg-bg px-4 pt-4 grid grid-cols-[0.8fr_2fr_0.8fr] gap-3 items-stretch"
+      style={{ paddingBottom: 'max(1.5rem, calc(env(safe-area-inset-bottom) + 1.25rem))' }}
+    >
       {tabs.map((t) => {
         const active = pathname.startsWith(t.to)
           || (t.to === '/challenges' && (pathname === '/main' || pathname === '/'));
