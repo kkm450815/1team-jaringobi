@@ -22,7 +22,7 @@ import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 import {
   ACTION_LABELS, AdminInfo, AuditLogEntry, TABLE_LABELS,
-  listAdmins, listAuditLog, logAdminAction,
+  listAdmins, listAuditLog, logAdminAction, updateMyAdminName,
 } from '../lib/adminAudit';
 
 type Tab = 'dashboard' | 'users' | 'posts' | 'rooms' | 'announcements' | 'shop' | 'missions' | 'titles' | 'admins';
@@ -855,12 +855,21 @@ function PostsSection() {
  * ============================================================ */
 
 function AdminsSection() {
+  const session = useSession();
+  const currentUserId = session && session !== null ? session.user.id : null;
+
   const [admins, setAdmins] = useState<AdminInfo[] | null>(null);
   const [logs, setLogs] = useState<AuditLogEntry[] | null>(null);
   const [adminsErr, setAdminsErr] = useState<string | null>(null);
   const [logsErr, setLogsErr] = useState<string | null>(null);
   const [filterTable, setFilterTable] = useState<string>('');
   const [filterAdmin, setFilterAdmin] = useState<string>('');
+
+  // 이름 편집 상태 — 본인 row 만 편집 가능
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [nameBusy, setNameBusy] = useState(false);
+  const [nameErr, setNameErr] = useState<string | null>(null);
 
   async function loadAll() {
     setAdminsErr(null);
@@ -883,6 +892,50 @@ function AdminsSection() {
     }
   }
   useEffect(() => { loadAll(); }, []);
+
+  function startEditName(currentName: string | null) {
+    setEditingName(true);
+    setNameDraft(currentName ?? '');
+    setNameErr(null);
+  }
+  function cancelEditName() {
+    setEditingName(false);
+    setNameDraft('');
+    setNameErr(null);
+  }
+  async function saveName() {
+    if (nameBusy) return;
+    const trimmed = nameDraft.trim();
+    if (trimmed.length > 32) {
+      setNameErr('이름은 32자 이하로 입력해 주세요.');
+      return;
+    }
+    setNameBusy(true);
+    setNameErr(null);
+    try {
+      await updateMyAdminName(trimmed);
+      // 로컬 admin 목록도 즉시 갱신
+      setAdmins((prev) =>
+        prev?.map((a) =>
+          a.user_id === currentUserId ? { ...a, name: trimmed || null } : a,
+        ) ?? null,
+      );
+      setEditingName(false);
+      setNameDraft('');
+    } catch (e) {
+      console.error('[AdminsSection.saveName] 실패', e);
+      setNameErr((e as Error).message ?? '이름 저장 실패');
+    } finally {
+      setNameBusy(false);
+    }
+  }
+
+  // 감사 로그 표시용 — user_id → 현재 이름 매핑
+  const nameByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    (admins ?? []).forEach((a) => { if (a.name) map.set(a.user_id, a.name); });
+    return map;
+  }, [admins]);
 
   const filteredLogs = useMemo(() => {
     if (!logs) return [];
@@ -932,6 +985,7 @@ function AdminsSection() {
             <table className="w-full text-[13px]">
               <thead>
                 <tr className="text-left text-[11px] font-bold text-[#2a2723]/55 uppercase tracking-wider bg-[#2a2723]/[0.03] border-b border-black/5">
+                  <th className="px-4 py-3">이름</th>
                   <th className="px-4 py-3">이메일</th>
                   <th className="px-4 py-3">등록일</th>
                   <th className="px-4 py-3">user_id</th>
@@ -939,28 +993,101 @@ function AdminsSection() {
               </thead>
               <tbody>
                 {admins === null && (
-                  <tr><td colSpan={3}><LoadingBox /></td></tr>
+                  <tr><td colSpan={4}><LoadingBox /></td></tr>
                 )}
                 {admins && admins.length === 0 && !adminsErr && (
-                  <tr><td colSpan={3}>
+                  <tr><td colSpan={4}>
                     <EmptyState icon="🛡" title="관리자가 없어요" />
                   </td></tr>
                 )}
-                {admins && admins.map((a, i) => (
-                  <tr key={a.user_id} className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''}`}>
-                    <td className="px-4 py-3 font-mono text-[12px]">{a.email}</td>
-                    <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
-                      {new Date(a.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-[11px] text-[#2a2723]/45">
-                      {a.user_id.slice(0, 8)}…
-                    </td>
-                  </tr>
-                ))}
+                {admins && admins.map((a, i) => {
+                  const isMe = a.user_id === currentUserId;
+                  const inEdit = isMe && editingName;
+                  return (
+                    <tr key={a.user_id} className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''}`}>
+                      <td className="px-4 py-3 min-w-[200px]">
+                        {inEdit ? (
+                          <div className="flex items-center gap-1.5">
+                            <input
+                              autoFocus
+                              value={nameDraft}
+                              onChange={(e) => { setNameDraft(e.target.value.slice(0, 32)); setNameErr(null); }}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') { e.preventDefault(); saveName(); }
+                                if (e.key === 'Escape') { e.preventDefault(); cancelEditName(); }
+                              }}
+                              placeholder="표시할 이름"
+                              maxLength={32}
+                              className="bg-amber-50 ring-1 ring-amber-300 rounded-lg px-2.5 py-1.5 text-[13px] outline-none focus:ring-amber-500 flex-1 min-w-0"
+                            />
+                            <button
+                              onClick={saveName}
+                              disabled={nameBusy}
+                              className="text-[12px] font-bold bg-amber-400 hover:bg-amber-300 text-[#1f1d1a] px-2.5 py-1.5 rounded-lg disabled:opacity-50 whitespace-nowrap"
+                            >
+                              {nameBusy ? '저장 중…' : '저장'}
+                            </button>
+                            <button
+                              onClick={cancelEditName}
+                              disabled={nameBusy}
+                              className="text-[12px] font-bold text-[#2a2723]/65 hover:bg-black/5 px-2 py-1.5 rounded-lg disabled:opacity-50"
+                            >
+                              취소
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            {a.name ? (
+                              <span className="font-bold flex items-center gap-1.5">
+                                {a.name}
+                                {isMe && (
+                                  <span className="inline-block bg-amber-400 text-[#1f1d1a] text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                    나
+                                  </span>
+                                )}
+                              </span>
+                            ) : (
+                              <span className="text-[#2a2723]/40 italic text-[12px] flex items-center gap-1.5">
+                                미설정
+                                {isMe && (
+                                  <span className="inline-block bg-amber-400 text-[#1f1d1a] text-[10px] font-black px-1.5 py-0.5 rounded-full">
+                                    나
+                                  </span>
+                                )}
+                              </span>
+                            )}
+                            {isMe && (
+                              <button
+                                onClick={() => startEditName(a.name)}
+                                className="text-[11px] font-bold text-amber-700 hover:text-amber-900 hover:underline ml-1"
+                                title="내 이름 수정"
+                              >
+                                ✎ 수정
+                              </button>
+                            )}
+                          </div>
+                        )}
+                        {inEdit && nameErr && (
+                          <p className="mt-1.5 text-[11px] text-red-600 font-bold">⚠ {nameErr}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[12px]">{a.email}</td>
+                      <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
+                        {new Date(a.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </td>
+                      <td className="px-4 py-3 font-mono text-[11px] text-[#2a2723]/45">
+                        {a.user_id.slice(0, 8)}…
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
         </div>
+        <p className="mt-2 text-[11px] text-[#2a2723]/45">
+          ※ 본인 row 의 <span className="font-bold">✎ 수정</span> 버튼으로 자기 이름만 변경 가능해요. 빈 값으로 저장하면 미설정으로 돌아갑니다.
+        </p>
       </div>
 
       {/* 감사 로그 */}
@@ -1030,13 +1157,24 @@ function AdminsSection() {
                     />
                   </td></tr>
                 )}
-                {logs && filteredLogs.map((l, i) => (
+                {logs && filteredLogs.map((l, i) => {
+                  const displayName = l.admin_user_id ? nameByUserId.get(l.admin_user_id) : undefined;
+                  return (
                   <tr key={l.id} className={`border-b border-black/5 last:border-b-0 hover:bg-amber-50/40 transition-colors ${i % 2 === 1 ? 'bg-[#2a2723]/[0.015]' : ''}`}>
                     <td className="px-4 py-3 text-[12px] text-[#2a2723]/65 whitespace-nowrap">
                       {new Date(l.created_at).toLocaleString('ko-KR', { dateStyle: 'short', timeStyle: 'short' })}
                     </td>
-                    <td className="px-4 py-3 font-mono text-[12px] whitespace-nowrap">
-                      {l.admin_email ?? <span className="text-[#2a2723]/40 italic">알 수 없음</span>}
+                    <td className="px-4 py-3 text-[12px] whitespace-nowrap">
+                      {displayName ? (
+                        <div className="flex flex-col leading-tight">
+                          <span className="font-bold">{displayName}</span>
+                          <span className="font-mono text-[10.5px] text-[#2a2723]/55">{l.admin_email}</span>
+                        </div>
+                      ) : l.admin_email ? (
+                        <span className="font-mono">{l.admin_email}</span>
+                      ) : (
+                        <span className="text-[#2a2723]/40 italic">알 수 없음</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap">
                       <span className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-bold ring-1 ${actionPill[l.action] ?? 'bg-black/5 ring-black/10 text-[#2a2723]/70'}`}>
@@ -1050,7 +1188,8 @@ function AdminsSection() {
                       {l.target_name ?? <span className="text-[#2a2723]/40 italic">—</span>}
                     </td>
                   </tr>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
           </div>

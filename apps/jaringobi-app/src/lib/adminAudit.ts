@@ -13,6 +13,8 @@ import { getSupabase } from './supabase';
 export interface AdminInfo {
   user_id: string;
   email: string;
+  /** 관리자 표시 이름. null 이면 미설정 — 이메일로만 표시. */
+  name: string | null;
   created_at: string;
 }
 
@@ -37,6 +39,17 @@ export async function listAdmins(): Promise<AdminInfo[]> {
   const { data, error } = await sb.rpc('admin_list_admins');
   if (error) throw error;
   return (data ?? []) as AdminInfo[];
+}
+
+/**
+ * 본인 관리자 이름 변경. 빈 문자열 / null 이면 이름 미설정 상태로 되돌림.
+ * RLS 우회 RPC — 호출자 본인 row 만 update.
+ */
+export async function updateMyAdminName(newName: string): Promise<void> {
+  const sb = getSupabase();
+  if (!sb) throw new Error('Supabase 미초기화');
+  const { error } = await sb.rpc('admin_update_my_name', { new_name: newName });
+  if (error) throw error;
 }
 
 /** 감사 로그 최근 N건 조회 (기본 200). created_at desc 순. */
