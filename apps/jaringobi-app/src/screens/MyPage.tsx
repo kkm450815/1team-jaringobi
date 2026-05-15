@@ -469,7 +469,7 @@ export default function MyPage() {
                 setDetailTitleId(null);
               }}
               onBackToGrid={() => setDetailTitleId(null)}
-              onClose={closeTitleModal}
+              onClose={() => setDetailTitleId(null)}
             />
           ) : (
             <TitleGrid
@@ -492,7 +492,7 @@ export default function MyPage() {
           onClick={() => !shareSending && closeSharePreview()}
         >
           <div
-            className="w-full max-w-[360px] bg-bg rounded-3xl p-5 shadow-2xl"
+            className="w-full max-w-[300px] bg-bg rounded-3xl p-4 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative">
@@ -501,7 +501,7 @@ export default function MyPage() {
                 onClick={closeSharePreview}
                 disabled={shareSending}
                 aria-label="닫기"
-                className="absolute right-0 top-0 w-9 h-9 grid place-items-center text-[22px] leading-none text-text/70 font-bold disabled:opacity-50"
+                className="absolute -right-1 -top-1 w-10 h-10 grid place-items-center text-[26px] leading-none text-text/70 font-bold disabled:opacity-50"
               >×</button>
             </div>
 
@@ -511,7 +511,7 @@ export default function MyPage() {
               <img
                 src={sharePreview.dataUrl}
                 alt="공유 미리보기"
-                style={{ maxHeight: '52vh' }}
+                style={{ maxHeight: '48vh' }}
                 className="max-w-full w-auto h-auto object-contain rounded-xl bg-white shadow-soft block"
               />
             </div>
@@ -637,7 +637,7 @@ function TitleGrid({
         <button
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+          className="absolute -right-1 -top-1 text-text/70 text-[26px] leading-none w-10 h-10 grid place-items-center font-bold"
         >
           ×
         </button>
@@ -711,7 +711,7 @@ function TitleDetail({
         <button
           onClick={onClose}
           aria-label="닫기"
-          className="absolute right-0 top-0 text-text/60 text-[18px] leading-none w-6 h-6 grid place-items-center"
+          className="absolute -right-1 -top-1 text-text/70 text-[26px] leading-none w-10 h-10 grid place-items-center font-bold"
         >
           ×
         </button>
