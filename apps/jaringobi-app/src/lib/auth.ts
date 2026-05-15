@@ -10,6 +10,7 @@
 import { useEffect, useState } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { getSupabase } from './supabase';
+import { isNativePlatform, signInWithGoogleNative } from './nativeAuth';
 
 /**
  * redirect URL 기준점. Capacitor 안드로이드 webview 는 window.location.origin
@@ -135,17 +136,29 @@ export async function signInWithEmail(email: string, redirectPath = '/admin') {
 }
 
 /**
- * Google OAuth 로그인. 성공 시 Supabase 가 콜백 URL 로 리다이렉트하고 세션을
- * 자동 설정.
+ * Google OAuth 로그인. 두 가지 경로:
  *
- * 사전 설정 필요:
- *  1) Google Cloud Console — OAuth 2.0 Client 생성, Authorized redirect URI 에
+ * - **웹 (Vercel)** — Supabase 가 자동으로 navigate. 콜백 URL 은 VITE_PUBLIC_URL.
+ * - **Capacitor 안드로이드** — Google 이 임베디드 WebView 에서 OAuth 차단하므로
+ *   외부 브라우저(Chrome Custom Tabs)로 띄우고, 콜백은 커스텀 스킴 딥링크
+ *   `jaringobi.myapp://login-callback` 으로 받아 세션 교환.
+ *   (nativeAuth.ts 의 installOAuthDeepLinkListener 가 미리 등록되어 있어야 함)
+ *
+ * 사전 설정:
+ *  1) Google Cloud Console — OAuth 2.0 Client, Authorized redirect URI 에
  *     `https://<프로젝트>.supabase.co/auth/v1/callback` 등록
  *  2) Supabase Dashboard — Authentication → Providers → Google ON, Client ID/
  *     Secret 입력
- *  3) Supabase Dashboard — Authentication → URL Configuration 에 앱 도메인 등록
+ *  3) Supabase Dashboard — Authentication → URL Configuration → Redirect URLs 에
+ *     **다음 두 개 모두** 등록:
+ *       - `https://1team-jaringobi.vercel.app/main` (웹)
+ *       - `jaringobi.myapp://login-callback` (안드로이드 앱)
  */
 export async function signInWithGoogle(redirectPath = '/main') {
+  if (isNativePlatform()) {
+    await signInWithGoogleNative();
+    return;
+  }
   const sb = getSupabase();
   if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
   const redirectTo = buildRedirectUrl(redirectPath);

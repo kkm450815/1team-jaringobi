@@ -15,16 +15,17 @@ function GoogleIcon() {
 }
 
 function SocialButton({
-  label, bg = 'bg-white', children, onClick,
-}: { label: string; bg?: string; children: React.ReactNode; onClick: () => void }) {
+  label, bg = 'bg-white', children, onClick, disabled,
+}: { label: string; bg?: string; children: React.ReactNode; onClick: () => void; disabled?: boolean }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={label}
-      className={`w-12 h-12 rounded-full ${bg} grid place-items-center shadow-soft active:scale-[.95] transition`}
+      disabled={disabled}
+      className={`w-full ${bg} rounded-full px-5 py-3.5 flex items-center justify-center gap-3 shadow-soft text-[15px] font-bold text-text active:scale-[.98] transition disabled:opacity-50`}
     >
-      {children}
+      <span className="grid place-items-center">{children}</span>
+      <span>{label}</span>
     </button>
   );
 }
@@ -214,14 +215,16 @@ export default function Login() {
         )}
       </form>
 
-      <div className="mt-auto pt-10">
+      {/* 소셜 로그인 — 이전엔 mt-auto 로 화면 맨 아래에 작은 아이콘만 두었다가,
+          누르기 어려워서 폼 바로 아래로 올리고 큰 풀폭 버튼으로 변경. */}
+      <div className="mt-8 pb-10">
         <div className="flex items-center gap-3">
           <hr className="flex-1 border-t border-text/20" />
           <span className="text-[12px] text-text/55">소셜 계정으로 로그인</span>
           <hr className="flex-1 border-t border-text/20" />
         </div>
-        <div className="mt-4 flex justify-center gap-5">
-          <SocialButton label="Google로 로그인" onClick={handleGoogle}>
+        <div className="mt-4">
+          <SocialButton label="Google로 로그인" onClick={handleGoogle} disabled={oauthBusy}>
             <GoogleIcon />
           </SocialButton>
         </div>

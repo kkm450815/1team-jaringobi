@@ -5,7 +5,12 @@ import App from './App';
 import { applyMissionsFromDb, applyTitlesFromDb } from './lib/data';
 import { missionsRepo } from './lib/missionsRepo';
 import { titlesRepo } from './lib/titlesRepo';
+import { installOAuthDeepLinkListener } from './lib/nativeAuth';
 import './styles/index.css';
+
+// 안드로이드(Capacitor) Google OAuth 콜백을 위한 딥링크 리스너 등록.
+// 웹 환경에선 내부에서 즉시 no-op 처리되므로 호출 안전.
+installOAuthDeepLinkListener();
 
 // BrowserRouter — Vercel 의 vercel.json rewrites 가 모든 경로를 index.html 로
 // 보내주므로 SPA 폴백 안전. /admin 같은 깔끔한 URL 사용 가능.

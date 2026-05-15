@@ -24,6 +24,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Supabase Google OAuth 콜백 딥링크.
+                 외부 브라우저(Chrome Custom Tabs)에서 로그인 완료 후
+                 jaringobi.myapp://login-callback 으로 돌아옴. -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="jaringobi.myapp" android:host="login-callback" />
+            </intent-filter>
+
         </activity>
 
         <provider
