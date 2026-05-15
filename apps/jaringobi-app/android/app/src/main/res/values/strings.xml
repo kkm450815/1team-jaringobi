@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">자린고비</string>
     <string name="title_activity_main">자린고비</string>
-    <string name="package_name">com.fourpoor.jaringobi</string>
-    <string name="custom_url_scheme">com.fourpoor.jaringobi</string>
+    <string name="package_name">jaringobi.myapp</string>
+    <string name="custom_url_scheme">jaringobi.myapp</string>
 </resources>

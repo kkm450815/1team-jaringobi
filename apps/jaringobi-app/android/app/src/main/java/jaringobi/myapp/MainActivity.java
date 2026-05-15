@@ -1,4 +1,4 @@
-package com.fourpoor.jaringobi;
+package jaringobi.myapp;
 
 import com.getcapacitor.BridgeActivity;
 
