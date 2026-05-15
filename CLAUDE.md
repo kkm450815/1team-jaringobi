@@ -30,3 +30,14 @@
 - Capacitor/안드로이드 작업 폴더: `C:\Users\Administrator\1team-jaringobi\apps\jaringobi-app`
 - 빌드용 CMD 이동 명령(복붙용): `cd /d C:\Users\Administrator\1team-jaringobi\apps\jaringobi-app`
 - 안드로이드 빌드/배포 관련 CMD 명령을 안내할 때는 항상 위 경로를 기준으로 작성한다. 예시 경로(`C:\dev\...` 등)로 대체 금지.
+
+## 현재 안드로이드 버전 (Play Console)
+
+- 정의 위치: `apps/jaringobi-app/android/app/build.gradle` 의 `versionCode` / `versionName`
+- **현재 값**: `versionCode 5` / `versionName "1.0.3"` (2026-05-15)
+  - 1.0.3 내용: 사운드/레이아웃/공유/닉네임/타이핑 7개 개선
+  - versionCode 4 는 옛날 main 에서 빌드돼 변경사항 미반영인 채로 Play Console 에 업로드된 이력 있음 → 재사용 불가 → 5 로 증가
+- **다음 출시 규칙**:
+  - versionCode 는 항상 직전 값 +1 (Play Console 에 한 번 업로드되면 영구 재사용 불가).
+  - versionName 은 같은 내용 재빌드면 유지, 새 기능/수정이면 의미 단위로 증가 (`1.0.3 → 1.0.4` 등).
+  - 사용자에게 빌드 안내할 때 현재 값 명시해 줄 것 ("이번 빌드는 vCode N / vName x.y.z").
