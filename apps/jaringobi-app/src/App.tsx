@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import { PhoneFrame } from './components/PhoneFrame';
 import { isLocalStorageAvailable } from './lib/storage';
@@ -100,14 +100,37 @@ function AuthBootstrap() {
 
 // 로컬 알림 — 권한 요청(1회) + 설정/완료상태 바뀔 때마다 30 일치 스케줄 reconcile.
 // native 가 아니면 notifications.ts 가 알아서 no-op.
+//
+// 권한 요청 타이밍: /main 도달 시점에 1회만.
+// - 신규 사용자: 온보딩(로그인 → 모드 선택 → 닉네임 설정) 끝낸 후 자연스럽게 요청.
+//   닉네임 입력 중 OS 알림 권한 팝업이 끼어들어 키보드/포커스 가로채는 문제 방지.
+// - 기존 사용자: Splash → /main 자동 진입 → 즉시 요청 (이전과 거의 동일한 타이밍).
 function NotificationsBootstrap() {
   const u = useUser();
-  // 첫 마운트 때 한 번 권한 요청 (이미 허용/거부돼 있으면 prompt 안 뜸)
+  const loc = useLocation();
+  const askedRef = useRef(false);
+
   useEffect(() => {
-    void requestNotificationPermission();
-  }, []);
+    if (askedRef.current) return;
+    if (loc.pathname !== '/main') return;
+    askedRef.current = true;
+    // 권한 요청 → 허용된 경우에만 reconcile 즉시 1회 더 실행.
+    // (앱 부팅 시 reconcile 은 권한 없음 상태에서 일찍 돌면서 등록을 못했을 수
+    //  있어, 허용된 직후 한 번 더 스케줄을 깔아 줘야 첫날부터 알림이 동작함.)
+    void (async () => {
+      const granted = await requestNotificationPermission();
+      if (granted) {
+        await reconcileNotifications(u.settings, u.lastSavedAt);
+      }
+    })();
+    // u.settings/lastSavedAt 은 askedRef 가 한 번만 통과하도록 deps 에서 제외 —
+    // 최신값은 클로저 캡처로 충분하고, 두 번 묻지 않는 게 중요.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loc.pathname]);
+
   // 알림 관련 설정 + 마지막 인증 시각이 바뀔 때마다 reconcile.
   // (lastSavedAt 변경 = 챌린지 인증 발생 → 그날 저녁 알림 자동 스킵 반영)
+  // 권한 미허용 상태에서는 reconcileNotifications 가 내부에서 silently skip.
   const { notifyMorning, notifyMorningTime, notifyEvening, notifyEveningTime } = u.settings;
   const lastSavedAt = u.lastSavedAt;
   useEffect(() => {
