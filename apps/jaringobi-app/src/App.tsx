@@ -60,6 +60,11 @@ function BgmController() {
     getBgm().setVolumePercent(u.settings.bgmVolume ?? 60);
   }, [u.settings.bgmVolume]);
 
+  // BGM 스타일 변경 — 재생 중이면 즉시 새 스타일로 전환
+  useEffect(() => {
+    getBgm().setStyle(u.settings.bgmStyle ?? 'default');
+  }, [u.settings.bgmStyle]);
+
   // SFX — sfxEnabled / sfxVolume 만 반영. sound 마스터(BGM 토글) 와는 독립
   // → BGM 끈 상태에서도 효과음만 들을 수 있음
   useEffect(() => {
