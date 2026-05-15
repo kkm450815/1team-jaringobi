@@ -41,17 +41,25 @@ let listenerInstalled = false;
  */
 export function installOAuthDeepLinkListener() {
   if (listenerInstalled) return;
-  if (!isNativePlatform()) return;
+  if (!isNativePlatform()) {
+    console.info('[oauth] 웹 환경 — 딥링크 리스너 설치 생략');
+    return;
+  }
   listenerInstalled = true;
+  console.info('[oauth] 딥링크 리스너 설치 — scheme:', OAUTH_REDIRECT);
 
   App.addListener('appUrlOpen', async (event: URLOpenListenerEvent) => {
     try {
       const url = event.url;
-      if (!url || !url.startsWith('jaringobi.myapp://login-callback')) return;
+      console.info('[oauth] appUrlOpen 수신', { url });
+      if (!url || !url.startsWith('jaringobi.myapp://login-callback')) {
+        console.info('[oauth] 콜백 URL 아님 — 무시');
+        return;
+      }
 
       const sb = getSupabase();
       if (!sb) {
-        console.warn('[oauth] Supabase 미초기화 — 콜백 무시');
+        console.warn('[oauth] Supabase 미초기화 — 콜백 무시. .env 의 VITE_SUPABASE_URL/ANON_KEY 확인 필요');
         await Browser.close().catch(() => {});
         return;
       }
@@ -61,27 +69,51 @@ export function installOAuthDeepLinkListener() {
       //   Implicit:  jaringobi.myapp://login-callback#access_token=...&refresh_token=...
       const queryIdx = url.indexOf('?');
       const hashIdx = url.indexOf('#');
+      console.info('[oauth] URL 파싱', { queryIdx, hashIdx });
+
+      // 콜백 자체에 error 파라미터가 실려 오는 경우 (사용자 취소, 권한 거부 등)
+      const errorParams = new URLSearchParams(url.split(/[?#]/).slice(1).join('&'));
+      const errorCode = errorParams.get('error');
+      const errorDesc = errorParams.get('error_description');
+      if (errorCode) {
+        console.error('[oauth] 콜백에 error 포함', { error: errorCode, description: errorDesc });
+        await Browser.close().catch(() => {});
+        return;
+      }
 
       if (queryIdx >= 0) {
         const params = new URLSearchParams(url.slice(queryIdx + 1));
         const code = params.get('code');
         if (code) {
-          const { error } = await sb.auth.exchangeCodeForSession(code);
-          if (error) console.error('[oauth] exchangeCodeForSession 실패', error);
+          console.info('[oauth] PKCE code 발견 — exchangeCodeForSession 호출');
+          const { data, error } = await sb.auth.exchangeCodeForSession(code);
+          if (error) {
+            console.error('[oauth] exchangeCodeForSession 실패', { message: error.message, status: (error as { status?: number }).status });
+          } else {
+            console.info('[oauth] 세션 교환 성공', { userId: data.session?.user?.id });
+          }
+        } else {
+          console.warn('[oauth] query 에 code 없음 — URL:', url);
         }
       } else if (hashIdx >= 0) {
         const params = new URLSearchParams(url.slice(hashIdx + 1));
         const access_token = params.get('access_token');
         const refresh_token = params.get('refresh_token');
         if (access_token && refresh_token) {
+          console.info('[oauth] hash 토큰 발견 — setSession 호출');
           const { error } = await sb.auth.setSession({ access_token, refresh_token });
-          if (error) console.error('[oauth] setSession 실패', error);
+          if (error) console.error('[oauth] setSession 실패', { message: error.message });
+          else console.info('[oauth] setSession 성공');
+        } else {
+          console.warn('[oauth] hash 에 토큰 없음 — URL:', url);
         }
+      } else {
+        console.warn('[oauth] URL 에 query/hash 모두 없음 — URL:', url);
       }
 
       await Browser.close().catch(() => {});
     } catch (e) {
-      console.error('[oauth] 딥링크 처리 에러', e);
+      console.error('[oauth] 딥링크 처리 예외', e);
     }
   });
 }
@@ -91,8 +123,16 @@ export function installOAuthDeepLinkListener() {
  * `skipBrowserRedirect: true` 로 URL 만 받아 Browser.open() 에 전달.
  */
 export async function signInWithGoogleNative() {
+  console.info('[oauth] signInWithGoogleNative 시작', { listenerInstalled, isNative: isNativePlatform() });
   const sb = getSupabase();
-  if (!sb) throw new Error('Supabase 가 설정되지 않았습니다.');
+  if (!sb) {
+    console.error('[oauth] Supabase 미초기화 — .env 의 VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY 확인');
+    throw new Error('Supabase 가 설정되지 않았습니다.');
+  }
+  if (!listenerInstalled) {
+    console.warn('[oauth] 딥링크 리스너 미설치 — main.tsx 에서 installOAuthDeepLinkListener() 호출 확인 필요. 지금 늦게라도 설치 시도');
+    installOAuthDeepLinkListener();
+  }
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
@@ -100,7 +140,19 @@ export async function signInWithGoogleNative() {
       skipBrowserRedirect: true,
     },
   });
-  if (error) throw error;
-  if (!data?.url) throw new Error('OAuth URL 을 받지 못했어요.');
-  await Browser.open({ url: data.url, presentationStyle: 'popover' });
+  if (error) {
+    console.error('[oauth] signInWithOAuth 실패', { message: error.message, status: (error as { status?: number }).status });
+    throw error;
+  }
+  if (!data?.url) {
+    console.error('[oauth] OAuth URL 미반환 — Supabase Dashboard Google Provider 활성 상태 확인 필요');
+    throw new Error('OAuth URL 을 받지 못했어요. Supabase Dashboard Google 활성 상태 점검 필요');
+  }
+  console.info('[oauth] OAuth URL 획득 — Chrome Custom Tabs 열기', { hostPreview: data.url.slice(0, 60) });
+  try {
+    await Browser.open({ url: data.url, presentationStyle: 'popover' });
+  } catch (e) {
+    console.error('[oauth] Browser.open 실패 — @capacitor/browser 플러그인 설치/sync 확인', e);
+    throw e;
+  }
 }
