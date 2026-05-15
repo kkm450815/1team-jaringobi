@@ -154,12 +154,14 @@ export async function reconcileNotifications(
   const evening = parseHM(settings.notifyEveningTime);
   const completedToday = isCompletedToday(lastSavedAt, now);
 
+  // smallIcon 은 명시 안 함 — 미지정 시 플러그인이 Android 기본 알림 아이콘 사용.
+  // (커스텀 status bar 아이콘 원하면 res/drawable/ 에 추가 후 capacitor.config 의
+  //  plugins.LocalNotifications.smallIcon 으로 지정)
   const toSchedule: {
     id: number;
     title: string;
     body: string;
     schedule: { at: Date; allowWhileIdle: true };
-    smallIcon: string;
   }[] = [];
 
   for (let i = 0; i < SCHEDULE_DAYS_AHEAD; i++) {
@@ -176,7 +178,6 @@ export async function reconcileNotifications(
           title: MORNING_TITLE,
           body: MORNING_BODY,
           schedule: { at, allowWhileIdle: true },
-          smallIcon: 'ic_stat_icon_config_sample',
         });
       }
     }
@@ -193,7 +194,6 @@ export async function reconcileNotifications(
             title: EVENING_TITLE,
             body: EVENING_BODY,
             schedule: { at, allowWhileIdle: true },
-            smallIcon: 'ic_stat_icon_config_sample',
           });
         }
       }

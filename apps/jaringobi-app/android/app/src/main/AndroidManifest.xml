@@ -51,9 +51,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- 로컬 알림 (아침 챌린지 등록 / 저녁 챌린지 완료 리마인더) -->
-    <!-- Android 13+ 알림 표시 런타임 권한 -->
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <!-- 기기 재부팅 후에도 스케줄된 알림 복원 -->
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 로컬 알림 권한(POST_NOTIFICATIONS, WAKE_LOCK, RECEIVE_BOOT_COMPLETED) 은
+         @capacitor/local-notifications 플러그인의 AndroidManifest 가 자동 머지함 →
+         여기서 별도 선언 불필요. -->
 </manifest>
