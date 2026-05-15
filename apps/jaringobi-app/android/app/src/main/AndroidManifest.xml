@@ -50,4 +50,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 로컬 알림 권한(POST_NOTIFICATIONS, WAKE_LOCK, RECEIVE_BOOT_COMPLETED) 은
+         @capacitor/local-notifications 플러그인의 AndroidManifest 가 자동 머지함 →
+         여기서 별도 선언 불필요. -->
 </manifest>

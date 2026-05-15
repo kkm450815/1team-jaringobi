@@ -20,6 +20,7 @@
     "@capacitor/cli": "^8.3.4",
     "@capacitor/core": "^8.3.4",
     "@capacitor/filesystem": "^8.0.0",
+    "@capacitor/local-notifications": "^8.0.0",
     "@capacitor/share": "^8.0.0",
     "@supabase/supabase-js": "^2.105.3",
     "html-to-image": "^1.11.13",
