@@ -34,9 +34,10 @@
 ## 현재 안드로이드 버전 (Play Console)
 
 - 정의 위치: `apps/jaringobi-app/android/app/build.gradle` 의 `versionCode` / `versionName`
-- **현재 값**: `versionCode 6` / `versionName "1.0.4"` (2026-05-15)
+- **현재 값**: `versionCode 7` / `versionName "1.0.4"` (2026-05-15)
   - 1.0.4 내용: 사운드 추가 상향(BGM 2.5×/SFX 2.8×), 타이핑 비제어 입력 전환, 구글 OAuth 안드로이드 외부 브라우저+딥링크, 로그아웃/구글 버튼 크기·위치, 프로필 의상/룸 실시간 동기화
 - 과거 이력:
+  - vCode 6 / 1.0.4 — 내부 테스트로 업로드됨 → 재사용 불가 → 비공개 테스트 업로드 위해 7 로 증가
   - vCode 5 / 1.0.3 — 사운드/레이아웃/공유/닉네임/타이핑 7개 개선
   - vCode 4 / 1.0.3 — 옛날 main 에서 빌드돼 변경사항 미반영인 채로 Play Console 에 업로드된 이력 있음 (재사용 불가)
 - **다음 출시 규칙**:
