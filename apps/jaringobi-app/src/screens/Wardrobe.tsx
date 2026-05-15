@@ -33,7 +33,7 @@ export default function Wardrobe() {
   const [accSub, setAccSub] = useState<AccSub>('모자');
 
   const ownedSet = useMemo(() => new Set(u.owned), [u.owned]);
-  const equippedSet = useMemo(() => new Set(u.equipped), [u.equipped]);
+  const favoritesSet = useMemo(() => new Set(u.favorites), [u.favorites]);
   const customItems = useCustomShopItems();
   const items = useMemo(() => {
     // 카테고리/서브 필터에 맞는 커스텀 아이템 (관리자가 추가한 항목)
@@ -54,9 +54,10 @@ export default function Wardrobe() {
     else pool = SHOP_GROUPS[cat];
     pool = [...customForView, ...pool];
     const owned = pool.filter((src) => ownedSet.has(src));
-    // 즐겨찾기(별표 = 착용 중) 항목을 앞으로 정렬. 동률 내에서는 원래 순서 유지(stable sort)
-    return owned.slice().sort((a, b) => Number(equippedSet.has(b)) - Number(equippedSet.has(a)));
-  }, [cat, remodelSub, accSub, ownedSet, equippedSet, customItems]);
+    // 즐겨찾기 항목을 맨 앞으로 정렬. 동률 내에서는 원래 순서 유지(stable sort).
+    // 별표(즐겨찾기) 는 착용 여부와 별개로 사용자가 명시적으로 토글하는 값.
+    return owned.slice().sort((a, b) => Number(favoritesSet.has(b)) - Number(favoritesSet.has(a)));
+  }, [cat, remodelSub, accSub, ownedSet, favoritesSet, customItems]);
 
   return (
     <main className="min-h-full pb-10 bg-bg">
@@ -146,27 +147,50 @@ export default function Wardrobe() {
         <section className="px-5 mt-3 grid grid-cols-3 gap-2.5">
           {items.map((src) => {
             const equipped = u.equipped.includes(src);
+            const favorited = u.favorites.includes(src);
             return (
-              <button
+              // 별표(즐겨찾기 토글) 와 카드 본체(착용 토글) 가 분리된 히트 영역을 가져야 해서
+              // div + 내부 button 두 개로 구성. 별표는 absolute 로 카드 위에 올림.
+              <div
                 key={src}
-                onClick={() => {
-                  u.toggleEquip(src);
-                  playClickSfx();
-                }}
-                className="relative rounded-xl overflow-hidden bg-primary/35"
+                className={`relative rounded-xl overflow-hidden bg-primary/35 transition ${
+                  equipped ? 'ring-2 ring-accent' : ''
+                }`}
               >
-                <span className="absolute top-1.5 left-1.5">
-                  <StarIcon filled={equipped} />
-                </span>
-                <div className="aspect-[3/4] grid place-items-center px-3 pt-7 pb-3">
-                  <img
-                    src={src}
-                    alt=""
-                    className="max-w-full max-h-full object-contain"
-                    draggable={false}
-                  />
-                </div>
-              </button>
+                <button
+                  onClick={() => { u.toggleEquip(src); playClickSfx(); }}
+                  className="w-full active:scale-[.98] transition-transform"
+                  aria-label={equipped ? '벗기' : '입어보기'}
+                  aria-pressed={equipped}
+                >
+                  <div className="aspect-[3/4] grid place-items-center px-3 pt-7 pb-3">
+                    <img
+                      src={src}
+                      alt=""
+                      className="max-w-full max-h-full object-contain"
+                      draggable={false}
+                    />
+                  </div>
+                </button>
+                {/* 별표 = 사용자 즐겨찾기 토글 (착용 여부와 무관) */}
+                <button
+                  onClick={(e) => { e.stopPropagation(); u.toggleFavorite(src); playClickSfx(); }}
+                  className="absolute top-1 left-1 w-8 h-8 grid place-items-center rounded-full active:scale-95 transition"
+                  aria-label={favorited ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+                  aria-pressed={favorited}
+                >
+                  <StarIcon filled={favorited} />
+                </button>
+                {/* 착용 중 뱃지 — 별표 우측 상단. 별표와 헷갈리지 않게 색·문구 명확하게 */}
+                {equipped && (
+                  <span
+                    className="absolute top-1.5 right-1.5 bg-accent text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full shadow"
+                    aria-hidden
+                  >
+                    착용 중
+                  </span>
+                )}
+              </div>
             );
           })}
         </section>

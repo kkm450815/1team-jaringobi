@@ -63,6 +63,9 @@ export interface UserState {
   coins: number;
   owned: string[];
   equipped: string[];
+  // 옷장에서 사용자가 별표로 표시한 '즐겨찾기' 아이템들. 착용(equipped) 과는 독립.
+  // 옷장에서 즐겨찾기가 그리드 맨 앞으로 정렬됨.
+  favorites: string[];
   missionPicks: string[];
   missionConfirmed: string[];
 
@@ -134,6 +137,7 @@ const DEFAULT: UserState = {
   coins: 0,
   owned: ['/shop/clothes/clo_shop_01.png', '/shop/clothes/clo_shop_51.png'],
   equipped: [],
+  favorites: [],
   missionPicks: ['m2', 'm12', 'm13'],
   missionConfirmed: [],
   missionSuccesses: [],
@@ -189,6 +193,7 @@ function read(): UserState {
       // clo_shop_51 은 무료 칭호처럼 모든 사용자에게 기본 보유
       owned: Array.from(new Set([...(parsed.owned ?? DEFAULT.owned), '/shop/clothes/clo_shop_51.png'])),
       equipped: parsed.equipped ?? DEFAULT.equipped,
+      favorites: parsed.favorites ?? DEFAULT.favorites,
       missionPicks: parsed.missionPicks ?? DEFAULT.missionPicks,
       missionConfirmed: parsed.missionConfirmed ?? DEFAULT.missionConfirmed,
 
@@ -497,6 +502,18 @@ export function useUser() {
     return ok;
   }, []);
 
+  // 옷장 즐겨찾기 토글 — 착용 상태와 무관. 보유 안 한 아이템은 무시 (구매 안 한 걸 즐겨찾기할 일 없음).
+  const toggleFavorite = useCallback((src: string) => {
+    setState((s) => {
+      if (!s.owned.includes(src)) return s;
+      const next: UserState = s.favorites.includes(src)
+        ? { ...s, favorites: s.favorites.filter((x) => x !== src) }
+        : { ...s, favorites: [...s.favorites, src] };
+      write(next);
+      return next;
+    });
+  }, []);
+
   const toggleEquip = useCallback((src: string) => {
     setState((s) => {
       if (!s.owned.includes(src)) return s;
@@ -611,6 +628,7 @@ export function useUser() {
     reset,
     buy,
     toggleEquip,
+    toggleFavorite,
     setMissionPicks,
     confirmMission,
     toggleMissionSuccess,

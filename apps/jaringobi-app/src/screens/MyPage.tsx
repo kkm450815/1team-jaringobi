@@ -32,6 +32,8 @@ export default function MyPage() {
   // 캡쳐 결과 미리보기 모달 — { dataUrl(미리보기용 blob URL), blob(공유용 File 변환용) }
   const [sharePreview, setSharePreview] = useState<{ dataUrl: string; blob: Blob } | null>(null);
   const [shareSending, setShareSending] = useState(false);
+  // 캡쳐/공유 흐름 중 사용자에게 보여줄 일회성 안내 메시지 (실패·폴백 알림)
+  const [shareToast, setShareToast] = useState<string | null>(null);
   // 모달 닫을 때 ObjectURL 메모리 해제까지 같이.
   const closeSharePreview = () => {
     if (sharePreview?.dataUrl?.startsWith('blob:')) {
@@ -127,8 +129,13 @@ export default function MyPage() {
       const prevDotsDisplay = dots?.style.display;
       if (dots) dots.style.display = 'none';
       const rect = el.getBoundingClientRect();
-      const width = Math.ceil(rect.width) + 4;
-      const height = Math.ceil(rect.height) + 4;
+      // 안드로이드 WebView 의 sub-pixel 반올림과 자식 요소 overflow(예: 닉네임 칩) 때문에
+      // rect.width 만 쓰면 오른쪽이 잘리는 경우가 있다. scrollWidth/Height 도 함께 고려하고
+      // 안전 버퍼를 12px 까지 키워서 오른쪽 잘림 방지.
+      const rawW = Math.max(rect.width, el.scrollWidth);
+      const rawH = Math.max(rect.height, el.scrollHeight);
+      const width = Math.ceil(rawW) + 12;
+      const height = Math.ceil(rawH) + 12;
       let blob: Blob | null = null;
       try {
         blob = await toBlob(el, {
@@ -151,15 +158,22 @@ export default function MyPage() {
       setSharePreview({ dataUrl, blob });
     } catch (e) {
       console.error('[MyPage.prepareShare] 캡쳐 실패', e);
-      // 캡쳐 실패 시 텍스트 share 폴백
+      playDeniedSfx();
+      // 캡쳐 실패 시 텍스트 share 폴백 — 어느 경로로 폴백됐는지 사용자에게 토스트로 안내
+      let fallbackMsg = '이미지 만들기에 실패했어요. 잠시 후 다시 시도해 주세요.';
       if (typeof navigator !== 'undefined' && navigator.share) {
-        try { await navigator.share({ title: '자린고비', text: shareText }); } catch { /* ignore */ }
+        try {
+          await navigator.share({ title: '자린고비', text: shareText });
+          fallbackMsg = '이미지 만들기에 실패해 텍스트로 공유했어요.';
+        } catch { /* 사용자 취소 등 — 기본 메시지 유지 */ }
       } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
         try {
           await navigator.clipboard.writeText(shareText);
-          alert('이미지 캡쳐에 실패했어요. 대신 텍스트를 클립보드에 복사했어요.');
+          fallbackMsg = '이미지 만들기에 실패해 텍스트를 클립보드에 복사했어요.';
         } catch { /* ignore */ }
       }
+      setShareToast(fallbackMsg);
+      window.setTimeout(() => setShareToast(null), 4000);
     } finally {
       setCapturing(false);
     }
@@ -452,7 +466,12 @@ export default function MyPage() {
       {titleModal && (
         <div
           className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-5"
-          onClick={closeTitleModal}
+          onClick={() => {
+            // 상세 화면이면 외부 클릭은 X 와 동일하게 '그리드로 복귀'.
+            // 그리드 화면이면 외부 클릭으로 모달 닫힘.
+            if (detailTitleId !== null) setDetailTitleId(null);
+            else closeTitleModal();
+          }}
         >
           {detailTitle ? (
             <TitleDetail
@@ -613,6 +632,18 @@ export default function MyPage() {
             <div className="mt-4">
               <RoomPreview equipped={u.equipped} className="mx-auto w-full" />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* 공유 캡쳐/폴백 결과 안내 토스트 — 4초 후 자동 소실 */}
+      {shareToast && (
+        <div
+          className="fixed inset-x-0 bottom-24 z-[70] grid place-items-center pointer-events-none px-5"
+          aria-live="polite"
+        >
+          <div className="pointer-events-auto bg-text/90 text-bg rounded-2xl px-4 py-2.5 text-[12px] font-bold shadow-2xl text-center leading-relaxed">
+            {shareToast}
           </div>
         </div>
       )}
