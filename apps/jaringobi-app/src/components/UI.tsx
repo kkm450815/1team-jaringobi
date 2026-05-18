@@ -5,9 +5,12 @@ import { useLocation, useNavigate } from 'react-router-dom';
 export function BackButton({
   className = '',
   fallback = '/main',
+  to,
 }: {
   className?: string;
   fallback?: string;
+  /** 지정 시 history 무시하고 무조건 이 경로로 이동. 화면 흐름을 강제하고 싶을 때 사용. */
+  to?: string;
 }) {
   const nav = useNavigate();
   const loc = useLocation();
@@ -18,6 +21,7 @@ export function BackButton({
     <button
       type="button"
       onClick={() => {
+        if (to) { nav(to); return; }
         if (hasHistory) nav(-1);
         else nav(fallback);
       }}
