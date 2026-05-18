@@ -24,6 +24,12 @@
 - 푸시 명령: `git push origin claude/prepare-new-branch-XcP7M`
 - main 브랜치에는 직접 푸시하지 않는다 (PR로만 머지됨).
 
+## Pull 규칙
+
+- **`git pull` 은 항상 main 브랜치에서 받는다**: `git pull origin main`
+- 작업 브랜치로 직접 pull 하지 않는다 (사용자가 명시적으로 요청한 경우 제외).
+- 푸시 충돌(원격 앞섬)로 rebase 가 필요한 경우는 예외 — 그때는 해당 작업 브랜치 기준으로 `git pull --rebase origin <작업브랜치>` 사용.
+
 ## 사용자 PC 환경 (Windows)
 
 - 저장소 경로: `C:\Users\Administrator\1team-jaringobi`
