@@ -129,13 +129,13 @@ export default function MyPage() {
       const prevDotsDisplay = dots?.style.display;
       if (dots) dots.style.display = 'none';
       const rect = el.getBoundingClientRect();
-      // 안드로이드 WebView 의 sub-pixel 반올림과 자식 요소 overflow(예: 닉네임 칩) 때문에
+      // 안드로이드 WebView 의 sub-pixel 반올림과 자식 요소 overflow(예: 닉네임 칩, 그림자) 때문에
       // rect.width 만 쓰면 오른쪽이 잘리는 경우가 있다. scrollWidth/Height 도 함께 고려하고
-      // 안전 버퍼를 12px 까지 키워서 오른쪽 잘림 방지.
+      // 우측은 32px, 하단은 16px 버퍼로 키워 잘림 완전 방지(여백은 노트 종이색으로 채워짐).
       const rawW = Math.max(rect.width, el.scrollWidth);
       const rawH = Math.max(rect.height, el.scrollHeight);
-      const width = Math.ceil(rawW) + 12;
-      const height = Math.ceil(rawH) + 12;
+      const width = Math.ceil(rawW) + 32;
+      const height = Math.ceil(rawH) + 16;
       let blob: Blob | null = null;
       try {
         blob = await toBlob(el, {
