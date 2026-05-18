@@ -63,7 +63,8 @@ export default function Wardrobe() {
     <main className="min-h-full pb-10 bg-bg">
       <div className="sticky top-0 z-10 bg-bg pb-2">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-6 pb-2">
-          <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" fallback="/main" />
+          {/* 옷장 → 뒤로 가면 무조건 상점으로. (옷장은 보통 상점 → 옷장 흐름으로 진입) */}
+          <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" to="/shop" />
           <h1 className="text-[24px] font-bold tracking-[6px] text-text">MY</h1>
           <Link to="/shop" aria-label="상점" className="justify-self-end pr-1">
             <img

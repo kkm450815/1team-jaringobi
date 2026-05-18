@@ -6,7 +6,7 @@ import { RoomPreview } from '../components/RoomPreview';
 import { AnnouncementBanner } from '../components/AnnouncementBanner';
 import { TutorialOverlay, TutorialStep } from '../components/TutorialOverlay';
 import { MISSIONS, MissionCategory } from '../lib/data';
-import { isMissionLocked, nextMissionAvailableAt, useUser } from '../lib/userState';
+import { isMissionLocked, nextMissionAvailableAt, useUser, SavingEntry } from '../lib/userState';
 import { playClickSfx, playHitSfx, playLoseSfx, playSuccessSfx, vibrate } from '../lib/feedback';
 import { useEscape } from '../lib/useEscape';
 
@@ -226,10 +226,14 @@ export default function Main() {
     playClickSfx();
   }
 
-  // ESC로 모달 닫기 (양심 / 미션)
+  // 절약 내역 모달 — 헤더의 누적 저축액 클릭 시 오픈
+  const [showSavingsModal, setShowSavingsModal] = useState(false);
+
+  // ESC로 모달 닫기 (양심 / 미션 / 절약 내역)
   useEscape(showHeartModal, () => { setShowHeartModal(false); setPendingHeartIdx(null); });
   useEscape(missionModal !== null, () => { setMissionModal(null); setChangingFor(null); });
   useEscape(showLockInfo, () => setShowLockInfo(false));
+  useEscape(showSavingsModal, () => setShowSavingsModal(false));
 
   // 닉네임 팝업 — 신규 사용자가 메인에 처음 진입했을 때 (1회). 모달 닫힌 뒤
   // 튜토리얼이 자동으로 이어 뜸. /nickname 페이지를 별도 화면으로 두지 않고
@@ -304,20 +308,28 @@ export default function Main() {
           <p className="text-[18px] text-text font-bold">D-{dDay}</p>
         </div>
 
-        <p
+        {/* 누적 저축액 — 클릭 시 절약 내역 모달 오픈. 기존 pointer-events-none 제거하고
+            <button> 으로 전환해 접근성·터치 영역 확보. */}
+        <button
+          type="button"
           data-tutorial="totalSaved"
-          aria-label="누적 저축액"
+          aria-label="누적 저축액 — 절약 내역 보기"
+          onClick={() => { playClickSfx(); setShowSavingsModal(true); }}
           style={{ top: 'calc(36px + (100% - 36px) / 2)' }}
-          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight pointer-events-none"
+          className="absolute left-1/2 -translate-x-1/2 -translate-y-1/2 text-[34px] font-bold leading-none tracking-tight bg-transparent active:scale-[.97] transition"
         >
           {u.totalSaved.toLocaleString()}
-        </p>
+        </button>
 
-        <Link to="/mypage" data-tutorial="mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
+        {/* 우측 상단: 설정 바로가기 (예전 MY 자리). MY 는 룸 우상단으로 이동. */}
+        <Link to="/settings" data-tutorial="settings" aria-label="설정" className="flex flex-col items-center gap-0.5">
           <span className="w-11 h-11 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
-            <img src="/jarin/main_mypage.png" alt="" className="w-9 h-9 object-contain" />
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-text/80">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+            </svg>
           </span>
-          <span className="text-[11px] font-bold text-text">MY</span>
+          <span className="text-[11px] font-bold text-text">설정</span>
         </Link>
       </header>
 
@@ -389,6 +401,15 @@ export default function Main() {
             </div>
           </div>
         )}
+        {/* MY 바로가기 — 룸 우상단. Shop 버튼이 우하단인 것과 대칭. */}
+        <Link
+          to="/mypage"
+          data-tutorial="mypage"
+          aria-label="마이페이지"
+          className="absolute right-4 top-4 w-14 h-14 rounded-2xl grid place-items-center bg-bg shadow-soft"
+        >
+          <img src="/jarin/main_mypage.png" alt="마이페이지" className="w-10 h-10 object-contain" />
+        </Link>
         <Link
           to="/shop"
           data-tutorial="shop"
@@ -624,6 +645,15 @@ export default function Main() {
           </div>
         </div>
       )}
+
+      {/* 절약 내역 모달 — 헤더의 누적 저축액 클릭 시. 최신순 리스트. */}
+      {showSavingsModal && (
+        <SavingsHistoryModal
+          entries={u.savingsLog}
+          totalSaved={u.totalSaved}
+          onClose={() => setShowSavingsModal(false)}
+        />
+      )}
     </main>
   );
 }
@@ -853,4 +883,104 @@ function ReviewPanel({
       </button>
     </>
   );
+}
+
+/* ---------- 절약 내역 모달 ----------
+ * 헤더의 누적 저축액 버튼 클릭 시 오픈. savingsLog 는 최신이 인덱스 0 이라
+ * 그대로 렌더하면 최신순. 빈 목록이면 안내 텍스트만 표시. */
+function SavingsHistoryModal({
+  entries,
+  totalSaved,
+  onClose,
+}: {
+  entries: SavingEntry[];
+  totalSaved: number;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 bg-black/45 grid place-items-center px-5 py-8"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-[420px] max-h-full bg-bg rounded-3xl shadow-2xl flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 헤더 — 누적 저축액 강조 + 닫기 */}
+        <div className="px-6 pt-5 pb-3 flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[12px] font-bold text-text/55">누적 절약 금액</p>
+            <p className="text-[26px] font-bold text-text leading-tight mt-0.5">
+              {totalSaved.toLocaleString()}<span className="text-[16px] ml-1">원</span>
+            </p>
+          </div>
+          <CloseButton onClick={onClose} />
+        </div>
+
+        {/* 본문 — 스크롤 가능한 리스트 */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5">
+          {entries.length === 0 ? (
+            <div className="py-10 text-center text-text/55 text-[14px] leading-relaxed">
+              아직 절약 내역이 없어요.<br />
+              미션 인증을 완료하면 이곳에 쌓여요.
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {entries.map((e, idx) => {
+                const dateLabel = formatSavingDate(e.date);
+                const missionLabels = e.missionIds
+                  .map((id) => MISSIONS.find((m) => m.id === id)?.title)
+                  .filter((t): t is string => !!t);
+                const activity = missionLabels.length > 0
+                  ? missionLabels.join(' · ')
+                  : `${e.cycle}회차 ${e.day}일차 인증`;
+                return (
+                  <li
+                    key={`${e.date}-${idx}`}
+                    className="bg-white rounded-2xl px-4 py-3 shadow-soft flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[11px] font-bold text-text/55 tabular-nums">{dateLabel}</p>
+                      <p className="text-[14px] font-bold text-text mt-0.5 leading-snug break-keep">
+                        {activity}
+                      </p>
+                      <p className="text-[11px] font-bold text-text/45 mt-0.5">
+                        {e.cycle}회차 · {e.day}일차
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[15px] font-bold text-accent tabular-nums leading-tight">
+                        +{e.amount.toLocaleString()}원
+                      </p>
+                      {e.coins > 0 && (
+                        <p className="text-[11px] font-bold text-text/55 tabular-nums mt-0.5">
+                          +{e.coins.toLocaleString()}P
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** ISO date 를 "YYYY.MM.DD HH:mm" 으로 — 절약 내역 리스트의 일자 라벨용. */
+function formatSavingDate(iso: string): string {
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const hh = String(d.getHours()).padStart(2, '0');
+    const mi = String(d.getMinutes()).padStart(2, '0');
+    return `${yyyy}.${mm}.${dd} ${hh}:${mi}`;
+  } catch {
+    return iso;
+  }
 }

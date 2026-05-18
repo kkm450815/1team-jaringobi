@@ -93,20 +93,26 @@ const CHEERFUL_STYLE: StyleDef = {
     const s = step % 64;
     const out: Array<NoteEv | NoiseEv> = [];
     // 베이스 — 매 4스텝(=8분음표) 마다 C 또는 G 도약 (C-G-C-G 패턴)
-    // sine 파형이 square/triangle 대비 같은 gain 에서 RMS 가 낮아 다른 스타일보다
-    // 작게 들리는 문제 → 전체 gain 약 1.6배 상향 (다른 스타일 평균 라우드니스 매칭).
+    // sine 파형이 square/triangle 대비 같은 gain 에서 RMS 가 낮고 배음이 없어서
+    // 라우드니스가 작게 들리는 문제 → 두 번 상향 후에도 여전히 작다는 피드백.
+    // (1) 전체 gain 을 다시 1.4~1.5배 추가 상향, (2) 1옥타브 위 sine 을 같이 섞어
+    // 배음을 인위적으로 더해 perceived loudness 를 올림 (음색은 거의 유지).
     if (s % 8 === 0) {
       const baseMidi = (s % 16 === 0) ? CHEERFUL_ROOT - 12 : CHEERFUL_ROOT - 5;
-      out.push({ kind: 'note', midi: baseMidi, dur: 0.4, type: 'sine', gain: 0.95 });
+      out.push({ kind: 'note', midi: baseMidi, dur: 0.4, type: 'sine', gain: 1.4 });
+      // 베이스 1옥타브 위 보강 — 저음대만 있을 때 안드로이드 스피커가 못 살리는 문제 보강
+      out.push({ kind: 'note', midi: baseMidi + 12, dur: 0.4, type: 'sine', gain: 0.55 });
     }
     // 멜로디 — 매 2스텝마다 1음 (총 32음 / 4마디)
     if (s % 2 === 0) {
       const idx = Math.floor(s / 2);
       const off = CHEERFUL_MELODY[idx];
       if (off >= 0) {
-        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off, dur: 0.24, type: 'sine', gain: 1.0 });
-        // 5도 화음 살짝 — 동요 느낌 더 풍성하게
-        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 7, dur: 0.24, type: 'sine', gain: 0.32 });
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off, dur: 0.24, type: 'sine', gain: 1.55 });
+        // 1옥타브 위 보강 — sine 만으로는 부족한 배음 보강해 라우드니스 ↑ (음색은 유지)
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 12, dur: 0.24, type: 'sine', gain: 0.7 });
+        // 5도 화음 — 동요 느낌 더 풍성하게
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 7, dur: 0.24, type: 'sine', gain: 0.5 });
       }
     }
     return out;

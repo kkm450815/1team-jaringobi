@@ -160,7 +160,8 @@ export default function Shop() {
       {/* 상단 고정 영역: 헤더 + 미리보기 + 카테고리 (+ 리모델링 서브) */}
       <div className="sticky top-0 z-10 bg-bg pb-2">
         <header className="grid grid-cols-[1fr_auto_1fr] items-center px-3 pt-6 pb-2">
-          <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" fallback="/main" />
+          {/* 상점 → 뒤로 가면 무조건 홈(메인) 으로. 옷장→상점 흐름의 깊이 진입 후에도 한 번에 홈 복귀. */}
+          <BackButton className="w-14 h-14 grid place-items-center text-text/80 -ml-1" to="/main" />
           <div className="flex items-center gap-2">
             <CoinIcon size={26} />
             <span className="text-[22px] font-bold text-text">{u.coins}P</span>

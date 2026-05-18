@@ -52,6 +52,26 @@ export interface UserSettings {
   showHelpButton: boolean;
 }
 
+/**
+ * 절약 인증 1회 분 — savePhoto 호출 시 1건 append.
+ * 메인 화면에서 totalSaved 클릭 시 최신순(인덱스 0 이 최신) 으로 리스트 표시.
+ * 과거 사용자(이 필드가 없던 시절) 의 인증은 마이그레이션할 방법이 없어
+ * 새 인증부터만 기록됨 — 기존 사용자는 처음엔 빈 목록 표시.
+ */
+export interface SavingEntry {
+  /** 인증 완료 시각 ISO. lastSavedAt 과 동일 값. */
+  date: string;
+  cycle: number;
+  /** 인증한 day (1..30). 인증 직후 day 가 증가하기 전 시점의 값. */
+  day: number;
+  /** 성공으로 체크된 미션 ID 들 (인증 시점에 missionSuccesses → missionConfirmed 변환). */
+  missionIds: string[];
+  /** 적립된 절약 금액 (원). */
+  amount: number;
+  /** 적립된 포인트. */
+  coins: number;
+}
+
 export interface UserState {
   nickname: string;
   cycle: number;
@@ -59,6 +79,8 @@ export interface UserState {
   hearts: number; // 양심 하트 (0..3) — 회차 시작 시 3 복구
   photos: Record<number, string>;
   totalSaved: number;
+  /** 절약 내역 — 최신이 인덱스 0. UI 에서 최신순으로 그대로 렌더. 상한 500개. */
+  savingsLog: SavingEntry[];
   goal: number;
   coins: number;
   owned: string[];
@@ -133,6 +155,7 @@ const DEFAULT: UserState = {
   hearts: MAX_HEARTS,
   photos: {},
   totalSaved: 0,
+  savingsLog: [],
   goal: 300_000,
   coins: 0,
   owned: ['/shop/clothes/clo_shop_01.png', '/shop/clothes/clo_shop_51.png'],
@@ -212,6 +235,18 @@ function read(): UserState {
       tutorialSeen: typeof parsed.tutorialSeen === 'boolean' ? parsed.tutorialSeen : DEFAULT.tutorialSeen,
       lastZeroPenaltyCycle: typeof parsed.lastZeroPenaltyCycle === 'number' ? parsed.lastZeroPenaltyCycle : DEFAULT.lastZeroPenaltyCycle,
       hearts: typeof parsed.hearts === 'number' ? parsed.hearts : DEFAULT.hearts,
+      savingsLog: Array.isArray(parsed.savingsLog)
+        ? (parsed.savingsLog as unknown[]).filter((e): e is SavingEntry => {
+            const x = e as Partial<SavingEntry>;
+            return typeof x === 'object' && x !== null
+              && typeof x.date === 'string'
+              && typeof x.cycle === 'number'
+              && typeof x.day === 'number'
+              && Array.isArray(x.missionIds)
+              && typeof x.amount === 'number'
+              && typeof x.coins === 'number';
+          })
+        : DEFAULT.savingsLog,
     };
   } catch {
     return DEFAULT;
@@ -403,6 +438,19 @@ export function useUser() {
         ? [...cur.ownedTitles, ...newlyEarned]
         : cur.ownedTitles;
 
+      // 인증 완료 시각 — base.lastSavedAt 과 savingsLog 엔트리 date 양쪽에서 동일하게 사용
+      const savedAtIso = new Date().toISOString();
+      // 절약 내역 추가 — 최신이 인덱스 0. 상한 500개 (수년치). 인증한 day 는 mutation 전(cur.day) 값.
+      const newEntry: SavingEntry = {
+        date: savedAtIso,
+        cycle: cur.cycle,
+        day: cur.day,
+        missionIds: wonIds,
+        amount: reward,
+        coins,
+      };
+      const savingsLog = [newEntry, ...cur.savingsLog].slice(0, 500);
+
       const base = {
         totalSaved: cur.totalSaved + reward,
         coins: cur.coins + coins,
@@ -411,8 +459,9 @@ export function useUser() {
         missionWinDays: nextWinDays,
         totalSaveCount: nextTotalSaveCount,
         ownedTitles,
+        savingsLog,
         // 인증 완료 시각 기록 — 다음 미션은 이 시각 이후 첫 새벽 4시부터 가능 (lock)
-        lastSavedAt: new Date().toISOString(),
+        lastSavedAt: savedAtIso,
       };
       const next: UserState = isCycleEnd
         ? {
