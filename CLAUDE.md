@@ -40,9 +40,10 @@
 ## 현재 안드로이드 버전 (Play Console)
 
 - 정의 위치: `apps/jaringobi-app/android/app/build.gradle` 의 `versionCode` / `versionName`
-- **현재 값**: `versionCode 10` / `versionName "1.0.7"` (2026-05-18)
-  - 1.0.7 내용: 옷장 별표를 '즐겨찾기' 로 분리(착용과 독립, favorites 필드 신설, 착용 중은 accent 보더 + '착용 중' 뱃지로 별도 표시), 상점 카트 상세 모달에 '전체 비우기' 버튼, 마이페이지 공유 캡쳐 실패 시 alert 대신 토스트 안내(이미지 실패→텍스트 폴백 명시), 칭호 상세 화면 외부 클릭이 X 와 동일하게 그리드로 복귀, BGM 백그라운드/숨김 상태 자동 정지(visibilitychange + Capacitor appStateChange), 효과음 부스트(SFX_BOOST 2.8→6.0), 상점 하단 카트 바 safe-area-inset-bottom 적용해 안드로이드 제스처 바에 안 가려지게, 공유 캡쳐 우측 잘림 수정(scrollWidth + 버퍼 12px)
+- **현재 값**: `versionCode 11` / `versionName "1.0.8"` (2026-05-18)
+  - 1.0.8 내용: 옷장 별표를 '즐겨찾기' 로 분리(착용과 독립, favorites 필드 신설, 착용 중은 accent 보더 + '착용 중' 뱃지로 별도 표시), 상점 카트 상세 모달에 '전체 비우기' 버튼, 마이페이지 공유 캡쳐 실패 시 alert 대신 토스트 안내(이미지 실패→텍스트 폴백 명시), 칭호 상세 화면 외부 클릭이 X 와 동일하게 그리드로 복귀, BGM 백그라운드/숨김 상태 자동 정지(visibilitychange + Capacitor appStateChange), 효과음 부스트(SFX_BOOST 2.8→6.0), 상점 하단 카트 바 safe-area-inset-bottom 적용해 안드로이드 제스처 바에 안 가려지게, 공유 캡쳐 우측 잘림 수정(scrollWidth + 버퍼 12px → 32px 로 추가 상향, 하단도 16px 로), 동요풍 BGM 의 sine 파형이 다른 스타일보다 작게 들리던 문제 → 노트 gain 약 1.6배 상향(베이스 0.55→0.95, 멜로디 0.62→1.0, 5도 화음 0.18→0.32)
 - 과거 이력:
+  - vCode 10 / 1.0.7 — Play Console 업로드 직전 추가 수정 발생 → 11 / 1.0.8 로 점프, vCode 10 은 사용하지 않음
   - vCode 9 / 1.0.6 — 마이페이지 칭호/공유 모달 UI 개선(상세→그리드 복귀, X 버튼 확대, 공유 미리보기 폭 축소), 닉네임 입력 비제어 전환, BGM 3종(차분/동요풍/8비트 레트로) 선택 + 마스터 게인 3.5 상향, 상점 장바구니 + 카테고리(슬롯)별 1개 동시 시착, 구글 로그인 단계별 에러 로그 보강
   - vCode 8 / 1.0.5 — 로컬 푸시 알림 신규 (아침 챌린지 등록 / 저녁 완료 인증 자동 안내, 설정에서 시간·ON/OFF 개별 조정)
   - vCode 7 / 1.0.4 — 비공개 테스트 업로드용 (vCode 6 재사용 불가로 7 점프)
