@@ -93,26 +93,27 @@ const CHEERFUL_STYLE: StyleDef = {
     const s = step % 64;
     const out: Array<NoteEv | NoiseEv> = [];
     // 베이스 — 매 4스텝(=8분음표) 마다 C 또는 G 도약 (C-G-C-G 패턴)
-    // sine 파형이 square/triangle 대비 같은 gain 에서 RMS 가 낮고 배음이 없어서
-    // 라우드니스가 작게 들리는 문제 → 두 번 상향 후에도 여전히 작다는 피드백.
-    // (1) 전체 gain 을 다시 1.4~1.5배 추가 상향, (2) 1옥타브 위 sine 을 같이 섞어
-    // 배음을 인위적으로 더해 perceived loudness 를 올림 (음색은 거의 유지).
+    // 게인 거듭 상향 + 옥타브 위 보강 + triangle 레이어를 함께 섞어
+    // perceived loudness 를 추가로 올림. triangle 은 sine 보다 배음이 풍부해
+    // 같은 RMS 대비 라우드니스가 더 크게 들림.
     if (s % 8 === 0) {
       const baseMidi = (s % 16 === 0) ? CHEERFUL_ROOT - 12 : CHEERFUL_ROOT - 5;
-      out.push({ kind: 'note', midi: baseMidi, dur: 0.4, type: 'sine', gain: 1.4 });
-      // 베이스 1옥타브 위 보강 — 저음대만 있을 때 안드로이드 스피커가 못 살리는 문제 보강
-      out.push({ kind: 'note', midi: baseMidi + 12, dur: 0.4, type: 'sine', gain: 0.55 });
+      out.push({ kind: 'note', midi: baseMidi, dur: 0.4, type: 'sine', gain: 2.0 });
+      out.push({ kind: 'note', midi: baseMidi + 12, dur: 0.4, type: 'sine', gain: 0.9 });
+      // triangle 레이어 — 배음 추가로 라우드니스 ↑ (음색은 부드럽게 유지)
+      out.push({ kind: 'note', midi: baseMidi, dur: 0.4, type: 'triangle', gain: 0.55 });
     }
     // 멜로디 — 매 2스텝마다 1음 (총 32음 / 4마디)
     if (s % 2 === 0) {
       const idx = Math.floor(s / 2);
       const off = CHEERFUL_MELODY[idx];
       if (off >= 0) {
-        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off, dur: 0.24, type: 'sine', gain: 1.55 });
-        // 1옥타브 위 보강 — sine 만으로는 부족한 배음 보강해 라우드니스 ↑ (음색은 유지)
-        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 12, dur: 0.24, type: 'sine', gain: 0.7 });
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off, dur: 0.24, type: 'sine', gain: 2.3 });
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 12, dur: 0.24, type: 'sine', gain: 1.2 });
+        // triangle 레이어 — sine 만으론 부족한 배음 채워 라우드니스 추가 상향
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off, dur: 0.24, type: 'triangle', gain: 0.85 });
         // 5도 화음 — 동요 느낌 더 풍성하게
-        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 7, dur: 0.24, type: 'sine', gain: 0.5 });
+        out.push({ kind: 'note', midi: CHEERFUL_ROOT + off + 7, dur: 0.24, type: 'sine', gain: 0.85 });
       }
     }
     return out;

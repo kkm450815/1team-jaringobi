@@ -119,23 +119,27 @@ export default function MyPage() {
       if (sharePreview?.dataUrl?.startsWith('blob:')) {
         URL.revokeObjectURL(sharePreview.dataUrl);
       }
-      // pixelRatio 2 면 인스타용으로 충분. 그 이상은 캡쳐만 느려지고 결과는 비슷.
-      const pixelRatio = 2;
+      // pixelRatio 를 2 → 1.5 로 다운 — 사용자가 공유한 이미지가 너무 커서
+      // SNS 업로드 시 자동 압축에 한 번 더 깎이는 문제 완화 + 우측 sub-pixel 잘림 추가 방지.
+      // 1.5 도 인스타·카톡 미리보기엔 충분히 선명.
+      const pixelRatio = 1.5;
       // section 안쪽에 'absolute -top-2' 로 위로 벗어난 바인딩 구멍이 있어서
       // bounding rect 가 그걸 포함 못함. 캡쳐 중에는 잠시 숨겨서 측정 왜곡·잘림 방지.
-      // 안드로이드 WebView 처럼 sub-pixel 반올림 더 보수적인 환경에선 +1 로도 모자라
-      // 우/하단이 잘림 → 버퍼를 4px 까지 키움.
       const dots = el.querySelector<HTMLElement>('[data-share-hide]');
       const prevDotsDisplay = dots?.style.display;
       if (dots) dots.style.display = 'none';
+      // 캡쳐 동안 shadow 를 일시 제거 — CSS box-shadow 는 element 의 bounding rect
+      // 바깥으로 그려져서 scrollWidth 에 잡히지 않고, 안드로이드 WebView 에서 우측
+      // 잘림의 주범이었음. inline style 로 잠시 끄고 캡쳐 후 복원.
+      const prevBoxShadow = el.style.boxShadow;
+      el.style.boxShadow = 'none';
       const rect = el.getBoundingClientRect();
-      // 안드로이드 WebView 의 sub-pixel 반올림과 자식 요소 overflow(예: 닉네임 칩, 그림자) 때문에
-      // rect.width 만 쓰면 오른쪽이 잘리는 경우가 있다. scrollWidth/Height 도 함께 고려하고
-      // 우측은 32px, 하단은 16px 버퍼로 키워 잘림 완전 방지(여백은 노트 종이색으로 채워짐).
+      // rect.width 만 쓰면 오른쪽이 잘리는 경우가 있어 scrollWidth/Height 도 고려.
+      // 우측은 64px, 하단은 32px 버퍼로 더 키워 잘림 완전 방지(여백은 노트 종이색).
       const rawW = Math.max(rect.width, el.scrollWidth);
       const rawH = Math.max(rect.height, el.scrollHeight);
-      const width = Math.ceil(rawW) + 32;
-      const height = Math.ceil(rawH) + 16;
+      const width = Math.ceil(rawW) + 64;
+      const height = Math.ceil(rawH) + 32;
       let blob: Blob | null = null;
       try {
         blob = await toBlob(el, {
@@ -151,6 +155,7 @@ export default function MyPage() {
         });
       } finally {
         if (dots) dots.style.display = prevDotsDisplay ?? '';
+        el.style.boxShadow = prevBoxShadow;
       }
       if (!blob) throw new Error('blob 변환 실패');
       // 미리보기는 ObjectURL — base64 dataURL 대비 즉시·메모리 효율적
