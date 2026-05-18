@@ -17,7 +17,7 @@ import { Announcement, announcementsRepo } from '../lib/announcementsRepo';
 import { ShopItem, shopItemsRepo, ShopCategory as ShopCat, AccSubCat, RemodelSubCat } from '../lib/shopItemsRepo';
 import { missionsRepo, MissionWithMeta } from '../lib/missionsRepo';
 import { titlesRepo, TitleWithMeta } from '../lib/titlesRepo';
-import { TITLES, MISSIONS, MissionCategory, Difficulty, TitleReq, TitleDifficulty } from '../lib/data';
+import { TITLES, MISSIONS, MissionCategory, Difficulty, TitleReq, TitleDifficulty, SHOP_GROUPS, REMODEL_FILES, REMODEL_SUBS, accSubOf, priceFor } from '../lib/data';
 import { signInWithEmail, signOut, useSession } from '../lib/auth';
 import { useIsAdmin } from '../lib/admins';
 
@@ -1392,6 +1392,30 @@ const EMPTY_SHOP_ITEM: ShopItem = {
   label: '',
 };
 
+// 코드에 박힌 기본 상점 아이템 (src/lib/data.ts 의 SHOP_GROUPS) 을 표 형식으로 펼친다.
+// 관리자가 전체 라인업을 한눈에 확인할 수 있도록 읽기 전용으로 노출.
+interface BuiltinShopRow {
+  src: string;
+  category: '사치품' | '티셔츠' | '리모델링';
+  subCategory: string | null;
+  price: number;
+}
+function getBuiltinShopRows(): BuiltinShopRow[] {
+  const rows: BuiltinShopRow[] = [];
+  for (const src of SHOP_GROUPS.사치품) {
+    rows.push({ src, category: '사치품', subCategory: accSubOf(src), price: priceFor(src) });
+  }
+  for (const src of SHOP_GROUPS.티셔츠) {
+    rows.push({ src, category: '티셔츠', subCategory: null, price: priceFor(src) });
+  }
+  for (const sub of REMODEL_SUBS) {
+    for (const src of REMODEL_FILES[sub]) {
+      rows.push({ src, category: '리모델링', subCategory: sub, price: priceFor(src) });
+    }
+  }
+  return rows;
+}
+
 function ShopItemsSection() {
   const [items, setItems] = useState<ShopItem[] | null>(null);
   const [editing, setEditing] = useState<ShopItem | null>(null);
@@ -1399,6 +1423,14 @@ function ShopItemsSection() {
   const [err, setErr] = useState<string | null>(null);
   const [uploadingShop, setUploadingShop] = useState(false);
   const [uploadingFit, setUploadingFit] = useState(false);
+  // 기본(빌트인) 아이템 표는 양이 많아 기본 접힘 상태. 토글로 펼침.
+  const [showBuiltins, setShowBuiltins] = useState(false);
+  const builtinRows = useMemo(() => getBuiltinShopRows(), []);
+  const builtinByCategory = useMemo(() => {
+    const grouped: Record<string, BuiltinShopRow[]> = { 사치품: [], 티셔츠: [], 리모델링: [] };
+    for (const r of builtinRows) grouped[r.category].push(r);
+    return grouped;
+  }, [builtinRows]);
 
   async function load() {
     setErr(null);
@@ -1707,6 +1739,71 @@ function ShopItemsSection() {
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="mt-8">
+        <div className="flex items-end justify-between gap-3 flex-wrap mb-3">
+          <div>
+            <h3 className="text-[16px] font-bold flex items-baseline gap-2">
+              기본 아이템 (코드 내장)
+              <span className="text-[13px] font-bold text-[#2a2723]/45 tabular-nums">
+                {builtinRows.length.toLocaleString()}
+              </span>
+            </h3>
+            <p className="text-[12px] text-[#2a2723]/55 mt-1 leading-relaxed">
+              <code className="bg-black/5 px-1 py-0.5 rounded text-[11px]">src/lib/data.ts</code> 의 SHOP_GROUPS 에 정의된 기본 아이템들. 읽기 전용 — 수정/삭제하려면 코드를 직접 변경해야 해요.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBuiltins((v) => !v)}
+            className="text-[13px] font-bold bg-black/5 hover:bg-black/10 px-4 py-2 rounded-lg"
+          >
+            {showBuiltins ? '▲ 접기' : '▼ 펼치기'}
+          </button>
+        </div>
+
+        {showBuiltins && (
+          <div className="space-y-5">
+            {(['사치품', '티셔츠', '리모델링'] as const).map((cat) => {
+              const rows = builtinByCategory[cat] ?? [];
+              if (rows.length === 0) return null;
+              return (
+                <div key={cat} className="bg-white rounded-xl shadow-sm overflow-x-auto">
+                  <div className="px-4 pt-3 pb-2 text-[13px] font-bold flex items-baseline gap-2 border-b border-black/5">
+                    {cat}
+                    <span className="text-[12px] font-bold text-[#2a2723]/45 tabular-nums">
+                      {rows.length.toLocaleString()}
+                    </span>
+                  </div>
+                  <table className="w-full text-[13px]">
+                    <thead>
+                      <tr className="text-left text-[12px] text-[#2a2723]/55 border-b border-black/10">
+                        <th className="px-4 py-2">미리보기</th>
+                        <th className="px-4 py-2">서브</th>
+                        <th className="px-4 py-2">파일 경로</th>
+                        <th className="px-4 py-2 text-right">가격</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((r) => (
+                        <tr key={r.src} className="border-b border-black/5">
+                          <td className="px-4 py-2">
+                            <img src={r.src} alt="" className="w-12 h-12 object-contain bg-black/5 rounded" />
+                          </td>
+                          <td className="px-4 py-2 whitespace-nowrap">
+                            {r.subCategory ?? <span className="text-[#2a2723]/40">—</span>}
+                          </td>
+                          <td className="px-4 py-2 text-[11px] text-[#2a2723]/60 break-all font-mono">{r.src}</td>
+                          <td className="px-4 py-2 text-right tabular-nums">{r.price.toLocaleString()}P</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
