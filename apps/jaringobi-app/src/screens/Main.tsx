@@ -321,15 +321,12 @@ export default function Main() {
           {u.totalSaved.toLocaleString()}
         </button>
 
-        {/* 우측 상단: 설정 바로가기 (예전 MY 자리). MY 는 룸 우상단으로 이동. */}
-        <Link to="/settings" data-tutorial="settings" aria-label="설정" className="flex flex-col items-center gap-0.5">
+        {/* 마이페이지 바로가기 — 헤더 우측. 마이페이지 안에 설정 톱니바퀴 버튼이 있어 그쪽으로 진입. */}
+        <Link to="/mypage" data-tutorial="mypage" aria-label="마이페이지" className="flex flex-col items-center gap-0.5">
           <span className="w-11 h-11 rounded-full bg-white grid place-items-center shadow-soft overflow-hidden">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="text-text/80">
-              <circle cx="12" cy="12" r="3" />
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
-            </svg>
+            <img src="/jarin/main_mypage.png" alt="" className="w-9 h-9 object-contain" />
           </span>
-          <span className="text-[11px] font-bold text-text">설정</span>
+          <span className="text-[11px] font-bold text-text">MY</span>
         </Link>
       </header>
 
@@ -401,15 +398,6 @@ export default function Main() {
             </div>
           </div>
         )}
-        {/* MY 바로가기 — 룸 우상단. Shop 버튼이 우하단인 것과 대칭. */}
-        <Link
-          to="/mypage"
-          data-tutorial="mypage"
-          aria-label="마이페이지"
-          className="absolute right-4 top-4 w-14 h-14 rounded-2xl grid place-items-center bg-bg shadow-soft"
-        >
-          <img src="/jarin/main_mypage.png" alt="마이페이지" className="w-10 h-10 object-contain" />
-        </Link>
         <Link
           to="/shop"
           data-tutorial="shop"
