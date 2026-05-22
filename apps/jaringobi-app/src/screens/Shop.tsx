@@ -283,7 +283,7 @@ export default function Shop() {
               </button>
               {inCart && (
                 <span
-                  className="absolute top-1.5 right-1.5 z-10 bg-accent text-white text-[10px] font-bold rounded-full w-5 h-5 grid place-items-center shadow pointer-events-none"
+                  className="absolute top-1.5 right-1.5 bg-accent text-white text-[10px] font-bold rounded-full w-5 h-5 grid place-items-center shadow pointer-events-none"
                   aria-hidden
                 >✓</span>
               )}
@@ -297,7 +297,7 @@ export default function Shop() {
               )}
               {owned && (
                 <span
-                  className="absolute top-1.5 left-1.5 z-10 bg-text/70 text-bg text-[9px] font-bold rounded-full px-1.5 py-0.5 shadow pointer-events-none"
+                  className="absolute top-1.5 left-1.5 bg-text/70 text-bg text-[9px] font-bold rounded-full px-1.5 py-0.5 shadow pointer-events-none"
                   aria-hidden
                 >보유</span>
               )}
