@@ -251,23 +251,44 @@ export default function Shop() {
           const owned = u.owned.includes(src);
           const inCart = cart.includes(src);
           const price = priceFor(src);
+          // 카드 외부는 div, 클릭/aria 는 내부 button — 안드로이드 WebView 에서 <button>
+          // 의 position:absolute 자식이 스크롤 시 어긋나 보이는 이슈 회피 (옷장과 동일 패턴).
+          // 뱃지(✓·보유·자물쇠) 는 div 안에 absolute 로 두어 카드와 같이 스크롤됨.
           return (
-            <button
+            <div
               key={src}
-              onClick={() => toggleCart(src)}
               className={`relative rounded-xl overflow-hidden transition-colors ${
                 inCart ? 'bg-accent/30 ring-2 ring-accent' : owned ? 'bg-white/40' : 'bg-white/70'
               }`}
-              aria-pressed={inCart}
             >
+              <button
+                onClick={() => toggleCart(src)}
+                className="block w-full active:scale-[.98] transition-transform"
+                aria-pressed={inCart}
+                aria-label={owned ? '이미 보유 중' : inCart ? '장바구니에서 제거' : '장바구니에 담기'}
+              >
+                <div className="aspect-square grid place-items-center px-3 pt-4 pb-2">
+                  <img
+                    src={src}
+                    alt=""
+                    className="max-w-full max-h-full object-contain"
+                    draggable={false}
+                    onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
+                  />
+                </div>
+                <div className="flex items-center justify-center gap-1 pb-2 -mt-1">
+                  <CoinIcon size={14} />
+                  <span className="text-[13px] font-bold text-text">{price}P</span>
+                </div>
+              </button>
               {inCart && (
                 <span
-                  className="absolute top-1.5 right-1.5 z-10 bg-accent text-white text-[10px] font-bold rounded-full w-5 h-5 grid place-items-center shadow"
+                  className="absolute top-1.5 right-1.5 z-10 bg-accent text-white text-[10px] font-bold rounded-full w-5 h-5 grid place-items-center shadow pointer-events-none"
                   aria-hidden
                 >✓</span>
               )}
               {!owned && price > 0 && !inCart && (
-                <span className="absolute top-1.5 left-1.5 text-text/80" aria-hidden>
+                <span className="absolute top-1.5 left-1.5 text-text/80 pointer-events-none" aria-hidden>
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="4" y="11" width="16" height="10" rx="2" />
                     <path d="M8 11V8a4 4 0 0 1 8 0v3" />
@@ -276,24 +297,11 @@ export default function Shop() {
               )}
               {owned && (
                 <span
-                  className="absolute top-1.5 left-1.5 z-10 bg-text/70 text-bg text-[9px] font-bold rounded-full px-1.5 py-0.5 shadow"
+                  className="absolute top-1.5 left-1.5 z-10 bg-text/70 text-bg text-[9px] font-bold rounded-full px-1.5 py-0.5 shadow pointer-events-none"
                   aria-hidden
                 >보유</span>
               )}
-              <div className="aspect-square grid place-items-center px-3 pt-4 pb-2">
-                <img
-                  src={src}
-                  alt=""
-                  className="max-w-full max-h-full object-contain"
-                  draggable={false}
-                  onError={(e) => { (e.currentTarget.style.visibility = 'hidden'); }}
-                />
-              </div>
-              <div className="flex items-center justify-center gap-1 pb-2 -mt-1">
-                <CoinIcon size={14} />
-                <span className="text-[13px] font-bold text-text">{price}P</span>
-              </div>
-            </button>
+            </div>
           );
         })}
         {visible < items.length && (
